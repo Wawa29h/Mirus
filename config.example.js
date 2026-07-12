@@ -7,4 +7,7 @@ window.TWINMAP_CONFIG = {
   // Punto base: Barra de Santiago, El Salvador (humedal RAMSAR)
   CENTER: [-90.05, 13.74], // [lng, lat]
   ZOOM: 13,
+
+  // Backend Express (crowds, aves, asistente, pronóstico migratorio)
+  API_BASE: "http://localhost:3001",
 };

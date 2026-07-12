@@ -77,6 +77,23 @@
     .status { margin-top: 12px; font-size: 11.5px; color: var(--muted); border-top: 1px solid var(--panel-border); padding-top: 10px; }
     .status b { color: var(--accent); }
 
+    /* ---- Signos vitales (clima Barra) ---- */
+    .vitals {
+      position: absolute; top: 148px; left: 14px; z-index: 5; width: 220px;
+      background: var(--panel); color: var(--text);
+      border: 1px solid var(--panel-border); border-radius: 14px;
+      padding: 12px 14px; backdrop-filter: blur(10px); box-shadow: 0 8px 30px rgba(0,0,0,.35);
+      font-size: 12px; line-height: 1.45;
+    }
+    .vitals h2 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+    .vitals .v-now { font-size: 22px; font-weight: 700; color: var(--accent); }
+    .vitals .v-row { display: flex; justify-content: space-between; gap: 8px; margin: 4px 0; color: var(--muted); }
+    .vitals .v-row b { color: var(--text); font-weight: 600; }
+    .vitals .v-days { display: flex; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--panel-border); }
+    .vitals .v-day { flex: 1; text-align: center; font-size: 10.5px; color: var(--muted); }
+    .vitals .v-day span { display: block; font-size: 13px; color: var(--text); font-weight: 600; }
+    .vitals .v-src { margin-top: 6px; font-size: 10px; color: var(--muted); }
+
     /* ---- Aviso de token faltante ---- */
     #token-warn {
       position: absolute; inset: 0; z-index: 20; display: none;
@@ -154,6 +171,11 @@
     <p>Digital Twin Turístico · Barra de Santiago 🇸🇻</p>
     <button id="island-btn" type="button">🏝️ Modo isla</button>
     <button id="flat-btn" type="button">🗺️ Vista plana (2D)</button>
+  </div>
+
+  <div class="vitals" id="vitals-panel" style="display:none" aria-live="polite">
+    <h2>Signos vitales</h2>
+    <div id="vitals-body">Cargando clima…</div>
   </div>
 
   <div class="panel" id="panel" style="display:none">
@@ -278,6 +300,7 @@
 
   <script>
     const CFG = window.TWINMAP_CONFIG || {};
+    const API = (CFG.API_BASE || "http://localhost:3001").replace(/\/$/, "");
     const hasToken = CFG.MAPBOX_TOKEN && CFG.MAPBOX_TOKEN.startsWith("pk.");
 
     if (!hasToken) {
@@ -371,6 +394,7 @@
         addNatureCatalog(map);
         addReferenceLayers(map);
         addMigrationForecast(map);
+        addVitalsDashboard();
         wireToggles(map);
         wireRoute(map);
         wireAssistant(map);
@@ -625,22 +649,35 @@
       map.on("mouseenter", "crowds-points", () => map.getCanvas().style.cursor = "pointer");
       map.on("mouseleave", "crowds-points", () => map.getCanvas().style.cursor = "");
       try {
-        const response = await fetch("http://localhost:3001/api/crowds");
+        const response = await fetch(API + "/api/crowds");
         const payload = await response.json();
         if (!response.ok || !payload.success) throw new Error(payload.error || "No se pudo consultar SerpAPI.");
-        const crowds = payload.data || empty;
-        map.getSource("crowds").setData(crowds);
-        const conDato = crowds.features.filter((f) => Number.isFinite(f.properties?.busyness));
-        const saturados = conDato.filter((f) => f.properties.busyness >= 75).length;
-        const sub = document.getElementById("crowds-sub");
-        if (sub) sub.textContent = conDato.length ? `${conDato.length} lugares · ${saturados} saturados` : "SerpAPI · sin dato para esta zona";
-        if (conDato.length) setStatus(`Flujo y capacidad · <b>${conDato.length}</b> lugares · <b>${saturados}</b> saturados`);
-        startCrowdPulse(map);
+        applyCrowdsData(map, payload.data || empty, payload.source || "api");
       } catch (error) {
+        try {
+          const cache = await fetch("data/crowds.geojson");
+          if (cache.ok) {
+            applyCrowdsData(map, await cache.json(), "cache");
+            const sub = document.getElementById("crowds-sub");
+            if (sub) sub.textContent = "Cache local · backend apagado";
+            return;
+          }
+        } catch { /* sigue al warn */ }
         const sub = document.getElementById("crowds-sub");
-        if (sub) sub.textContent = "SerpAPI no disponible · usa el caché";
+        if (sub) sub.textContent = "SerpAPI no disponible · arranca el backend";
         console.warn("Crowds API error", error);
       }
+    }
+
+    function applyCrowdsData(map, crowds, source) {
+      const empty = { type: "FeatureCollection", features: [] };
+      map.getSource("crowds").setData(crowds);
+      const conDato = (crowds.features || []).filter((f) => Number.isFinite(f.properties?.busyness));
+      const saturados = conDato.filter((f) => f.properties.busyness >= 75).length;
+      const sub = document.getElementById("crowds-sub");
+      if (sub) sub.textContent = conDato.length ? `${conDato.length} lugares · ${saturados} saturados` : "SerpAPI · sin dato para esta zona";
+      if (conDato.length) setStatus(`Flujo y capacidad · <b>${conDato.length}</b> lugares · <b>${saturados}</b> saturados (${source})`);
+      startCrowdPulse(map);
     }
 
     // Animación del halo pulsante (solo repinta cuando la capa está visible)
@@ -766,7 +803,7 @@
       map.on("mouseleave", "fauna-layer", () => map.getCanvas().style.cursor = "");
       let birds = null;
       try {
-        const response = await fetch("http://localhost:3001/api/birds");
+        const response = await fetch(API + "/api/birds");
         const payload = await response.json();
         if (!response.ok || !payload.success) throw new Error(payload.error || "No se pudo consultar eBird.");
         birds = payload.data;
@@ -798,7 +835,7 @@
     }
     async function addMigrationForecast(map) {
       let forecast = null;
-      for (const url of ["http://localhost:3001/api/birds/forecast", "data/forecast.json"]) {
+      for (const url of [API + "/api/birds/forecast", "data/forecast.json"]) {
         try {
           const response = await fetch(url);
           if (!response.ok) continue;
@@ -853,7 +890,7 @@
           const button = event.currentTarget;
           button.disabled = true; button.textContent = "Actualizando IA...";
           try {
-            const response = await fetch("http://localhost:3001/api/birds/forecast?refresh=1");
+            const response = await fetch(API + "/api/birds/forecast?refresh=1");
             const payload = await response.json();
             if (!response.ok || !payload.success) throw new Error(payload.error || "No se pudo actualizar");
             window.location.reload();
@@ -1086,7 +1123,7 @@
         answer.textContent = "Buscando lugares reales cercanos y ordenando la ruta...";
         try {
           const location = await chatLocation(map);
-          const response = await fetch("http://localhost:3001/api/assistant/route", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, location }) });
+          const response = await fetch(API + "/api/assistant/route", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, location }) });
           const payload = await response.json();
           if (!response.ok || !payload.success) throw new Error(payload.error || "No se pudo crear la ruta.");
           const stops = payload.data.stops || [];
@@ -1104,6 +1141,71 @@
       };
       button.onclick = send;
       input.onkeydown = (event) => { if (event.key === "Enter") send(); };
+    }
+
+    function weatherLabel(code) {
+      const c = Number(code);
+      if (c === 0) return "Despejado";
+      if (c <= 3) return "Parcialmente nublado";
+      if (c <= 48) return "Niebla";
+      if (c <= 67) return "Lluvia";
+      if (c <= 77) return "Nieve/granizo";
+      if (c <= 82) return "Chubascos";
+      if (c <= 99) return "Tormenta";
+      return "Variable";
+    }
+
+    async function addVitalsDashboard() {
+      const panel = document.getElementById("vitals-panel");
+      const body = document.getElementById("vitals-body");
+      panel.style.display = "block";
+      const [lng, lat] = CFG.CENTER || [-90.05, 13.74];
+      let weather = null;
+      let source = "Open-Meteo";
+
+      try {
+        const url = new URL("https://api.open-meteo.com/v1/forecast");
+        url.search = new URLSearchParams({
+          latitude: String(lat), longitude: String(lng), timezone: "America/El_Salvador",
+          current: "temperature_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m",
+          daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+          forecast_days: "4",
+        }).toString();
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Open-Meteo HTTP " + res.status);
+        const data = await res.json();
+        weather = { current: data.current, daily: data.daily, destination: { name: "Barra de Santiago" } };
+      } catch (error) {
+        try {
+          const cache = await fetch("data/weather.json");
+          if (cache.ok) { weather = await cache.json(); source = "cache local"; }
+        } catch { /* sin clima */ }
+        if (!weather) { body.textContent = "Clima no disponible."; console.warn("Vitals error", error); return; }
+      }
+
+      const cur = weather.current || {};
+      const daily = weather.daily || {};
+      const days = (daily.time || []).slice(0, 4).map((date, i) => ({
+        date,
+        max: daily.temperature_2m_max?.[i],
+        min: daily.temperature_2m_min?.[i],
+        rain: daily.precipitation_probability_max?.[i],
+        code: daily.weather_code?.[i],
+      }));
+      const dayHtml = days.map((d) => {
+        const label = new Date(d.date + "T12:00:00").toLocaleDateString("es", { weekday: "short" });
+        return `<div class="v-day"><span>${Math.round(d.max)}°</span>${label}<br>${d.rain ?? 0}% lluvia</div>`;
+      }).join("");
+
+      body.innerHTML =
+        `<div class="v-now">${Math.round(cur.temperature_2m ?? days[0]?.max ?? 0)}°C</div>` +
+        `<div class="v-row"><span>${weatherLabel(cur.weather_code ?? days[0]?.code)}</span><b>Barra de Santiago</b></div>` +
+        `<div class="v-row"><span>Sensación</span><b>${Math.round(cur.apparent_temperature ?? cur.temperature_2m ?? 0)}°C</b></div>` +
+        `<div class="v-row"><span>Viento</span><b>${Math.round(cur.wind_speed_10m ?? 0)} km/h</b></div>` +
+        `<div class="v-row"><span>Lluvia ahora</span><b>${cur.precipitation ?? 0} mm</b></div>` +
+        `<div class="v-row"><span>Marea</span><b style="color:var(--muted);font-size:11px">Pendiente StormGlass</b></div>` +
+        `<div class="v-days">${dayHtml}</div>` +
+        `<div class="v-src">${source} · actualizado al cargar</div>`;
     }
 
     // ============ Estilo plano (colores planos, sin relieve) / satélite 3D ============
