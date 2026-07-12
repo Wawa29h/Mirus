@@ -80,7 +80,7 @@ function renderItineraryList() {
   if (items.length === 0) {
     routeListEl.innerHTML = `
       <div class="route-itinerary__empty">
-        <p>AÃºn no has aÃ±adido lugares. Explora el mapa y aÃ±Ã¡delos a tu ruta.</p>
+        <p>Aún no has añadido lugares. Explora el mapa y añádelos a tu ruta.</p>
         <button class="outline-button" type="button" data-view="mapa">Explorar mapa</button>
       </div>
     `;

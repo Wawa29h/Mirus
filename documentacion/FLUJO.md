@@ -1,6 +1,6 @@
-﻿# Twinmap — Flujo de la aplicación
+﻿# Mirus — Flujo de la aplicación
 
-Twinmap es una aplicación web para **planificar y explorar turismo en El Salvador**. Combina mapas, cuestionario de preferencias, itinerarios, bitácora, favoritos y contexto local (emergencias y noticias por zona) en dos perfiles: **Modo ruta** (planificación) y **Modo aventura** (exploración gamificada).
+Mirus es una aplicación web para **planificar y explorar turismo en El Salvador**. Combina mapas, cuestionario de preferencias, itinerarios, bitácora, favoritos y contexto local (emergencias y noticias por zona) en dos perfiles: **Modo ruta** (planificación) y **Modo aventura** (exploración gamificada).
 
 **Entrada principal:** `frontend/index.html` (SPA por vistas con `data-panel` / `data-view`).
 

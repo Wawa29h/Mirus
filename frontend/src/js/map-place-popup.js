@@ -6,9 +6,11 @@ const popupDescription = document.getElementById("popup-description");
 const popupForecast = document.getElementById("popup-forecast");
 const popupWaze = document.getElementById("popup-waze");
 const popupNews = document.getElementById("popup-news");
+const popupInDrive = document.getElementById("popup-indrive");
 const popupDrive = document.getElementById("popup-drive");
 const popupDetails = document.getElementById("popup-details");
 const popupAddRouteBtn = document.getElementById("popup-add-route");
+const popupMarkVisitedBtn = document.getElementById("popup-mark-visited");
 const popupSaveFavoriteBtn = document.getElementById("popup-save-favorite");
 const popupCloseButtons = document.querySelectorAll("[data-close-popup]");
 const popupPlanningEl = document.querySelector(".place-popup__planning");
@@ -35,7 +37,7 @@ const PLACE_SAFETY_NEWS_TERMS = [
 ];
 const safetyNewsCache = new Map();
 
-const FORECAST_LABELS = ["Hoy", "MaÃ±ana", "En dos dÃ­as"];
+const FORECAST_LABELS = ["Hoy", "Mañana", "En dos días"];
 
 const UBER = {
   scheme: "uber",
@@ -128,19 +130,31 @@ function buildSafetyNewsQuery(place) {
 }
 
 function buildSafetyNewsUrl(place) {
-  const apiKey = getPlaceNewsDataApiKey();
-  if (!apiKey) {
-    throw new Error("Configura tu API key de NewsData.io para revisar seguridad reciente.");
-  }
-
   const params = new URLSearchParams({
-    apikey: apiKey,
     q: buildSafetyNewsQuery(place),
     country: "sv",
     language: "es",
     size: "6",
   });
 
+  const apiBase = (
+    window.TWINMAP_API_BASE ||
+    window.TWINMAP_CONFIG?.API_BASE ||
+    window.TWINMAP_CONFIG?.apiBaseUrl ||
+    window.TwinmapApi?.API_BASE_URL ||
+    ""
+  ).replace(/\/$/, "");
+
+  if (apiBase) {
+    return `${apiBase}/api/news?${params.toString()}`;
+  }
+
+  const apiKey = getPlaceNewsDataApiKey();
+  if (!apiKey) {
+    throw new Error("Configura tu API key de NewsData.io para revisar seguridad reciente.");
+  }
+
+  params.set("apikey", apiKey);
   return `${PLACE_NEWSDATA_API_ENDPOINT}?${params.toString()}`;
 }
 
@@ -175,17 +189,17 @@ function formatSafetyNewsDate(timestamp) {
   }).format(new Date(timestamp));
 }
 
-function buildSafetyNewsSummary(items) {
-  if (!items.length) return "";
+function buildGoogleNewsSearchUrl(place) {
+  if (window.TwinmapPlaceTravelPanel?.buildGoogleNewsSearchUrl) {
+    return window.TwinmapPlaceTravelPanel.buildGoogleNewsSearchUrl(place);
+  }
 
-  const count = items.length;
-  const sources = [...new Set(items.map((item) => item.source).filter(Boolean))].slice(0, 3);
-  const titles = items.slice(0, 2).map((item) => item.title);
-
-  return `Se encontraron ${count} noticia${count === 1 ? "" : "s"} relacionada${count === 1 ? "" : "s"} con seguridad. ${sources.length ? `Fuentes: ${sources.join(", ")}. ` : ""}Temas detectados: ${titles.join("; ")}.`;
+  const location = place.location || "El Salvador";
+  const query = `${place.name} ${location} El Salvador noticias seguridad accidente robo`;
+  return `https://news.google.com/search?q=${encodeURIComponent(query)}&hl=es-419&gl=SV&ceid=SV:es-419`;
 }
 
-function renderSafetyNewsPanel(state, placeName, items = [], message = "") {
+function renderSafetyNewsPanel(state, placeName, items = [], message = "", newsUrl = "") {
   if (!popupDetails) return;
 
   const listHtml = items.length
@@ -201,9 +215,19 @@ function renderSafetyNewsPanel(state, placeName, items = [], message = "") {
       </ul>`
     : "";
 
-  const summary = items.length ? buildSafetyNewsSummary(items) : message;
+  const summary = items.length
+    ? `Se encontraron ${items.length} noticia${items.length === 1 ? "" : "s"} recientes relacionadas con ${placeName}.`
+    : message;
   const statusHtml = summary
     ? `<p class="place-safety-news__status place-safety-news__status--${escapePlaceHtml(state)}">${escapePlaceHtml(summary)}</p>`
+    : "";
+
+  const searchHtml = newsUrl
+    ? `<p class="place-safety-news__search">
+        <a href="${escapePlaceHtml(newsUrl)}" target="_blank" rel="noopener noreferrer">
+          Buscar mas noticias en Google Noticias
+        </a>
+      </p>`
     : "";
 
   popupDetails.innerHTML = `
@@ -217,6 +241,7 @@ function renderSafetyNewsPanel(state, placeName, items = [], message = "") {
       </div>
       ${statusHtml}
       ${listHtml}
+      ${searchHtml}
     </section>
   `;
 }
@@ -224,13 +249,64 @@ function renderSafetyNewsPanel(state, placeName, items = [], message = "") {
 async function loadSafetyNews(place) {
   const token = ++safetyNewsToken;
   const cacheKey = `${place.name}|${place.location}`;
+  const newsUrl = buildGoogleNewsSearchUrl(place);
 
-  if (safetyNewsCache.has(cacheKey)) {
-    renderSafetyNewsPanel("ready", place.name, safetyNewsCache.get(cacheKey));
+  if (window.TwinmapPlaceTravelPanel?.fetchSafetyNewsForPlace) {
+    if (safetyNewsCache.has(cacheKey)) {
+      renderSafetyNewsPanel("ready", place.name, safetyNewsCache.get(cacheKey), "", newsUrl);
+      return;
+    }
+
+    renderSafetyNewsPanel(
+      "loading",
+      place.name,
+      [],
+      "Revisando noticias recientes de accidentes, robos y seguridad...",
+      newsUrl,
+    );
+
+    try {
+      const items = await window.TwinmapPlaceTravelPanel.fetchSafetyNewsForPlace(place);
+      if (token !== safetyNewsToken) return;
+
+      safetyNewsCache.set(cacheKey, items);
+      if (!items.length) {
+        renderSafetyNewsPanel(
+          "empty",
+          place.name,
+          [],
+          "No encontramos noticias recientes en NewsData.io. Busca en Google Noticias con el enlace de abajo.",
+          newsUrl,
+        );
+        return;
+      }
+
+      renderSafetyNewsPanel("ready", place.name, items, "", newsUrl);
+    } catch (error) {
+      if (token !== safetyNewsToken) return;
+      renderSafetyNewsPanel(
+        "error",
+        place.name,
+        [],
+        error?.message || "No se pudo revisar NewsData.io en este momento.",
+        newsUrl,
+      );
+    }
     return;
   }
 
-  renderSafetyNewsPanel("loading", place.name, [], "Revisando noticias recientes de accidentes, robos y seguridad...");
+  if (safetyNewsCache.has(cacheKey)) {
+    renderSafetyNewsPanel("ready", place.name, safetyNewsCache.get(cacheKey), "", newsUrl);
+    return;
+  }
+
+  renderSafetyNewsPanel(
+    "loading",
+    place.name,
+    [],
+    "Revisando noticias recientes de accidentes, robos y seguridad...",
+    newsUrl,
+  );
 
   try {
     const response = await fetch(buildSafetyNewsUrl(place));
@@ -246,7 +322,6 @@ async function loadSafetyNews(place) {
     if (token !== safetyNewsToken) return;
 
     const items = (data.results || [])
-      .filter(isSafetyNewsItem)
       .map(mapSafetyNewsItem)
       .slice(0, 5);
 
@@ -257,12 +332,13 @@ async function loadSafetyNews(place) {
         "empty",
         place.name,
         [],
-        "No encontramos noticias recientes de accidentes o robos para este lugar."
+        "No encontramos noticias recientes en NewsData.io. Busca en Google Noticias con el enlace de abajo.",
+        newsUrl,
       );
       return;
     }
 
-    renderSafetyNewsPanel("ready", place.name, items);
+    renderSafetyNewsPanel("ready", place.name, items, "", newsUrl);
   } catch (error) {
     if (token !== safetyNewsToken) return;
 
@@ -270,7 +346,8 @@ async function loadSafetyNews(place) {
       "error",
       place.name,
       [],
-      error?.message || "No se pudo revisar NewsData.io en este momento."
+      error?.message || "No se pudo revisar NewsData.io en este momento.",
+      newsUrl,
     );
   }
 }
@@ -287,14 +364,14 @@ const MOCK_CONDITIONS = [
 
 function parseWeatherString(weather) {
   if (!weather) {
-    return { temp: "26Â°C", condition: "Despejado" };
+    return { temp: "26°C", condition: "Despejado" };
   }
 
-  const parts = weather.split("Â·");
+  const parts = weather.split("·");
 
   return {
     temp: parts[0]?.trim() || weather,
-    condition: parts.slice(1).join("Â·").trim() || "Clima local",
+    condition: parts.slice(1).join("·").trim() || "Clima local",
   };
 }
 
@@ -313,7 +390,7 @@ function adjustTemp(temp, delta) {
 
   if (!match) return temp;
 
-  return `${Number(match[0]) + delta}Â°C`;
+  return `${Number(match[0]) + delta}°C`;
 }
 
 function generateMockForecast(baseWeather, placeName) {
@@ -341,13 +418,13 @@ function getForecastFromPin(pin) {
   ];
 
   if (explicit.some(Boolean)) {
-    const fallback = pin.dataset.placeWeather || "26Â°C Â· Despejado";
+    const fallback = pin.dataset.placeWeather || "26°C · Despejado";
 
     return explicit.map((weather) => parseWeatherString(weather || fallback));
   }
 
   return generateMockForecast(
-    pin.dataset.placeWeather || "26Â°C Â· Despejado",
+    pin.dataset.placeWeather || "26°C · Despejado",
     pin.dataset.placeName
   );
 }
@@ -380,8 +457,8 @@ function getPlaceFromPin(pin) {
     location: pin.dataset.placeLocation || "El Salvador",
     description:
       pin.dataset.placeDescription ||
-      "InformaciÃ³n general del lugar seleccionado en el mapa.",
-    weather: pin.dataset.placeWeather || "26Â°C Â· Despejado",
+      "Información general del lugar seleccionado en el mapa.",
+    weather: pin.dataset.placeWeather || "26°C · Despejado",
     forecast: getForecastFromPin(pin),
     newsUrl:
       pin.dataset.placeNews ||
@@ -407,26 +484,64 @@ function updatePopupModeUI() {
   if (popupPlanningEl) {
     popupPlanningEl.textContent = adventure
       ? "Parada sugerida en tu ruta de aventura"
-      : "Parte de tu planeaciÃ³n del viaje";
+      : "Parte de tu planeación del viaje";
     popupPlanningEl.classList.toggle("place-popup__planning--aventura", adventure);
   }
 
   updateSaveFavoriteButton();
 }
 
-function updateSaveFavoriteButton() {
-  if (!popupSaveFavoriteBtn || !currentPlace) return;
+function refreshPersonalizadoFromPlaceSave() {
+  window.TwinmapBitacora?.refresh?.();
+  window.TwinmapFavoritos?.refresh?.();
+  window.TwinmapPersonalizado?.render?.();
+  window.TwinmapPersonalizado?.renderDashboard?.();
+}
+
+function showPlaceActionToast(message) {
+  if (window.TwinmapRoute?.showRouteToast) {
+    window.TwinmapRoute.showRouteToast(message);
+    return;
+  }
+  window.alert(message);
+}
+
+function updatePlaceActionButtons() {
+  if (!currentPlace) return;
 
   if (isAdventureMode()) {
     const isFavorite = window.TwinmapAventuraFavoritos?.isFavorite(currentPlace);
-    popupSaveFavoriteBtn.textContent = isFavorite ? "Guardado en favoritos" : "Guardar en favoritos";
-    popupSaveFavoriteBtn.disabled = Boolean(isFavorite);
+    if (popupSaveFavoriteBtn) {
+      popupSaveFavoriteBtn.textContent = isFavorite ? "Quitar de favoritos" : "Guardar en favoritos";
+      popupSaveFavoriteBtn.classList.toggle("is-active", Boolean(isFavorite));
+      popupSaveFavoriteBtn.disabled = false;
+    }
+    if (popupMarkVisitedBtn) popupMarkVisitedBtn.hidden = true;
     return;
   }
 
-  const inBitacora = window.TwinmapBitacora?.hasPlace?.(currentPlace);
-  popupSaveFavoriteBtn.textContent = inBitacora ? "Guardado en bitacora" : "Guardar lugar";
-  popupSaveFavoriteBtn.disabled = Boolean(inBitacora);
+  if (popupMarkVisitedBtn) popupMarkVisitedBtn.hidden = false;
+
+  const inBitacora = window.TwinmapBitacora?.hasPlace?.(currentPlace)
+    || window.TwinmapPlaceStorage?.isVisited?.(currentPlace);
+  const inFavoritos = window.TwinmapFavoritos?.isFavorite?.(currentPlace)
+    || window.TwinmapPlaceStorage?.isFavorite?.(currentPlace);
+
+  if (popupMarkVisitedBtn) {
+    popupMarkVisitedBtn.textContent = inBitacora ? "Quitar de visitados" : "Marcar visitado";
+    popupMarkVisitedBtn.classList.toggle("is-active", Boolean(inBitacora));
+    popupMarkVisitedBtn.disabled = false;
+  }
+
+  if (popupSaveFavoriteBtn) {
+    popupSaveFavoriteBtn.textContent = inFavoritos ? "Quitar de favoritos" : "Guardar en favoritos";
+    popupSaveFavoriteBtn.classList.toggle("is-active", Boolean(inFavoritos));
+    popupSaveFavoriteBtn.disabled = false;
+  }
+}
+
+function updateSaveFavoriteButton() {
+  updatePlaceActionButtons();
 }
 
 function updateAddRouteButton() {
@@ -435,8 +550,26 @@ function updateAddRouteButton() {
   const inRoute = window.TwinmapRoute?.isPlaceInRoute(currentPlace);
 
   popupAddRouteBtn.disabled = inRoute;
-  popupAddRouteBtn.textContent = inRoute ? "AÃ±adido a mi ruta" : "AÃ±adir a mi ruta";
+  popupAddRouteBtn.textContent = inRoute ? "Añadido a mi ruta" : "Añadir a mi ruta";
   popupAddRouteBtn.classList.toggle("is-added", inRoute);
+}
+
+function applyTravelPanelLinks(place) {
+  if (window.TwinmapPlaceTravelPanel?.renderPopupLinks) {
+    window.TwinmapPlaceTravelPanel.renderPopupLinks(place, {
+      waze: popupWaze,
+      news: popupNews,
+      indrive: popupInDrive,
+      uber: popupDrive,
+      details: popupDetails,
+    });
+    return;
+  }
+
+  popupWaze.href = place.wazeUrl;
+  popupNews.href = place.newsUrl;
+  popupDrive.href = place.uberUrl;
+  loadSafetyNews(place);
 }
 
 function openPlacePopup(pin) {
@@ -456,10 +589,7 @@ function openPlacePopup(pin) {
     popupImage.alt = currentPlace.category;
   }
   renderForecast(currentPlace.forecast);
-  popupWaze.href = currentPlace.wazeUrl;
-  popupNews.href = currentPlace.newsUrl;
-  popupDrive.href = currentPlace.uberUrl;
-  loadSafetyNews(currentPlace);
+  applyTravelPanelLinks(currentPlace);
 
   updatePopupModeUI();
   updateAddRouteButton();
@@ -488,13 +618,13 @@ popupAddRouteBtn?.addEventListener("click", () => {
   const result = window.TwinmapRoute.addPlaceToRoute(currentPlace);
 
   if (result.added) {
-    window.TwinmapRoute.showRouteToast(`${currentPlace.name} aÃ±adido a tu ruta`);
+    window.TwinmapRoute.showRouteToast(`${currentPlace.name} añadido a tu ruta`);
     updateAddRouteButton();
     return;
   }
 
   if (result.alreadyExists) {
-    window.TwinmapRoute.showRouteToast("Este lugar ya estÃ¡ en tu ruta");
+    window.TwinmapRoute.showRouteToast("Este lugar ya está en tu ruta");
     updateAddRouteButton();
   }
 });
@@ -510,37 +640,68 @@ popupDrive?.addEventListener("click", (event) => {
   openUber(currentPlace);
 });
 
+popupMarkVisitedBtn?.addEventListener("click", () => {
+  if (!currentPlace || isAdventureMode()) return;
+
+  const result = window.TwinmapPlaceStorage?.toggleVisited?.(currentPlace)
+    || window.TwinmapBitacora?.togglePlace?.(currentPlace);
+
+  if (result?.toggled || result?.delegated) {
+    const active = result.active ?? window.TwinmapBitacora?.hasPlace?.(currentPlace)
+      ?? window.TwinmapPlaceStorage?.isVisited?.(currentPlace);
+    showPlaceActionToast(
+      active
+        ? `${currentPlace.name} marcado como visitado`
+        : `${currentPlace.name} quitado de visitados`,
+    );
+    updatePlaceActionButtons();
+    refreshPersonalizadoFromPlaceSave();
+  }
+});
+
 popupSaveFavoriteBtn?.addEventListener("click", () => {
   if (!currentPlace) return;
 
   if (!isAdventureMode()) {
-    const result = window.TwinmapBitacora?.addPlace?.(currentPlace);
+    const result = window.TwinmapFavoritos?.toggle?.(currentPlace)
+      || window.TwinmapPlaceStorage?.toggleFavorite?.(currentPlace);
 
-    if (result?.added) {
-      window.TwinmapRoute?.showRouteToast(`${currentPlace.name} guardado en bitacora`);
-      updateSaveFavoriteButton();
-      window.TwinmapPersonalizado?.render?.();
-      window.TwinmapPersonalizado?.renderDashboard?.();
-      return;
-    }
-
-    if (result?.alreadyExists) {
-      window.TwinmapRoute?.showRouteToast("Este lugar ya esta en tu bitacora");
-      updateSaveFavoriteButton();
+    if (result?.toggled || result?.delegated) {
+      const active = result.active ?? window.TwinmapFavoritos?.isFavorite?.(currentPlace)
+        ?? window.TwinmapPlaceStorage?.isFavorite?.(currentPlace);
+      showPlaceActionToast(
+        active
+          ? `${currentPlace.name} guardado en favoritos`
+          : `${currentPlace.name} quitado de favoritos`,
+      );
+      updatePlaceActionButtons();
+      refreshPersonalizadoFromPlaceSave();
     }
 
     return;
   }
 
+  const pin = document.querySelector(".map-pin.is-active");
+  const placeId = currentPlace.id || pin?.dataset.placeId;
+  const isFavorite = window.TwinmapAventuraFavoritos?.isFavorite(currentPlace);
+
+  if (isFavorite) {
+    window.TwinmapAventuraFavoritos?.remove?.(placeId);
+    window.TwinmapRoute?.showRouteToast(`${currentPlace.name} quitado de favoritos`);
+    updateSaveFavoriteButton();
+    window.TwinmapAventuraLogros?.refresh();
+    return;
+  }
+
   const result = window.TwinmapAventuraFavoritos?.add({
-    id: currentPlace.id || document.querySelector(".map-pin.is-active")?.dataset.placeId,
+    id: placeId,
     name: currentPlace.name,
     category: currentPlace.category,
     categoryLabel: currentPlace.category,
     location: currentPlace.location,
-    type: document.querySelector(".map-pin.is-active")?.classList.contains("aventura-map-pin--restaurante")
+    type: pin?.classList.contains("aventura-map-pin--restaurante")
       ? "restaurante"
-      : document.querySelector(".map-pin.is-active")?.classList.contains("aventura-map-pin--playa")
+      : pin?.classList.contains("aventura-map-pin--playa")
         ? "playa"
         : "lugar",
   });
@@ -549,12 +710,6 @@ popupSaveFavoriteBtn?.addEventListener("click", () => {
     window.TwinmapRoute?.showRouteToast(`${currentPlace.name} guardado en favoritos`);
     updateSaveFavoriteButton();
     window.TwinmapAventuraLogros?.refresh();
-    return;
-  }
-
-  if (result?.alreadyExists) {
-    window.TwinmapRoute?.showRouteToast("Este lugar ya estÃ¡ en favoritos");
-    updateSaveFavoriteButton();
   }
 });
 
@@ -586,10 +741,7 @@ function openDebugPlace(place) {
   popupLocation.textContent = currentPlace.location;
   popupDescription.textContent = currentPlace.description;
   renderForecast(currentPlace.forecast);
-  popupWaze.href = currentPlace.wazeUrl;
-  popupNews.href = currentPlace.newsUrl;
-  popupDrive.href = currentPlace.uberUrl;
-  loadSafetyNews(currentPlace);
+  applyTravelPanelLinks(currentPlace);
 
   updatePopupModeUI();
   updateAddRouteButton();

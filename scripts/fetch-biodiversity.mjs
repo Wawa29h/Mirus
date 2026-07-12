@@ -20,7 +20,7 @@ url.search = new URLSearchParams({
   decimalLongitude: `${lng - lngDelta},${lng + lngDelta}`,
   hasCoordinate: "true", basisOfRecord: "HUMAN_OBSERVATION", limit: "300",
 }).toString();
-const response = await fetch(url, { headers: { "User-Agent": "TwinMap/1.0" } });
+const response = await fetch(url, { headers: { "User-Agent": "Mirus/1.0" } });
 if (!response.ok) throw new Error(`GBIF respondió HTTP ${response.status}`);
 const payload = await response.json();
 const seen = new Set();

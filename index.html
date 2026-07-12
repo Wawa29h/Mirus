@@ -3,13 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TwinMap · Digital Twin Turístico — Barra de Santiago</title>
+  <title>Mirus · Gemelo digital turístico — El Salvador</title>
 
   <link href="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.css" rel="stylesheet" />
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.css" rel="stylesheet" />
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.min.js"></script>
   <script src="lib/profile-sync.js"></script>
+  <script src="lib/place-storage.js"></script>
+  <script src="lib/place-travel-panel.js"></script>
   <script src="lib/category-images.js?v=7"></script>
   <script src="config.js" onerror="window.__TWINMAP_CONFIG_MISSING__=true"></script>
   <meta name="mapbox-token" content="" id="mapbox-token-meta" />
@@ -26,21 +28,29 @@
     (function () {
       const params = new URLSearchParams(location.search);
 
-      function applyEmbedMode(frontendUi) {
+      function applyEmbedMode(frontendUi, personalizadoShell) {
         document.documentElement.classList.add("embed-mode");
         if (frontendUi) document.documentElement.classList.add("frontend-ui");
+        if (personalizadoShell) document.documentElement.classList.add("personalizado-shell");
       }
 
+      window.__TWINMAP_EMBED_LAYERS__ = {};
+      if (params.has("tourism")) window.__TWINMAP_EMBED_LAYERS__.tourism = params.get("tourism") !== "0";
+      if (params.has("heat")) window.__TWINMAP_EMBED_LAYERS__.heat = params.get("heat") !== "0";
+
       if (params.get("embed") === "1") {
-        applyEmbedMode(params.get("ui") === "frontend");
+        applyEmbedMode(params.get("ui") === "frontend", params.get("shell") === "personalizado");
       } else if (window.self !== window.top) {
-        // Fallback: iframe del frontend sin query params
-        applyEmbedMode(true);
+        applyEmbedMode(true, false);
       }
 
       window.addEventListener("message", (event) => {
         if (event.data?.type === "twinmap-embed-init") {
-          applyEmbedMode(event.data.ui === "frontend");
+          applyEmbedMode(event.data.ui === "frontend", event.data.shell === "personalizado");
+          if (event.data.tourism !== undefined) window.__TWINMAP_EMBED_LAYERS__.tourism = !!event.data.tourism;
+          if (event.data.heat !== undefined) window.__TWINMAP_EMBED_LAYERS__.heat = !!event.data.heat;
+          window.__applyEmbedLayerDefaults?.();
+          if (window._twinmap) window.__syncEmbedLayerVisibility?.(window._twinmap);
         }
       });
     })();
@@ -48,20 +58,21 @@
 
   <style>
     :root {
-      --bg: #0d1b2a;
-      --panel: rgba(13, 27, 42, 0.92);
-      --panel-border: rgba(120, 200, 210, 0.22);
-      --accent: #2ec4b6;
-      --accent2: #ffbf69;
-      --text: #e8f1f2;
-      --muted: #9bb4bd;
+      /* Línea gráfica de la app: minimalista claro (blanco/negro/gris) */
+      --bg: #f4f5f6;
+      --panel: rgba(255, 255, 255, 0.94);
+      --panel-border: rgba(23, 23, 23, 0.15);
+      --accent: #171717;
+      --accent2: #171717;
+      --text: #171717;
+      --muted: #686868;
       --dock-w: 248px;
       --ui-gap: 8px;
       --ui-pad: 12px;
       --ui-radius: 12px;
     }
     * { box-sizing: border-box; }
-    html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+    html, body { margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden; }
     #map { position: absolute; inset: 0; }
 
     /* ---- Shell: mapa + overlays ---- */
@@ -106,27 +117,65 @@
     .brand h1 { margin: 0; font-size: 18px; letter-spacing: .3px; }
     .brand h1 span { color: var(--accent); }
     .brand p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
-    #island-btn, #flat-btn {
+    #island-btn, #flat-btn, #explore-btn {
       margin-top: 8px; width: 100%; cursor: pointer;
-      background: var(--accent); color: #062b28; border: none; border-radius: 9px;
+      background: var(--accent); color: #ffffff; border: none; border-radius: 9px;
       padding: 9px 12px; font-size: 13px; font-weight: 600; transition: background .15s, transform .1s;
     }
-    #island-btn:hover, #flat-btn:hover { transform: translateY(-1px); }
-    #island-btn.active, #flat-btn.active { background: var(--accent2); color: #3a2600; }
+    #island-btn:hover, #flat-btn:hover, #explore-btn:hover { transform: translateY(-1px); }
+    #island-btn.active, #flat-btn.active { background: var(--accent2); color: #ffffff; }
+    #explore-btn { background: #fff; color: var(--text); border: 1px solid var(--panel-border); }
 
-    /* ---- Panel de capas ---- */
+    /* ---- Panel de capas (chips, mismo lenguaje que categorías) ---- */
     .panel {
       flex: 1 1 auto; min-height: 0; overflow-y: auto;
     }
     .panel h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
-    .layer { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-radius: 9px; cursor: pointer; transition: background .15s; }
-    .layer:hover { background: rgba(255,255,255,.05); }
-    .layer input { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; }
-    .layer .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-    .layer .txt { font-size: 13.5px; }
-    .layer .sub { font-size: 11px; color: var(--muted); }
+    .layer-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .layer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 38px;
+      padding: 6px 10px;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .layer:hover { background: rgba(255, 255, 255, 0.08); }
+    .layer:has(input:checked) {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+    .layer input {
+      position: absolute;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      pointer-events: none;
+    }
+    .layer .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex: none;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .layer .txt { font-size: 12px; font-weight: 600; line-height: 1.25; }
+    .layer .sub { font-size: 10px; color: var(--muted); line-height: 1.25; }
+    .layer:has(input:checked) .sub { color: rgba(6, 43, 40, 0.75); }
 
-    .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 4px 6px 0; padding-left: 26px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 4px 0 0; padding: 0 2px; }
     .legend span { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
     .legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 
@@ -233,7 +282,7 @@
       max-height: none;
     }
     html.embed-mode .panel h2 { font-size: 11px; margin-bottom: 6px; }
-    html.embed-mode .layer { padding: 4px; }
+    html.embed-mode .layer { min-height: 34px; padding: 5px 8px; }
     html.embed-mode .layer .txt { font-size: 11px; }
     html.embed-mode .layer .sub { font-size: 9.5px; }
     html.embed-mode .legend { padding-left: 16px; gap: 2px 6px; }
@@ -260,6 +309,10 @@
       --accent: #141414;
       --accent2: #2ec4b6;
       --dock-w: 220px;
+      --dock-left-w: 196px;
+      --line: #202020;
+      --surface: #fff;
+      --surface-soft: #f7f7f7;
       --ui-pad: 10px;
       --ui-radius: 8px;
     }
@@ -269,8 +322,12 @@
       backdrop-filter: none;
     }
     html.embed-mode.frontend-ui .ui-col-right .panel h2 {
-      color: var(--muted);
-      font-size: 11px;
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      text-transform: none;
+      letter-spacing: normal;
     }
     html.embed-mode.frontend-ui #search .mapboxgl-ctrl-geocoder {
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
@@ -279,8 +336,51 @@
     html.embed-mode.frontend-ui #search .mapboxgl-ctrl-geocoder input {
       color: #141414;
     }
+    html.embed-mode.frontend-ui .layer-panel {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+      box-shadow: none;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    html.embed-mode.frontend-ui .layer {
+      border: 1px solid #202020;
+      background: #ffffff;
+      color: #141414;
+    }
     html.embed-mode.frontend-ui .layer:hover {
-      background: rgba(0, 0, 0, 0.04);
+      background: #f7f7f7;
+    }
+    html.embed-mode.frontend-ui .layer:has(input:checked) {
+      background: #141414;
+      color: #ffffff;
+      border-color: #141414;
+    }
+    html.embed-mode.frontend-ui .layer:has(input:checked) .sub {
+      color: rgba(255, 255, 255, 0.7);
+    }
+    html.embed-mode.frontend-ui .layer .dot {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--line);
+    }
+    html.embed-mode.frontend-ui .layer .txt {
+      font-size: 12px;
+      font-weight: 400;
+    }
+    html.embed-mode.frontend-ui .layer .sub {
+      font-size: 10px;
+    }
+    html.embed-mode.frontend-ui .layer-panel .status {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+      font-size: 10px;
+      color: var(--muted);
+    }
+    html.embed-mode.frontend-ui .layer-panel .status b {
+      color: var(--text);
     }
     html.embed-mode.frontend-ui .tool-toggle,
     html.embed-mode.frontend-ui .embed-frontend-controls #island-btn,
@@ -292,7 +392,140 @@
     html.embed-mode.frontend-ui .embed-frontend-controls #island-btn.active,
     html.embed-mode.frontend-ui .embed-frontend-controls #flat-btn.active {
       background: #2ec4b6;
-      color: #062b28;
+      color: #ffffff;
+    }
+
+    /* Panel izquierdo: filtros por categoría (embed frontend) */
+    html.embed-mode.frontend-ui .ui-shell {
+      grid-template-columns: var(--dock-left-w) minmax(0, 1fr) var(--dock-w) !important;
+    }
+    html.embed-mode.frontend-ui .ui-col-category {
+      grid-column: 1 !important;
+      grid-row: 1 / -1 !important;
+      display: flex !important;
+      flex-direction: column;
+      max-height: calc(100% - 12px);
+      overflow-y: auto;
+      pointer-events: auto;
+    }
+    html.embed-mode.frontend-ui #search {
+      grid-column: 2 !important;
+      width: min(calc(100% - var(--dock-left-w) - var(--dock-w) - 16px), 280px);
+    }
+    html.embed-mode.frontend-ui .ui-col-right {
+      grid-column: 3 !important;
+    }
+    html.embed-mode.frontend-ui .mapboxgl-ctrl-bottom-left {
+      left: calc(var(--dock-left-w) + var(--ui-pad) + 2px) !important;
+    }
+    html.embed-mode.frontend-ui .embed-frontend-controls {
+      left: calc(var(--dock-left-w) + 8px);
+      width: min(calc(var(--dock-left-w) - 16px), 40vw);
+    }
+    html.embed-mode.frontend-ui.personalizado-shell .ui-shell {
+      grid-template-columns: var(--dock-left-w) minmax(0, 1fr) !important;
+    }
+    html.embed-mode.frontend-ui.personalizado-shell .ui-col-left,
+    html.embed-mode.frontend-ui.personalizado-shell .ui-col-right,
+    html.embed-mode.frontend-ui.personalizado-shell #search {
+      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+    html.embed-mode.frontend-ui.personalizado-shell .ui-col-category {
+      display: flex !important;
+      grid-column: 1 !important;
+      grid-row: 1 / -1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+    html.embed-mode.frontend-ui.personalizado-shell #category-panel {
+      display: flex !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+    html.embed-mode.frontend-ui .panel-layer-poi,
+    html.embed-mode.frontend-ui .panel-layer-nature,
+    html.embed-mode.frontend-ui #legend {
+      display: none !important;
+    }
+    .ui-col-category { display: none; }
+    html.embed-mode.frontend-ui .map-filter-panel {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+      box-shadow: none;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    html.embed-mode.frontend-ui .map-filter-panel h2 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    html.embed-mode.frontend-ui .category-filter-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    html.embed-mode.frontend-ui .category-filter-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 38px;
+      padding: 6px 10px;
+      border: 1px solid #202020;
+      border-radius: 6px;
+      background: #ffffff;
+      color: #141414;
+      font-size: 12px;
+      text-align: left;
+      cursor: pointer;
+    }
+    html.embed-mode.frontend-ui .category-filter-btn::before {
+      content: "";
+      flex: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--surface-soft) center / cover no-repeat;
+      border: 1px solid var(--line);
+    }
+    html.embed-mode.frontend-ui .category-filter-btn[data-map-category="volcan"]::before { background-image: url("/frontend/assets/volcan.png"); }
+    html.embed-mode.frontend-ui .category-filter-btn[data-map-category="restaurantes"]::before { background-image: url("/frontend/assets/comida.png"); }
+    html.embed-mode.frontend-ui .category-filter-btn[data-map-category="surf"]::before { background-image: url("/frontend/assets/surf.png"); }
+    html.embed-mode.frontend-ui .category-filter-btn[data-map-category="montana"]::before { background-image: url("/frontend/assets/montana.png"); }
+    html.embed-mode.frontend-ui .category-filter-btn[data-map-category="cascada"]::before { background-image: url("/frontend/assets/cascada.png"); }
+    html.embed-mode.frontend-ui .category-filter-btn[data-map-category="hospedaje"]::before { background-image: url("/frontend/assets/alojamiento.png"); }
+    html.embed-mode.frontend-ui .category-filter-btn[data-map-category="eventos"]::before { background-image: url("/frontend/assets/eventos.png"); }
+    html.embed-mode.frontend-ui .category-filter-btn[data-map-category="parque"]::before { background-image: url("/frontend/assets/parque.png"); }
+    html.embed-mode.frontend-ui .category-filter-btn[data-map-category="playa"]::before { background-image: url("/frontend/assets/playa.png"); }
+    html.embed-mode.frontend-ui .category-filter-btn[data-map-category="pueblos-magicos"]::before { background-image: url("/frontend/assets/iglesia.png"); }
+    html.embed-mode.frontend-ui .category-filter-btn.is-active {
+      background: #141414;
+      color: #ffffff;
+      border-color: #141414;
+    }
+    html.embed-mode.frontend-ui .category-filter-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+    }
+    html.embed-mode.frontend-ui .category-filter-actions button {
+      flex: 1;
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
     }
 
     .maplibre-marker { font-size: 22px; cursor: pointer; }
@@ -512,6 +745,182 @@
       color: var(--text);
       font-weight: 600;
     }
+    .place-sidebar-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .place-sidebar-actions button {
+      min-height: 40px;
+      padding: 8px 12px;
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .place-sidebar-actions button.is-saved {
+      opacity: 0.85;
+    }
+    html.embed-mode.frontend-ui .place-sidebar-actions button {
+      border: 1px solid #202020;
+      background: #ffffff;
+      color: #141414;
+    }
+    html.embed-mode.frontend-ui .place-sidebar-actions button.is-saved {
+      background: #141414;
+      color: #ffffff;
+      border-color: #141414;
+    }
+
+    .place-sidebar-travel {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--panel-border);
+    }
+    .place-sidebar-travel h3,
+    .place-sidebar-safety-wrap h3 {
+      margin: 0 0 8px;
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .place-sidebar-travel-note {
+      margin: 0 0 10px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    .place-sidebar-travel-links {
+      display: grid;
+      gap: 8px;
+    }
+    .place-sidebar-travel-link {
+      display: block;
+      text-align: center;
+      min-height: 40px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .place-sidebar-travel-link:hover,
+    .place-sidebar-travel-link:focus-visible {
+      border-color: var(--accent);
+      outline: none;
+    }
+    .place-sidebar-travel-link--news {
+      background: rgba(255, 191, 105, 0.12);
+      border-color: rgba(255, 191, 105, 0.35);
+    }
+    html.embed-mode.frontend-ui .place-sidebar-travel-link {
+      border: 1px solid #202020;
+      background: #ffffff;
+      color: #141414;
+    }
+    html.embed-mode.frontend-ui .place-sidebar-travel-link--news {
+      background: #fff8eb;
+      border-color: #d4a017;
+    }
+    .place-sidebar-safety-wrap {
+      margin-top: 16px;
+      margin-bottom: 0;
+    }
+    .place-safety-news {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    html.embed-mode.frontend-ui .place-safety-news {
+      background: rgba(0, 0, 0, 0.03);
+    }
+    .place-safety-news__header h3 {
+      margin: 4px 0 0;
+      font-size: 14px;
+      line-height: 1.35;
+      color: var(--text);
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .place-safety-news__eyebrow {
+      margin: 0;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .place-safety-news__status {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    .place-safety-news__status--error {
+      color: #b45309;
+    }
+    .place-safety-news__list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .place-safety-news__item {
+      display: grid;
+      gap: 3px;
+      padding-top: 8px;
+      border-top: 1px solid var(--panel-border);
+    }
+    .place-safety-news__item a {
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.35;
+      text-decoration: none;
+    }
+    .place-safety-news__item a:hover,
+    .place-safety-news__item a:focus-visible {
+      color: var(--accent);
+      outline: none;
+    }
+    .place-safety-news__item span {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .place-safety-news__search {
+      margin: 4px 0 0;
+      padding-top: 10px;
+      border-top: 1px solid var(--panel-border);
+    }
+    .place-safety-news__search a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .place-safety-news__search a:hover,
+    .place-safety-news__search a:focus-visible {
+      text-decoration: underline;
+      outline: none;
+    }
+    #place-sidebar-travel {
+      margin-bottom: 16px;
+    }
 
     /* ---- Panel de rutas ---- */
     .route-panel { flex-shrink: 0; overflow: visible; }
@@ -522,7 +931,7 @@
     }
     .location-bar button {
       width: 100%; cursor: pointer; font-size: 13px; font-weight: 700; padding: 9px;
-      border-radius: 9px; border: none; background: var(--accent); color: #062b28;
+      border-radius: 9px; border: none; background: var(--accent); color: #ffffff;
     }
     .location-bar button:disabled { opacity: .65; cursor: wait; }
     #sr-origin-label { font-size: 11px; color: var(--muted); line-height: 1.35; }
@@ -534,8 +943,8 @@
     .route-panel .hint { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
     .route-row { display: flex; gap: 8px; margin-bottom: 8px; }
     .route-row button { flex: 1; cursor: pointer; font-size: 12.5px; padding: 8px; border-radius: 9px; border: 1px solid var(--panel-border); background: rgba(255,255,255,.05); color: var(--text); transition: all .15s; }
-    .route-row button.primary { background: var(--accent); color: #062b28; border-color: var(--accent); font-weight: 600; }
-    .route-row button.armed { background: var(--accent2); color: #3a2600; border-color: var(--accent2); }
+    .route-row button.primary { background: var(--accent); color: #ffffff; border-color: var(--accent); font-weight: 600; }
+    .route-row button.armed { background: var(--accent2); color: #ffffff; border-color: var(--accent2); }
     .route-row select { background: rgba(255,255,255,.06); color: var(--text); border: 1px solid var(--panel-border); border-radius: 8px; padding: 6px; font-size: 12.5px; }
     #route-summary { font-size: 12.5px; line-height: 1.5; margin-top: 6px; }
     #route-summary .metric { color: var(--accent); font-weight: 600; }
@@ -544,11 +953,11 @@
 
     .route-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
     .route-tabs button { flex: 1; cursor: pointer; font-size: 11.5px; padding: 7px; border-radius: 8px; border: 1px solid var(--panel-border); background: rgba(255,255,255,.05); color: var(--muted); }
-    .route-tabs button.active { background: var(--accent); color: #062b28; border-color: var(--accent); font-weight: 700; }
+    .route-tabs button.active { background: var(--accent); color: #ffffff; border-color: var(--accent); font-weight: 700; }
     .sr-step-title { font-size: 12px; color: var(--accent); font-weight: 600; margin: 0 0 8px; }
     .sr-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
     .sr-chips button { cursor: pointer; font-size: 11.5px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--panel-border); background: rgba(255,255,255,.05); color: var(--text); }
-    .sr-chips button.active { background: var(--accent2); color: #3a2600; border-color: var(--accent2); font-weight: 600; }
+    .sr-chips button.active { background: var(--accent2); color: #ffffff; border-color: var(--accent2); font-weight: 600; }
     .dest-list { display: flex; flex-direction: column; gap: 6px; max-height: 140px; overflow-y: auto; margin-bottom: 8px; }
     .dest-item { text-align: left; cursor: pointer; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--panel-border); background: rgba(255,255,255,.04); color: var(--text); }
     .dest-item:hover { background: rgba(255,255,255,.08); }
@@ -569,7 +978,7 @@
     .sr-nav-links { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
     .sr-nav-links a {
       display: block; text-align: center; font-size: 12px; font-weight: 600; padding: 8px;
-      border-radius: 9px; text-decoration: none; color: #062b28; background: var(--accent2);
+      border-radius: 9px; text-decoration: none; color: #ffffff; background: var(--accent2);
     }
     .sr-nav-links a.secondary { background: rgba(255,255,255,.1); color: var(--text); border: 1px solid var(--panel-border); }
 
@@ -594,7 +1003,7 @@
       width: min(100%, 480px); z-index: 6;
       display: flex; align-items: center; gap: 8px; padding: 8px 12px;
     }
-    .timeline button { flex: none; cursor: pointer; width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--accent); color: #062b28; font-size: 14px; }
+    .timeline button { flex: none; cursor: pointer; width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--accent); color: #ffffff; font-size: 14px; }
     .timeline input[type=range] { flex: 1; accent-color: var(--accent); cursor: pointer; }
     .timeline .tl-label { flex: none; font-size: 12px; color: var(--accent); font-weight: 600; min-width: 120px; text-align: right; }
     .timeline .tl-hint { flex: none; font-size: 10.5px; color: var(--muted); }
@@ -607,14 +1016,14 @@
     .forecast-card h3 { margin: 0 0 5px; font-size: 13px; color: var(--accent); }
     .forecast-card p { margin: 5px 0; }
     .forecast-card .fc-meta { color: var(--muted); font-size: 10.5px; }
-    .forecast-card button { margin-top: 8px; border: 0; border-radius: 8px; padding: 7px 9px; cursor: pointer; background: var(--accent); color: #062b28; font-weight: 700; }
+    .forecast-card button { margin-top: 8px; border: 0; border-radius: 8px; padding: 7px 9px; cursor: pointer; background: var(--accent); color: #ffffff; font-weight: 700; }
 
     .assistant-chat { max-height: 160px; overflow-y: auto; }
     .assistant-chat h3 { margin:0 0 5px; font-size:13px; color:var(--accent); }
     .assistant-chat p { margin:0 0 8px; color:var(--muted); font-size:11px; line-height:1.35; }
     .assistant-chat .chat-row { display:flex; gap:6px; }
     .assistant-chat input { min-width:0; flex:1; border:1px solid var(--panel-border); border-radius:8px; background:rgba(255,255,255,.07); color:var(--text); padding:8px; font-size:12px; }
-    .assistant-chat button { border:0; border-radius:8px; background:var(--accent); color:#062b28; font-weight:700; cursor:pointer; padding:8px 10px; }
+    .assistant-chat button { border:0; border-radius:8px; background:var(--accent); color:#ffffff; font-weight:700; cursor:pointer; padding:8px 10px; }
     .assistant-chat .chat-answer { margin-top:8px; font-size:11.5px; line-height:1.4; color:var(--text); max-height: 72px; overflow-y: auto; }
 
     .tool-toggle { width:100%; cursor:pointer; border:0; border-radius:8px; padding:7px 10px; font-size:11px; font-weight:600; background:rgba(255,255,255,.08); color:var(--muted); text-align:left; }
@@ -654,19 +1063,28 @@
       <h2 class="place-sidebar-title" id="place-sidebar-title">Lugar</h2>
       <p class="place-sidebar-meta" id="place-sidebar-meta"></p>
       <div class="place-sidebar-extras" id="place-sidebar-extras"></div>
+      <div class="place-sidebar-actions" id="place-sidebar-actions" hidden>
+        <button type="button" id="place-sidebar-visited">Marcar visitado</button>
+        <button type="button" id="place-sidebar-favorite">Guardar en favoritos</button>
+      </div>
     </div>
     <div class="place-sidebar-body" id="place-sidebar-body">
-      <p class="place-sidebar-loading">Haz clic en un icono del mapa para ver información.</p>
+      <div class="place-sidebar-safety-wrap" id="place-sidebar-safety"></div>
+      <div id="place-sidebar-travel"></div>
+      <div id="place-sidebar-info">
+        <p class="place-sidebar-loading">Haz clic en un icono del mapa para ver información.</p>
+      </div>
     </div>
   </aside>
 
   <div class="ui-shell">
     <div class="ui-col-left">
       <div class="brand ui-card">
-        <h1>Twin<span>Map</span></h1>
+        <h1>Mi<span>rus</span></h1>
         <p>Gemelo digital turístico 🇸🇻</p>
         <button id="island-btn" type="button">🏝️ Modo isla</button>
         <button id="flat-btn" type="button">🗺️ Vista plana</button>
+        <button id="explore-btn" type="button">🎲 Sorpréndeme (explorador)</button>
       </div>
       <div class="route-panel ui-card" id="route-panel" style="display:none">
         <h2 class="route-main-title">🧭 Tu ruta personalizada</h2>
@@ -679,7 +1097,7 @@
           <div id="profile-summary"></div>
 
           <div id="sr-step-category">
-            <p class="sr-step-title">1 · ¿Qué tipo de lugar buscas?</p>
+            <p class="sr-step-title">1 · ¿Qué tipo de lugar buscasí</p>
             <div class="sr-chips" id="sr-categories">
               <button type="button" data-cat="playa">🏖️ Playa</button>
               <button type="button" data-cat="naturaleza">🌿 Naturaleza</button>
@@ -738,10 +1156,20 @@
 
     <div id="search"></div>
 
+    <div class="ui-col-category map-filter-panel ui-card" id="category-panel" aria-label="Filtros por categoría" hidden>
+      <h2>Categorías</h2>
+      <div class="category-filter-list" id="category-filter-list"></div>
+      <div class="category-filter-actions">
+        <button type="button" id="category-select-all">Todas</button>
+        <button type="button" id="category-select-none">Ninguna</button>
+      </div>
+    </div>
+
     <div class="ui-col-right">
-      <div class="panel ui-card" id="panel" style="display:none">
+      <div class="panel ui-card map-filter-panel layer-panel" id="panel" style="display:none">
         <h2>Capas del gemelo</h2>
 
+        <div class="layer-list">
         <label class="layer">
           <input type="checkbox" id="lyr-3d" checked />
           <span class="dot" style="background:#8ecae6"></span>
@@ -754,10 +1182,16 @@
           <span><span class="txt">Departamentos</span><br><span class="sub">14 divisiones · al alejar</span></span>
         </label>
 
-        <label class="layer">
+        <label class="layer panel-layer-poi">
           <input type="checkbox" id="lyr-pois" checked />
           <span class="dot" style="background:var(--accent2)"></span>
           <span><span class="txt">Puntos de interés</span><br><span class="sub">OpenStreetMap · El Salvador</span></span>
+        </label>
+
+        <label class="layer">
+          <input type="checkbox" id="lyr-tourism" checked />
+          <span class="dot" style="background:#ffd166"></span>
+          <span><span class="txt">Destinos oficiales</span><br><span class="sub" id="tourism-sub">104 lugares · 13 deptos · 26 categorías</span></span>
         </label>
 
         <label class="layer">
@@ -793,7 +1227,7 @@
           <span><span class="txt">Biodiversidad</span><br><span class="sub">eBird</span></span>
         </label>
 
-        <label class="layer">
+        <label class="layer panel-layer-nature">
           <input type="checkbox" id="lyr-nature" checked />
           <span class="dot" style="background:#90be6d"></span>
           <span><span class="txt">Naturaleza</span><br><span class="sub" id="nature-sub">Catálogo</span></span>
@@ -810,6 +1244,7 @@
           <span class="dot" style="background:#c77dff"></span>
           <span><span class="txt">Agenda cultural</span><br><span class="sub">Eventos ref.</span></span>
         </label>
+        </div>
 
         <div class="status" id="status">Cargando mapa…</div>
       </div>
@@ -960,6 +1395,33 @@
       "icon-anchor": "bottom",
     };
 
+    const TOURISM_ICON_LAYOUT = {
+      "icon-image": [
+        "match", ["get", "cat"],
+        "comida", "tm-comida",
+        "hospedaje", "tm-alojamiento",
+        "playa", "tm-playa",
+        "historico", "tm-iglesia",
+        "turismo", "tm-eventos",
+        "parque", "tm-parque",
+        "volcan", "tm-volcan",
+        "montana", "tm-montana",
+        "cascada", "tm-cascada",
+        "tm-eventos",
+      ],
+      "icon-size": [
+        "interpolate", ["linear"], ["zoom"],
+        6, ["case", ["get", "featured"], 0.2, 0.16],
+        12, ["case", ["get", "featured"], 0.24, 0.2],
+        16, ["case", ["get", "featured"], 0.28, 0.24],
+      ],
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+      "icon-pitch-alignment": "viewport",
+      "icon-rotation-alignment": "viewport",
+      "icon-anchor": "bottom",
+    };
+
     function mapIconsReady(map) {
       return ["tm-comida", "tm-playa", "tm-volcan", "tm-montana", "tm-cascada"].some((id) => map.hasImage(id));
     }
@@ -976,6 +1438,9 @@
 
     function setupEmbedFrontendUi() {
       if (!document.documentElement.classList.contains("frontend-ui")) return;
+      const categoryPanel = document.getElementById("category-panel");
+      if (categoryPanel) categoryPanel.hidden = false;
+      if (document.documentElement.classList.contains("personalizado-shell")) return;
       if (document.getElementById("embed-frontend-controls")) return;
       const island = document.getElementById("island-btn");
       const flat = document.getElementById("flat-btn");
@@ -989,6 +1454,7 @@
 
     function boot() {
       setupEmbedFrontendUi();
+      applyEmbedLayerDefaults();
       mapboxgl.accessToken = mapboxToken;
       document.getElementById("panel").style.display = "block";
 
@@ -996,13 +1462,14 @@
       const flatMode = new URLSearchParams(location.search).get("flat") === "1";
       window._flatMode = flatMode;
 
+      const nationalZoom = CFG.ZOOM ?? 7.4;
       const map = new mapboxgl.Map({
         container: "map",
         style: flatMode ? "mapbox://styles/mapbox/streets-v12" : "mapbox://styles/mapbox/satellite-streets-v12",
-        center: CFG.CENTER || [-90.05, 13.74],
-        zoom: CFG.ZOOM || 13,
-        pitch: flatMode ? 0 : 60,
-        bearing: flatMode ? 0 : -20,
+        center: CFG.CENTER || [-89.20, 13.80],
+        zoom: nationalZoom,
+        pitch: flatMode ? 0 : (nationalZoom <= 8 ? 0 : 45),
+        bearing: flatMode ? 0 : -12,
         antialias: true,
       });
 
@@ -1012,8 +1479,18 @@
         };
         window.addEventListener("message", (event) => {
           if (event.data?.type === "twinmap-resize") resizeMap();
+          if (event.data?.type === "twinmap-embed-init") {
+            if (event.data.tourism !== undefined) window.__TWINMAP_EMBED_LAYERS__.tourism = !!event.data.tourism;
+            if (event.data.heat !== undefined) window.__TWINMAP_EMBED_LAYERS__.heat = !!event.data.heat;
+            applyEmbedLayerDefaults();
+            syncEmbedLayerVisibility(map);
+            if (window._tourismGeojson && isFrontendEmbedUi() && !isPersonalizadoShell()) {
+              fitTourismBounds(map, window._tourismGeojson, { duration: 600 });
+            }
+          }
           if (event.data?.type === "twinmap-profile-updated") {
             try { wireProfile(map); } catch { /* ignore */ }
+            updatePlaceSidebarActionButtons();
           }
         });
         document.addEventListener("visibilitychange", () => {
@@ -1047,6 +1524,7 @@
 
       map.on("style.load", async () => {
         try {
+        thinBaseRoads(map);
         delete map.__twinmapIconsReady;
         await window.TwinmapCategoryImages?.loadMapIcons?.(map, { force: true });
 
@@ -1086,6 +1564,7 @@
         addDepartments(map);
         addIslandMask(map);
         await loadPOIs(map);
+        await addOfficialTourism(map);
         addParking(map);
         addCrowds(map);
         await addTraffic(map);
@@ -1094,7 +1573,11 @@
         addReferenceLayers(map);
         addMigrationForecast(map);
         addVitalsDashboard(map);
+        applyEmbedLayerDefaults();
         wireToggles(map);
+        syncEmbedLayerVisibility(map);
+        wireCategoryFilters(map);
+        wirePersonalizadoShell(map);
         wireRoute(map);
         wireSmartRoute(map);
         wireProfile(map);
@@ -1103,9 +1586,21 @@
         wireToolToggles();
         // "Solo El Salvador" por defecto: activa el modo isla al arrancar (cubre calles/países vecinos)
         try { if (typeof toggleIsland === "function" && !islandOn) toggleIsland(map); } catch (e) {}
-        setStatus("Mapa listo · <b>Barra de Santiago</b>");
+        applyTourismPoiInteraction(map);
+        if (window._tourismGeojson && !window._tourismBoundsFit) {
+          fitTourismBounds(map, window._tourismGeojson);
+          window._tourismBoundsFit = true;
+        }
+        const heatOn = document.getElementById("lyr-heat")?.checked === true;
+        const tourismOn = document.getElementById("lyr-tourism")?.checked !== false;
+        const statusBits = [
+          tourismOn ? "<b>104 destinos MITUR</b>" : null,
+          heatOn ? "heatmap activo" : null,
+          "todo El Salvador",
+        ].filter(Boolean);
+        setStatus("Mapa listo · " + statusBits.join(" · "));
         } catch (layerError) {
-          console.error("TwinMap capas:", layerError);
+          console.error("Mirus capas:", layerError);
           setStatus("Mapa base listo · algunas capas no cargaron");
         }
         map.resize();
@@ -1131,7 +1626,659 @@
       comida: "#ffbf69", hospedaje: "#8ecae6", playa: "#48cae4",
       historico: "#e07a5f", turismo: "#06d6a0", parque: "#90be6d", otro: "#adb5bd",
     };
+
+    const MAP_CATEGORIES = [
+      { id: "volcan", label: "Volcanes", asset: "volcan.png", natureCats: ["volcan"] },
+      { id: "restaurantes", label: "Restaurantes", asset: "comida.png", poiCats: ["comida"] },
+      { id: "surf", label: "Surf", asset: "surf.png", poiSurf: true, natureSurf: true },
+      { id: "montana", label: "Montañas", asset: "montana.png", natureCats: ["montana", "mirador"] },
+      { id: "cascada", label: "Cascada", asset: "cascada.png", natureCats: ["cascada"] },
+      { id: "hospedaje", label: "Hospedaje", asset: "alojamiento.png", poiCats: ["hospedaje"] },
+      { id: "eventos", label: "Eventos", asset: "eventos.png", poiCats: ["turismo"] },
+      { id: "parque", label: "Parques", asset: "parque.png", poiCats: ["parque"], natureCats: ["parque", "sendero", "humedal"] },
+      { id: "playa", label: "Playa", asset: "playa.png", poiCats: ["playa"], natureCats: ["playa", "arrecife"] },
+      { id: "pueblos-magicos", label: "Pueblos mágicos", asset: "iglesia.png", poiCats: ["historico"] },
+    ];
+
+    let activeMapCategoryIds = new Set(MAP_CATEGORIES.map((cat) => cat.id));
+
+    function getEffectiveActiveCategoryIds() {
+      return activeMapCategoryIds;
+    }
+
+    function isFrontendEmbedUi() {
+      return document.documentElement.classList.contains("embed-mode")
+        && document.documentElement.classList.contains("frontend-ui");
+    }
+
+    function embedLayerDefault(name) {
+      if (!isFrontendEmbedUi() || isPersonalizadoShell()) return null;
+      const prefs = window.__TWINMAP_EMBED_LAYERS__ || {};
+      if (prefs[name] !== undefined) return prefs[name];
+      return true;
+    }
+
+    function applyEmbedLayerDefaults() {
+      const tourismDefault = embedLayerDefault("tourism");
+      const heatDefault = embedLayerDefault("heat");
+      const tourismEl = document.getElementById("lyr-tourism");
+      const heatEl = document.getElementById("lyr-heat");
+      if (tourismDefault !== null && tourismEl) tourismEl.checked = tourismDefault;
+      if (heatDefault !== null && heatEl) heatEl.checked = heatDefault;
+    }
+
+    function syncEmbedLayerVisibility(map) {
+      syncAllLayerToggles(map);
+    }
+
+    window.__applyEmbedLayerDefaults = applyEmbedLayerDefaults;
+    window.__syncEmbedLayerVisibility = syncEmbedLayerVisibility;
+
+    function collectPoiCatsFromActiveCategories() {
+      const effective = getEffectiveActiveCategoryIds();
+      const cats = new Set();
+      MAP_CATEGORIES.forEach((cat) => {
+        if (!effective.has(cat.id)) return;
+        (cat.poiCats || []).forEach((value) => cats.add(value));
+      });
+      return [...cats];
+    }
+
+    function hasActivePoiCategoryFilter() {
+      if (collectPoiCatsFromActiveCategories().length) return true;
+      const effective = getEffectiveActiveCategoryIds();
+      return MAP_CATEGORIES.some((cat) => effective.has(cat.id) && cat.poiSurf);
+    }
+
+    function hasActiveNatureCategoryFilter() {
+      const effective = getEffectiveActiveCategoryIds();
+      return MAP_CATEGORIES.some((cat) => {
+        if (!effective.has(cat.id)) return false;
+        return (cat.natureCats || []).length || cat.natureSurf;
+      });
+    }
+
+    function buildPoiCategoryFilter() {
+      const effective = getEffectiveActiveCategoryIds();
+      const parts = [];
+      const cats = collectPoiCatsFromActiveCategories();
+      if (cats.length) {
+        parts.push(["any", ...cats.map((cat) => ["==", ["get", "cat"], cat])]);
+      }
+      const wantsPoiSurf = effective.has("surf");
+      const wantsAllPlayaPoi = effective.has("playa");
+      if (wantsPoiSurf && !wantsAllPlayaPoi) {
+        parts.push(["all",
+          ["==", ["get", "cat"], "playa"],
+          ["!=", ["index-of", "surf", ["downcase", ["coalesce", ["get", "kind"], ""]]], -1],
+        ]);
+      }
+      if (!parts.length) return ["==", ["get", "cat"], "__none__"];
+      if (parts.length === 1) return parts[0];
+      return ["any", ...parts];
+    }
+
+    function buildNatureCategoryFilter() {
+      const effective = getEffectiveActiveCategoryIds();
+      const natureCats = new Set();
+      MAP_CATEGORIES.forEach((cat) => {
+        if (!effective.has(cat.id)) return;
+        (cat.natureCats || []).forEach((value) => natureCats.add(value));
+      });
+      const wantsAllPlayas = effective.has("playa");
+      const wantsSurfSpots = effective.has("surf");
+      const parts = [];
+      const catsWithoutCoast = [...natureCats].filter((value) => value !== "playa" && value !== "arrecife");
+      if (catsWithoutCoast.length) {
+        parts.push(["in", ["get", "category"], ["literal", catsWithoutCoast]]);
+      }
+      if (wantsAllPlayas) {
+        parts.push(["in", ["get", "category"], ["literal", ["playa", "arrecife"]]]);
+      } else if (wantsSurfSpots) {
+        parts.push(["all",
+          ["==", ["get", "category"], "playa"],
+          ["!=", ["coalesce", ["get", "surf"], ""], ""],
+        ]);
+      }
+      if (!parts.length) return ["==", ["get", "category"], "__none__"];
+      if (parts.length === 1) return parts[0];
+      return ["any", ...parts];
+    }
+
+    function allPoiCategoriesActive() {
+      const effective = getEffectiveActiveCategoryIds();
+      return MAP_CATEGORIES.every((cat) => {
+        if (!cat.poiCats?.length && !cat.poiSurf) return true;
+        return effective.has(cat.id);
+      });
+    }
+
+    function applyMapCategoryFilters(map) {
+      if (!map?.getLayer) return;
+      const poiMaster = document.getElementById("lyr-pois")?.checked !== false;
+      const natureMaster = document.getElementById("lyr-nature")?.checked !== false;
+      const poiEnabled = poiMaster && hasActivePoiCategoryFilter();
+      const natureEnabled = natureMaster && hasActiveNatureCategoryFilter();
+
+      if (map.getLayer("pois-layer")) {
+        const base = ["!", ["has", "point_count"]];
+        map.setFilter("pois-layer", poiEnabled ? ["all", base, buildPoiCategoryFilter()] : ["==", ["get", "cat"], "__none__"]);
+        map.setLayoutProperty("pois-layer", "visibility", poiEnabled ? "visible" : "none");
+      }
+      if (map.getLayer("clusters")) {
+        const showClusters = poiEnabled && allPoiCategoriesActive();
+        map.setLayoutProperty("clusters", "visibility", showClusters ? "visible" : "none");
+      }
+      if (map.getLayer("cluster-count")) {
+        const showClusters = poiEnabled && allPoiCategoriesActive();
+        map.setLayoutProperty("cluster-count", "visibility", showClusters ? "visible" : "none");
+      }
+
+      const natureFilter = natureEnabled ? buildNatureCategoryFilter() : ["==", ["get", "category"], "__none__"];
+      NATURE_LAYERS.forEach((id) => {
+        if (!map.getLayer(id)) return;
+        map.setFilter(id, natureFilter);
+        map.setLayoutProperty(id, "visibility", natureEnabled ? "visible" : "none");
+      });
+
+      applyTourismLayerVisibility(map);
+    }
+
+    function syncCategoryButtonStates() {
+      const list = document.getElementById("category-filter-list");
+      if (!list) return;
+      list.querySelectorAll("[data-map-category]").forEach((button) => {
+        const active = activeMapCategoryIds.has(button.dataset.mapCategory);
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+    }
+
+    function renderCategoryFilterPanel(map) {
+      const list = document.getElementById("category-filter-list");
+      if (!list) return;
+      list.innerHTML = MAP_CATEGORIES.map((cat) => `
+        <button
+          type="button"
+          class="category-filter-btn${activeMapCategoryIds.has(cat.id) ? " is-active" : ""}"
+          data-map-category="${cat.id}"
+          aria-pressed="${activeMapCategoryIds.has(cat.id)}"
+        >${cat.label}</button>
+      `).join("");
+
+      list.querySelectorAll("[data-map-category]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const id = button.dataset.mapCategory;
+          if (activeMapCategoryIds.has(id)) activeMapCategoryIds.delete(id);
+          else activeMapCategoryIds.add(id);
+          syncCategoryButtonStates();
+          if (isPersonalizadoShell()) applyPersonalizadoShellFilters(map);
+          else applyMapCategoryFilters(map);
+        });
+      });
+    }
+
+    function wireCategoryFilterActions(map) {
+      const selectAll = document.getElementById("category-select-all");
+      const selectNone = document.getElementById("category-select-none");
+      if (selectAll) {
+        selectAll.onclick = () => {
+          activeMapCategoryIds = new Set(MAP_CATEGORIES.map((cat) => cat.id));
+          syncCategoryButtonStates();
+          if (isPersonalizadoShell()) applyPersonalizadoShellFilters(map);
+          else applyMapCategoryFilters(map);
+        };
+      }
+      if (selectNone) {
+        selectNone.onclick = () => {
+          activeMapCategoryIds.clear();
+          syncCategoryButtonStates();
+          if (isPersonalizadoShell()) applyPersonalizadoShellFilters(map);
+          else applyMapCategoryFilters(map);
+        };
+      }
+    }
+
+    function wireCategoryFilters(map) {
+      if (!isFrontendEmbedUi()) return;
+      renderCategoryFilterPanel(map);
+      wireCategoryFilterActions(map);
+      if (isPersonalizadoShell()) applyPersonalizadoShellFilters(map);
+      else applyMapCategoryFilters(map);
+    }
+
+    // ============ Shell Mapa personalizado (iframe dentro del frontend) ============
+    const PERSONALIZADO_ZONE_BBOX = {
+      Occidente: { west: -90.25, east: -89.35, south: 13.55, north: 14.45 },
+      Centro: { west: -89.45, east: -88.75, south: 13.45, north: 14.05 },
+      Oriente: { west: -88.75, east: -87.65, south: 13.15, north: 13.85 },
+      Costa: { west: -89.65, east: -87.85, south: 13.1, north: 13.55 },
+      "Ruta de las Flores": { west: -89.78, east: -89.42, south: 13.72, north: 13.98 },
+      "Parque Nacional": { west: -89.78, east: -89.48, south: 13.75, north: 13.92 },
+    };
+
+    const SHELL_CATEGORY_TO_MAP_IDS = {
+      Volcanes: ["volcan"],
+      Restaurantes: ["restaurantes"],
+      Surf: ["surf"],
+      Montanas: ["montana"],
+      "Montañas": ["montana"],
+      "Montañas": ["montana"],
+      Cascada: ["cascada"],
+      Cascadas: ["cascada"],
+      Hospedaje: ["hospedaje"],
+      Alojamiento: ["hospedaje"],
+      Eventos: ["eventos"],
+      Turismo: ["eventos"],
+      Parques: ["parque"],
+      Playa: ["playa"],
+      Playas: ["playa"],
+      "Pueblos magicos": ["pueblos-magicos"],
+      "Pueblos mágicos": ["pueblos-magicos"],
+      "Pueblos mágicos": ["pueblos-magicos"],
+    };
+
+    let personalizadoShellState = {
+      zone: null,
+      category: null,
+      quizHighlight: true,
+      quizStrict: false,
+      route: [],
+    };
+
+    function isPersonalizadoShell() {
+      return document.documentElement.classList.contains("personalizado-shell");
+    }
+
+    function bboxPolygonGeometry(bbox) {
+      if (!bbox) return null;
+      return {
+        type: "Polygon",
+        coordinates: [[
+          [bbox.west, bbox.south],
+          [bbox.east, bbox.south],
+          [bbox.east, bbox.north],
+          [bbox.west, bbox.north],
+          [bbox.west, bbox.south],
+        ]],
+      };
+    }
+
+    function normalizeShellCategory(value) {
+      return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    }
+
+    function shellCategoryToMapIds(categoryLabel) {
+      if (!categoryLabel) return null;
+      const direct = SHELL_CATEGORY_TO_MAP_IDS[categoryLabel];
+      if (direct) return direct;
+      const key = Object.keys(SHELL_CATEGORY_TO_MAP_IDS).find(
+        (label) => normalizeShellCategory(label) === normalizeShellCategory(categoryLabel),
+      );
+      return key ? SHELL_CATEGORY_TO_MAP_IDS[key] : null;
+    }
+
+    function preferredSetsFromProfile(profile) {
+      const poiCats = new Set();
+      const natureCats = new Set();
+      const fq = profile?.frontendQuiz || {};
+      const paisaje = fq.paisaje || "";
+      const bio = fq.biodiversidad || "";
+
+      if (profile?.interest === "playa" || /playa/i.test(paisaje)) {
+        poiCats.add("playa");
+        natureCats.add("playa");
+        natureCats.add("arrecife");
+      }
+      if (profile?.interest === "cultura" || /pueblo/i.test(paisaje)) {
+        poiCats.add("historico");
+        poiCats.add("turismo");
+      }
+      if (profile?.interest === "naturaleza" || /volcan/i.test(paisaje) || /cascad/i.test(paisaje) || /mezclar/i.test(paisaje)) {
+        natureCats.add("volcan");
+        natureCats.add("cascada");
+        natureCats.add("montana");
+        natureCats.add("mirador");
+        natureCats.add("parque");
+        natureCats.add("sendero");
+        poiCats.add("parque");
+      }
+      if (profile?.interest === "aves" || /fauna|aves|tortuga/i.test(bio)) {
+        natureCats.add("parque");
+        natureCats.add("humedal");
+        natureCats.add("montana");
+      }
+      if (/cascad/i.test(paisaje)) {
+        natureCats.add("cascada");
+      }
+      if (/volcan/i.test(paisaje)) {
+        natureCats.add("volcan");
+        natureCats.add("montana");
+      }
+      if (/surf|ola/i.test(paisaje)) {
+        poiCats.add("playa");
+        natureCats.add("playa");
+      }
+
+      poiCats.add("comida");
+      poiCats.add("hospedaje");
+
+      return { poiCats, natureCats };
+    }
+
+    function preferenceOpacityExpression(preferredValues, field) {
+      const values = [...preferredValues];
+      if (!values.length) return 1;
+      return ["case", ["in", ["get", field], ["literal", values]], 1, 0.28];
+    }
+
+    function buildPersonalizadoPoiFilter() {
+      const parts = [["!", ["has", "point_count"]]];
+      const zonePoly = personalizadoShellState.zone
+        ? bboxPolygonGeometry(PERSONALIZADO_ZONE_BBOX[personalizadoShellState.zone])
+        : null;
+      if (zonePoly) parts.push(["within", zonePoly]);
+      return parts.length === 1 ? parts[0] : ["all", ...parts];
+    }
+
+    function buildPersonalizadoNatureFilter() {
+      const parts = [];
+      const zonePoly = personalizadoShellState.zone
+        ? bboxPolygonGeometry(PERSONALIZADO_ZONE_BBOX[personalizadoShellState.zone])
+        : null;
+      if (zonePoly) parts.push(["within", zonePoly]);
+      if (!parts.length) return null;
+      return parts.length === 1 ? parts[0] : ["all", ...parts];
+    }
+
+    function mergePersonalizadoCategoryFilters(baseFilter, categoryFilter) {
+      if (!baseFilter) return categoryFilter;
+      if (!categoryFilter) return baseFilter;
+      return ["all", baseFilter, categoryFilter];
+    }
+
+    function applyPersonalizadoShellFilters(map) {
+      if (!isPersonalizadoShell() || !map?.getLayer) return;
+
+      syncProfileFromFrontend();
+      const profile = getProfile();
+      const { poiCats, natureCats } = preferredSetsFromProfile(profile);
+      const dimNonPreferred = personalizadoShellState.quizHighlight !== false;
+      const strictQuiz = personalizadoShellState.quizStrict === true;
+      const poiOpacity = strictQuiz
+        ? preferenceOpacityExpression(poiCats, "cat")
+        : dimNonPreferred
+          ? ["case", ["in", ["get", "cat"], ["literal", [...poiCats]]], 1, 0.28]
+          : 1;
+      const natureOpacity = strictQuiz
+        ? preferenceOpacityExpression(natureCats, "category")
+        : dimNonPreferred
+          ? ["case", ["in", ["get", "category"], ["literal", [...natureCats]]], 1, 0.28]
+          : 1;
+
+      const poiMaster = document.getElementById("lyr-pois")?.checked !== false;
+      const natureMaster = document.getElementById("lyr-nature")?.checked !== false;
+      const poiEnabled = poiMaster && hasActivePoiCategoryFilter();
+      const natureEnabled = natureMaster && hasActiveNatureCategoryFilter();
+      const zonePoiFilter = buildPersonalizadoPoiFilter();
+      const categoryPoiFilter = poiEnabled ? buildPoiCategoryFilter() : ["==", ["get", "cat"], "__none__"];
+      const poiFilter = poiEnabled
+        ? mergePersonalizadoCategoryFilters(zonePoiFilter, categoryPoiFilter)
+        : ["==", ["get", "cat"], "__none__"];
+
+      if (map.getLayer("pois-layer")) {
+        map.setFilter("pois-layer", poiFilter);
+        map.setLayoutProperty("pois-layer", "visibility", poiEnabled ? "visible" : "none");
+        const poiLayerType = map.getLayer("pois-layer").type;
+        if (poiLayerType === "symbol") {
+          map.setPaintProperty("pois-layer", "icon-opacity", strictQuiz
+            ? ["case", ["in", ["get", "cat"], ["literal", [...poiCats]]], 1, 0]
+            : poiOpacity);
+        } else {
+          map.setPaintProperty("pois-layer", "circle-opacity", strictQuiz
+            ? ["case", ["in", ["get", "cat"], ["literal", [...poiCats]]], 0.86, 0]
+            : poiOpacity);
+        }
+      }
+      if (map.getLayer("clusters")) {
+        const showClusters = poiEnabled && allPoiCategoriesActive();
+        map.setLayoutProperty("clusters", "visibility", showClusters ? "visible" : "none");
+      }
+      if (map.getLayer("cluster-count")) {
+        const showClusters = poiEnabled && allPoiCategoriesActive();
+        map.setLayoutProperty("cluster-count", "visibility", showClusters ? "visible" : "none");
+      }
+
+      const zoneNatureFilter = buildPersonalizadoNatureFilter();
+      const categoryNatureFilter = natureEnabled ? buildNatureCategoryFilter() : ["==", ["get", "category"], "__none__"];
+      const natureFilter = natureEnabled
+        ? (zoneNatureFilter
+          ? mergePersonalizadoCategoryFilters(zoneNatureFilter, categoryNatureFilter)
+          : categoryNatureFilter)
+        : ["==", ["get", "category"], "__none__"];
+      NATURE_LAYERS.forEach((id) => {
+        if (!map.getLayer(id)) return;
+        map.setFilter(id, natureFilter);
+        map.setLayoutProperty(id, "visibility", natureEnabled ? "visible" : "none");
+        if (id === "nature-points") {
+          const natureLayerType = map.getLayer(id)?.type;
+          const opacity = strictQuiz
+            ? ["case", ["in", ["get", "category"], ["literal", [...natureCats]]], 1, 0]
+            : natureOpacity;
+          if (natureLayerType === "symbol") {
+            map.setPaintProperty(id, "icon-opacity", opacity);
+          } else {
+            map.setPaintProperty(id, "circle-opacity", opacity);
+          }
+        } else if (id === "nature-halo") {
+          map.setPaintProperty(id, "circle-opacity", dimNonPreferred
+            ? ["case", ["in", ["get", "category"], ["literal", [...natureCats]]], 0.15, 0.05]
+            : 0.15);
+        } else if (id === "nature-labels") {
+          map.setPaintProperty(id, "text-opacity", natureOpacity);
+        }
+      });
+
+      applyTourismLayerVisibility(map);
+      drawPersonalizadoRoute(map, personalizadoShellState.route);
+    }
+
+    function fitPersonalizadoZone(map) {
+      if (!map?.fitBounds) return;
+      const bbox = personalizadoShellState.zone
+        ? PERSONALIZADO_ZONE_BBOX[personalizadoShellState.zone]
+        : { west: -90.15, east: -87.65, south: 13.12, north: 14.45 };
+      if (!bbox) return;
+      map.fitBounds([[bbox.west, bbox.south], [bbox.east, bbox.north]], {
+        padding: 48,
+        duration: 900,
+        maxZoom: personalizadoShellState.zone ? 10.5 : 8.2,
+      });
+    }
+
+    function drawPersonalizadoRoute(map, routePlaces) {
+      const sourceId = "personalizado-route";
+      const lineId = "personalizado-route-line";
+      const pointsId = "personalizado-route-points";
+      const places = (routePlaces || []).filter((place) => place?.lng != null && place?.lat != null);
+
+      if (!places.length) {
+        [lineId, pointsId].forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
+        if (map.getSource(sourceId)) map.removeSource(sourceId);
+        return;
+      }
+
+      const featureCollection = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            geometry: { type: "LineString", coordinates: places.map((place) => [place.lng, place.lat]) },
+            properties: {},
+          },
+          ...places.map((place, index) => ({
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [place.lng, place.lat] },
+            properties: { label: String(index + 1), name: place.name || "" },
+          })),
+        ],
+      };
+
+      if (map.getSource(sourceId)) {
+        map.getSource(sourceId).setData(featureCollection);
+      } else {
+        map.addSource(sourceId, { type: "geojson", data: featureCollection });
+        map.addLayer({
+          id: lineId,
+          type: "line",
+          source: sourceId,
+          filter: ["==", ["geometry-type"], "LineString"],
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: { "line-color": "#141414", "line-width": 4, "line-opacity": 0.85 },
+        });
+        map.addLayer({
+          id: pointsId,
+          type: "circle",
+          source: sourceId,
+          filter: ["==", ["geometry-type"], "Point"],
+          paint: {
+            "circle-radius": 9,
+            "circle-color": "#141414",
+            "circle-stroke-width": 2,
+            "circle-stroke-color": "#ffffff",
+          },
+        });
+      }
+    }
+
+    function wirePersonalizadoShell(map) {
+      if (!isPersonalizadoShell()) return;
+
+      const handleMessage = (event) => {
+        const data = event.data || {};
+        if (data.type === "twinmap-personalizado-filters") {
+          personalizadoShellState = {
+            zone: data.zone !== undefined ? data.zone : personalizadoShellState.zone,
+            category: data.category !== undefined ? data.category : personalizadoShellState.category,
+            quizHighlight: data.quizHighlight !== false,
+            quizStrict: data.quizStrict === true,
+            route: Array.isArray(data.route) ? data.route : personalizadoShellState.route,
+          };
+          applyPersonalizadoShellFilters(map);
+        }
+        if (data.type === "twinmap-profile-updated") {
+          applyPersonalizadoShellFilters(map);
+        }
+      };
+
+      window.addEventListener("message", handleMessage);
+      window.addEventListener("storage", (event) => {
+        if (event.key === "twinmap-quiz-ruta" || event.key === PROFILE_KEY) {
+          applyPersonalizadoShellFilters(map);
+        }
+      });
+
+      applyPersonalizadoShellFilters(map);
+      fitPersonalizadoZone(map);
+    }
+
     const POI_LAYERS = ["clusters", "cluster-count", "pois-layer"];
+    const TOURISM_LAYERS = ["tourism-halo", "tourism-points"];
+    const HEAT_LAYERS = ["crowds-heat", "crowds-points", "crowds-pulse"];
+    const HOTSPOT_LAYERS = ["bio-heat", "bio-layer", "fauna-layer"];
+    let tourismCategoryList = [];
+    let activeTourismCategories = new Set();
+
+    function isLayerToggleOn(toggleId, defaultOn = true) {
+      const el = document.getElementById(toggleId);
+      return el ? el.checked : defaultOn;
+    }
+
+    function setLayerGroupVisibility(map, layerIds, on) {
+      const vis = on ? "visible" : "none";
+      (layerIds || []).forEach((id) => {
+        if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", vis);
+      });
+    }
+
+    function applyTourismLayerVisibility(map) {
+      if (!map?.getLayer) return;
+      const tourismMaster = isLayerToggleOn("lyr-tourism");
+      let show = tourismMaster;
+      if (isFrontendEmbedUi() && activeMapCategoryIds.size === 0) show = false;
+      setLayerGroupVisibility(map, TOURISM_LAYERS, show);
+      if (show) applyTourismCategoryFilter(map);
+    }
+
+    function applyPoiAndNatureFilters(map) {
+      if (!map?.getLayer) return;
+      if (isFrontendEmbedUi()) {
+        if (isPersonalizadoShell()) applyPersonalizadoShellFilters(map);
+        else applyMapCategoryFilters(map);
+        return;
+      }
+      setLayerGroupVisibility(map, POI_LAYERS, isLayerToggleOn("lyr-pois"));
+      setLayerGroupVisibility(map, NATURE_LAYERS, isLayerToggleOn("lyr-nature"));
+      applyTourismLayerVisibility(map);
+    }
+
+    function syncAllLayerToggles(map) {
+      if (!map?.getLayer) return;
+      toggle3D(map, isLayerToggleOn("lyr-3d"));
+      setLayerGroupVisibility(map, DEPT_LAYERS, isLayerToggleOn("lyr-dept"));
+      setLayerGroupVisibility(map, PARKING_LAYERS, isLayerToggleOn("lyr-parking", false));
+      setLayerGroupVisibility(map, HEAT_LAYERS, isLayerToggleOn("lyr-heat", false));
+      setLayerGroupVisibility(map, TRAFFIC_LAYERS, isLayerToggleOn("lyr-traffic"));
+      setLayerGroupVisibility(map, HOTSPOT_LAYERS, isLayerToggleOn("lyr-hotspots", false));
+      setLayerGroupVisibility(map, MOBILITY_LAYERS, isLayerToggleOn("lyr-mobility", false));
+      setLayerGroupVisibility(map, EVENT_LAYERS, isLayerToggleOn("lyr-events", false));
+      applyPoiAndNatureFilters(map);
+      const bioTimeline = document.getElementById("bio-timeline");
+      if (bioTimeline) bioTimeline.style.display = isLayerToggleOn("lyr-hotspots", false) ? "flex" : "none";
+    }
+
+    function tourismCategoryFilterExpr() {
+      const cats = [...activeTourismCategories];
+      if (!cats.length) return ["==", ["get", "category"], "__none__"];
+      if (cats.length >= tourismCategoryList.length) return true;
+      return ["in", ["get", "category"], ["literal", cats]];
+    }
+
+    function tourismSubtitle(meta, total) {
+      const depts = meta?.department_count || new Set((window._tourismGeojson?.features || []).map((f) => f.properties?.department)).size || 13;
+      const cats = meta?.category_count || tourismCategoryList.length || 26;
+      return `${total} lugares · ${depts} deptos · ${cats} categorías`;
+    }
+
+    function applyTourismCategoryFilter(map) {
+      if (!map?.getLayer) return;
+      const expr = tourismCategoryFilterExpr();
+      if (map.getLayer("tourism-points")) map.setFilter("tourism-points", expr);
+      if (map.getLayer("tourism-halo")) {
+        map.setFilter("tourism-halo", expr === true
+          ? ["==", ["get", "featured"], true]
+          : ["all", ["==", ["get", "featured"], true], expr]);
+      }
+    }
+
+    function applyTourismPoiInteraction(map) {
+      applyPoiAndNatureFilters(map);
+    }
+
+    function fitTourismBounds(map, geojson, options = {}) {
+      const coords = (geojson.features || []).map((f) => f.geometry?.coordinates).filter(Boolean);
+      if (!coords.length) return;
+      const lngs = coords.map((c) => c[0]);
+      const lats = coords.map((c) => c[1]);
+      map.fitBounds(
+        [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+        { padding: 56, maxZoom: 9, duration: options.duration ?? 1200 },
+      );
+    }
     const PARKING_LAYERS = ["parking-clusters", "parking-cluster-count", "parking-points"];
 
     const DEPT_LAYERS = ["dept-fill", "dept-line", "dept-label"];
@@ -1238,7 +2385,7 @@
     async function loadPOIs(map) {
       try {
         const loaded = await window.TwinmapCategoryImages?.loadMapIcons?.(map);
-        if (!loaded) console.warn("TwinMap: ningún icono PNG cargó; revisa /frontend/assets/");
+        if (!loaded) console.warn("Mirus: ningún icono PNG cargó; revisa /frontend/assets/");
 
         ["pois-layer", "cluster-count", "clusters"].forEach((id) => removeMapLayer(map, id));
         removeMapSource(map, "pois");
@@ -1319,10 +2466,88 @@
           map.on("mouseleave", id, () => map.getCanvas().style.cursor = "");
         });
 
+        if (isFrontendEmbedUi() && isPersonalizadoShell()) applyPersonalizadoShellFilters(map);
+        else if (isFrontendEmbedUi()) applyMapCategoryFilters(map);
+
         setStatus(`Mapa listo · <b>${total.toLocaleString()}</b> POIs de El Salvador (cache local)`);
       } catch (err) {
         setStatus("POIs: no se pudo leer data/pois.geojson");
         console.warn("POIs cache error", err);
+      }
+    }
+
+
+    // ============ CAPA: Destinos oficiales MITUR (data/tourism-official.geojson) ============
+    async function addOfficialTourism(map) {
+      ["tourism-halo", "tourism-points"].forEach((id) => removeMapLayer(map, id));
+      removeMapSource(map, "tourism-official");
+
+      try {
+        const response = await fetch("data/tourism-official.geojson");
+        if (!response.ok) throw new Error("No tourism cache");
+        const geojson = await response.json();
+        window._tourismGeojson = geojson;
+        window.TwinmapCategoryImages?.enrichGeoJson?.(geojson);
+        const total = geojson.features?.length || 0;
+        const meta = geojson.metadata || {};
+
+        tourismCategoryList = [...new Set((geojson.features || []).map((f) => f.properties?.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
+        activeTourismCategories = new Set(tourismCategoryList);
+
+        map.addSource("tourism-official", { type: "geojson", data: geojson });
+
+        map.addLayer({
+          id: "tourism-halo", type: "circle", source: "tourism-official",
+          filter: ["==", ["get", "featured"], true],
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 10, 8, 16, 12, 22, 16, 28],
+            "circle-color": "#ffd166",
+            "circle-opacity": 0.45,
+            "circle-stroke-width": 0,
+          },
+        });
+
+        const tourismIconReady = mapIconsReady(map);
+        if (tourismIconReady) {
+          map.addLayer({
+            id: "tourism-points", type: "symbol", source: "tourism-official",
+            layout: TOURISM_ICON_LAYOUT,
+            minzoom: 5,
+          });
+        } else {
+          map.addLayer({
+            id: "tourism-points", type: "circle", source: "tourism-official",
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, ["case", ["get", "featured"], 5, 4], 8, ["case", ["get", "featured"], 8, 6], 12, ["case", ["get", "featured"], 12, 9], 16, ["case", ["get", "featured"], 16, 12]],
+              "circle-color": ["match", ["get", "cat"],
+                "playa", CAT_COLORS.playa, "historico", CAT_COLORS.historico,
+                "volcan", "#e07a5f", "parque", CAT_COLORS.parque,
+                "comida", CAT_COLORS.comida, "montana", "#81b29a", "cascada", "#48cae4",
+                "#ffd166"],
+              "circle-stroke-width": ["case", ["get", "verified"], 2.5, 1.5],
+              "circle-stroke-color": ["case", ["get", "featured"], "#ffd166", "#0d1b2a"],
+              "circle-opacity": 0.96,
+            },
+          });
+        }
+
+        map.on("click", "tourism-points", (e) => {
+          if (clickMode) return;
+          openPlaceSidebar(map, placeFromFeature(e.features[0], "tourism-points", e.lngLat));
+        });
+        ["tourism-halo", "tourism-points"].forEach((id) => {
+          map.on("mouseenter", id, () => { map.getCanvas().style.cursor = "pointer"; });
+          map.on("mouseleave", id, () => { map.getCanvas().style.cursor = ""; });
+        });
+
+        applyTourismCategoryFilter(map);
+
+        const sub = document.getElementById("tourism-sub");
+        if (sub) sub.textContent = tourismSubtitle(meta, total);
+      } catch (error) {
+        console.warn("Tourism official cache error", error);
+        const sub = document.getElementById("tourism-sub");
+        if (sub) sub.textContent = "MITUR · cache no disponible";
       }
     }
 
@@ -1349,26 +2574,135 @@
       return { emoji: "🟢", txt: "Óptimo", rec: "Por debajo de su capacidad. Buen momento para visitar." };
     }
 
+    const TOURISM_CATEGORY_WEIGHT = {
+      Playas: 8, Beach: 8, "Parques Nacionales": 10, "Pueblos Turísticos": 9,
+      "Zonas Arqueológicas Mayas": 8, Volcanes: 7, Volcano: 7, "Rutas Turísticas": 6,
+    };
+
+    function estimateBusynessFromTourism(props = {}) {
+      let score = 28;
+      if (Number.isFinite(props.rating)) score += (props.rating / 5) * 32;
+      if (props.featured) score += 25;
+      if (props.verified) score += 15;
+      const cat = props.category || props.officialCategory || "";
+      score += TOURISM_CATEGORY_WEIGHT[cat] || 4;
+      return Math.min(95, Math.max(25, Math.round(score)));
+    }
+
+    function crowdCoordKey(feature) {
+      const [lng, lat] = feature.geometry?.coordinates || [];
+      return `${Number(lat).toFixed(3)},${Number(lng).toFixed(3)}`;
+    }
+
+    function buildEstimatedCrowdsFromTourismGeojson(geojson) {
+      return {
+        type: "FeatureCollection",
+        metadata: { source: "Estimado MITUR", estimated: true },
+        features: (geojson.features || []).map((feature) => ({
+          type: "Feature",
+          geometry: feature.geometry,
+          properties: {
+            name: feature.properties?.name || "Destino",
+            department: feature.properties?.department || "",
+            slug: feature.properties?.slug || "",
+            featured: Boolean(feature.properties?.featured),
+            verified: Boolean(feature.properties?.verified),
+            rating: feature.properties?.rating ?? null,
+            busyness: estimateBusynessFromTourism(feature.properties || {}),
+            is_live: false,
+            is_estimated: true,
+            info: "Potencial turístico MITUR",
+            category: feature.properties?.category || "",
+            peak_hour: "",
+            peak_score: null,
+          },
+        })),
+      };
+    }
+
+    function mergeCrowdsWithTourismEstimates(live, estimated) {
+      const features = [...(live?.features || [])];
+      const seen = new Set(
+        features.filter((f) => Number.isFinite(f.properties?.busyness)).map(crowdCoordKey),
+      );
+      for (const feature of estimated?.features || []) {
+        if (seen.has(crowdCoordKey(feature))) continue;
+        features.push(feature);
+        seen.add(crowdCoordKey(feature));
+      }
+      return { type: "FeatureCollection", metadata: { ...(estimated?.metadata || {}), merged: true }, features };
+    }
+
+    async function loadTourismCrowdsEstimate() {
+      try {
+        const response = await fetch("data/tourism-official.geojson");
+        if (!response.ok) return null;
+        return buildEstimatedCrowdsFromTourismGeojson(await response.json());
+      } catch (error) {
+        console.warn("Crowds tourism estimate error", error);
+        return null;
+      }
+    }
+
     async function addCrowds(map) {
       const empty = { type: "FeatureCollection", features: [] };
       map.addSource("crowds", { type: "geojson", data: empty });
 
-      // Halo pulsante SOLO en lugares saturados (llama la atención sobre la sobrecarga)
+      // Halo pulsante en lugares saturados
       map.addLayer({
         id: "crowds-pulse", type: "circle", source: "crowds",
         layout: { visibility: "none" }, filter: [">=", ["coalesce", ["get", "busyness"], 0], 75],
-        paint: { "circle-radius": 18, "circle-color": "#ff6b6b", "circle-opacity": 0.35, "circle-stroke-width": 0 },
+        paint: {
+          "circle-radius": 14,
+          "circle-color": "#ff6b6b",
+          "circle-opacity": 0.22,
+          "circle-stroke-width": 2.5,
+          "circle-stroke-color": "#ffd166",
+          "circle-stroke-opacity": 0.55,
+          "circle-blur": 0.2,
+        },
       });
       map.addLayer({
         id: "crowds-heat", type: "heatmap", source: "crowds", layout: { visibility: "none" },
-        paint: { "heatmap-weight": ["coalesce", ["get", "busyness"], 0], "heatmap-intensity": 1.2, "heatmap-radius": 45, "heatmap-opacity": 0.8, "heatmap-color": ["interpolate", ["linear"], ["heatmap-density"], 0, "rgba(0,0,0,0)", 0.35, "#2ec4b6", 0.65, "#ffbf69", 1, "#ff6b6b"] },
+        paint: {
+          "heatmap-weight": [
+            "interpolate", ["linear"], ["coalesce", ["get", "busyness"], 0],
+            0, 0, 20, 0.2, 50, 0.55, 80, 0.85, 100, 1,
+          ],
+          "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 5, 0.5, 7, 0.85, 9, 1.15, 11, 1.35, 14, 1.65],
+          "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 5, 24, 7, 36, 9, 50, 11, 64, 14, 82],
+          "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 5, 0.68, 9, 0.8, 12, 0.86],
+          "heatmap-color": [
+            "interpolate", ["linear"], ["heatmap-density"],
+            0, "rgba(0,0,0,0)",
+            0.1, "rgba(46, 196, 182, 0.15)",
+            0.25, "rgba(46, 196, 182, 0.72)",
+            0.42, "rgba(144, 190, 109, 0.82)",
+            0.58, "rgba(255, 209, 102, 0.88)",
+            0.72, "rgba(255, 159, 67, 0.92)",
+            0.86, "rgba(255, 107, 107, 0.94)",
+            1, "rgba(230, 57, 70, 0.96)",
+          ],
+        },
       });
       map.addLayer({
-        id: "crowds-points", type: "circle", source: "crowds", layout: { visibility: "none" }, filter: [">=", ["get", "busyness"], 0],
+        id: "crowds-points", type: "circle", source: "crowds", layout: { visibility: "none" },
+        filter: [">", ["coalesce", ["get", "busyness"], -1], 0],
         paint: {
-          "circle-radius": ["interpolate", ["linear"], ["coalesce", ["get", "busyness"], 0], 0, 9, 100, 22],
-          "circle-color": CAP_COLOR,
-          "circle-opacity": 0.92, "circle-stroke-width": 2, "circle-stroke-color": "#0d1b2a",
+          "circle-radius": [
+            "interpolate", ["linear"], ["zoom"],
+            6, ["interpolate", ["linear"], ["coalesce", ["get", "busyness"], 0], 0, 4, 100, 11],
+            10, ["interpolate", ["linear"], ["coalesce", ["get", "busyness"], 0], 0, 6, 100, 15],
+            14, ["interpolate", ["linear"], ["coalesce", ["get", "busyness"], 0], 0, 8, 100, 20],
+          ],
+          "circle-color": [
+            "interpolate", ["linear"], ["coalesce", ["get", "busyness"], 0],
+            0, "#2ec4b6", 35, "#90be6d", 55, "#ffd166", 75, "#ff9f43", 100, "#ff6b6b",
+          ],
+          "circle-opacity": 0.9,
+          "circle-stroke-width": 2,
+          "circle-stroke-color": "rgba(13, 27, 42, 0.8)",
+          "circle-blur": 0.12,
         },
       });
       map.on("click", "crowds-points", (event) => {
@@ -1376,41 +2710,75 @@
         const b = Math.round(p.busyness);
         const s = capStatus(b);
         const pico = p.peak_hour ? `<br>⏰ Hora pico: <b>${p.peak_hour}</b>` : "";
+        const modo = p.is_estimated ? " · Potencial turístico MITUR" : (p.is_live ? " · en vivo SerpAPI" : "");
         new mapboxgl.Popup().setLngLat(event.lngLat).setHTML(
-          `<b>${p.name}</b><br>Ocupación: <b>${b}%</b> ${s.emoji} <b>${s.txt}</b>${p.is_live ? " · en vivo" : ""}${pico}<br><small>${s.rec}</small>`
+          `<b>${p.name}</b><br>Ocupación: <b>${b}%</b> ${s.emoji} <b>${s.txt}</b>${modo}${pico}<br><small>${s.rec}</small>`
         ).addTo(map);
       });
       map.on("mouseenter", "crowds-points", () => map.getCanvas().style.cursor = "pointer");
       map.on("mouseleave", "crowds-points", () => map.getCanvas().style.cursor = "");
+      let crowds = null;
+      let source = "api";
       try {
         const response = await fetch(API + "/api/crowds");
         const payload = await response.json();
-        if (!response.ok || !payload.success) throw new Error(payload.error || "No se pudo consultar SerpAPI.");
-        applyCrowdsData(map, payload.data || empty, payload.source || "api");
+        if (response.ok && payload.success) {
+          crowds = payload.data || empty;
+          source = payload.source || "api";
+        }
       } catch (error) {
+        console.warn("Crowds API error", error);
+      }
+      if (!crowds?.features?.length) {
         try {
           const cache = await fetch("data/crowds.geojson");
           if (cache.ok) {
-            applyCrowdsData(map, await cache.json(), "cache");
-            const sub = document.getElementById("crowds-sub");
-            if (sub) sub.textContent = "Cache local · backend apagado";
-            return;
+            crowds = await cache.json();
+            source = "cache";
           }
-        } catch { /* sigue al warn */ }
+        } catch (error) {
+          console.warn("Crowds cache error", error);
+        }
+      }
+      const liveCount = (crowds?.features || []).filter((f) => Number.isFinite(f.properties?.busyness) && !f.properties?.is_estimated).length;
+      if (liveCount < 20) {
+        const estimated = await loadTourismCrowdsEstimate();
+        if (estimated?.features?.length) {
+          crowds = estimated.features.length && liveCount
+            ? mergeCrowdsWithTourismEstimates(crowds, estimated)
+            : estimated;
+          source = liveCount ? `${source}+mitur` : "mitur-estimado";
+        }
+      }
+      if (crowds?.features?.length) {
+        applyCrowdsData(map, crowds, source);
+      } else {
         const sub = document.getElementById("crowds-sub");
-        if (sub) sub.textContent = "SerpAPI no disponible · arranca el backend";
-        console.warn("Crowds API error", error);
+        if (sub) sub.textContent = "Sin datos · activa backend o regenera cache";
       }
     }
 
     function applyCrowdsData(map, crowds, source) {
-      const empty = { type: "FeatureCollection", features: [] };
       map.getSource("crowds").setData(crowds);
       const conDato = (crowds.features || []).filter((f) => Number.isFinite(f.properties?.busyness));
+      const enVivo = conDato.filter((f) => !f.properties?.is_estimated);
+      const estimados = conDato.filter((f) => f.properties?.is_estimated);
       const saturados = conDato.filter((f) => f.properties.busyness >= 75).length;
       const sub = document.getElementById("crowds-sub");
-      if (sub) sub.textContent = conDato.length ? `${conDato.length} lugares · ${saturados} saturados` : "SerpAPI · sin dato para esta zona";
-      if (conDato.length) setStatus(`Flujo y capacidad · <b>${conDato.length}</b> lugares · <b>${saturados}</b> saturados (${source})`);
+      if (sub) {
+        if (!conDato.length) sub.textContent = "Sin dato · revisa SerpAPI o MITUR";
+        else if (enVivo.length && estimados.length) {
+          sub.textContent = `${enVivo.length} en vivo + ${estimados.length} MITUR · activa capa`;
+        }         else if (estimados.length) {
+          sub.textContent = `${estimados.length} destinos MITUR · activa «Flujo y capacidad»`;
+        } else {
+          sub.textContent = `${conDato.length} lugares en vivo · activa capa`;
+        }
+      }
+      if (conDato.length) {
+        const label = estimados.length && !enVivo.length ? "Potencial turístico MITUR" : "Flujo y capacidad";
+        setStatus(`${label} · <b>${conDato.length}</b> lugares · <b>${saturados}</b> saturados (${source})`);
+      }
       startCrowdPulse(map);
     }
 
@@ -1419,10 +2787,12 @@
     function startCrowdPulse(map) {
       if (crowdPulseRAF) return;
       const step = (t) => {
-        if (map.getLayer("crowds-pulse") && map.getLayoutProperty("crowds-points", "visibility") === "visible") {
-          const phase = (Math.sin(t / 500) + 1) / 2; // 0..1
-          map.setPaintProperty("crowds-pulse", "circle-radius", 16 + phase * 18);
-          map.setPaintProperty("crowds-pulse", "circle-opacity", 0.45 - phase * 0.35);
+        const heatOn = map.getLayoutProperty("crowds-heat", "visibility") === "visible";
+        if (map.getLayer("crowds-pulse") && heatOn) {
+          const phase = (Math.sin(t / 480) + 1) / 2;
+          map.setPaintProperty("crowds-pulse", "circle-radius", 12 + phase * 22);
+          map.setPaintProperty("crowds-pulse", "circle-opacity", 0.38 - phase * 0.28);
+          map.setPaintProperty("crowds-pulse", "circle-stroke-opacity", 0.65 - phase * 0.4);
         }
         crowdPulseRAF = requestAnimationFrame(step);
       };
@@ -1522,7 +2892,7 @@
     // ============ CAPA: Catalogo natural curado de El Salvador ============
     async function addNatureCatalog(map) {
       const loaded = await window.TwinmapCategoryImages?.loadMapIcons?.(map);
-      if (!loaded) console.warn("TwinMap: iconos naturaleza no cargaron");
+      if (!loaded) console.warn("Mirus: iconos naturaleza no cargaron");
 
       ["nature-labels", "nature-points", "nature-halo"].forEach((id) => removeMapLayer(map, id));
       removeMapSource(map, "nature");
@@ -1571,6 +2941,8 @@
         map.getSource("nature").setData(catalog);
         const sub = document.getElementById("nature-sub");
         if (sub) sub.textContent = (catalog.features?.length || 0) + " lugares de referencia";
+        if (isFrontendEmbedUi() && isPersonalizadoShell()) applyPersonalizadoShellFilters(map);
+        else if (isFrontendEmbedUi()) applyMapCategoryFilters(map);
       } catch (error) { console.warn("Nature catalog error", error); }
     }
 
@@ -1966,6 +3338,7 @@
           syncProfileFromFrontend();
           renderProfileSummary();
           preselectCategoryFromProfile();
+          updatePlaceSidebarActionButtons();
           startSmartRouteFlow(map);
         }
       });
@@ -2330,7 +3703,7 @@
         if (res.ok && payload.success && payload.data?.routes?.length) {
           routes = payload.data.routes;
           recommendedId = payload.data.recommendedId || routes[0].id;
-          sourceNote = " (servidor TwinMap)";
+          sourceNote = " (servidor Mirus)";
         } else {
           throw new Error(payload.error || "Backend sin rutas");
         }
@@ -2424,6 +3797,92 @@
     }
 
     let placeSidebarRequestId = 0;
+    let placeSidebarCurrentPlace = null;
+
+    function placeRecordFromSidebar(place) {
+      const coords = place?.coordinates || [];
+      return window.TwinmapPlaceStorage?.normalizePlace?.({
+        id: place.id,
+        name: place.name,
+        category: place.category,
+        categoryLabel: place.category,
+        location: place.department || place.location || "El Salvador",
+        department: place.department,
+        lat: coords[1],
+        lng: coords[0],
+      }) || {
+        id: place.name,
+        name: place.name,
+        category: place.category,
+        categoryLabel: place.category,
+        location: place.department || "El Salvador",
+        lat: coords[1],
+        lng: coords[0],
+      };
+    }
+
+    function updatePlaceSidebarActionButtons() {
+      const actions = document.getElementById("place-sidebar-actions");
+      const visitedBtn = document.getElementById("place-sidebar-visited");
+      const favoriteBtn = document.getElementById("place-sidebar-favorite");
+      if (!actions || !placeSidebarCurrentPlace) return;
+
+      actions.hidden = false;
+      const record = placeRecordFromSidebar(placeSidebarCurrentPlace);
+      const visited = window.TwinmapPlaceStorage?.isVisited?.(record);
+      const favorite = window.TwinmapPlaceStorage?.isFavorite?.(record);
+
+      if (visitedBtn) {
+        visitedBtn.textContent = visited ? "Quitar de visitados" : "Marcar visitado";
+        visitedBtn.classList.toggle("is-saved", Boolean(visited));
+      }
+      if (favoriteBtn) {
+        favoriteBtn.textContent = favorite ? "Quitar de favoritos" : "Guardar en favoritos";
+        favoriteBtn.classList.toggle("is-saved", Boolean(favorite));
+      }
+    }
+
+    function wirePlaceSidebarActions() {
+      const visitedBtn = document.getElementById("place-sidebar-visited");
+      const favoriteBtn = document.getElementById("place-sidebar-favorite");
+      if (visitedBtn && !visitedBtn.dataset.wired) {
+        visitedBtn.dataset.wired = "1";
+        visitedBtn.addEventListener("click", () => {
+          if (!placeSidebarCurrentPlace) return;
+          const record = placeRecordFromSidebar(placeSidebarCurrentPlace);
+          const result = window.TwinmapPlaceStorage?.togglePlaceAction?.("visited", record)
+            || window.TwinmapPlaceStorage?.toggleVisited?.(record);
+          if (result?.toggled || result?.added || result?.removed) {
+            updatePlaceSidebarActionButtons();
+          }
+        });
+      }
+      if (favoriteBtn && !favoriteBtn.dataset.wired) {
+        favoriteBtn.dataset.wired = "1";
+        favoriteBtn.addEventListener("click", () => {
+          if (!placeSidebarCurrentPlace) return;
+          const record = placeRecordFromSidebar(placeSidebarCurrentPlace);
+          const result = window.TwinmapPlaceStorage?.togglePlaceAction?.("favorite", record)
+            || window.TwinmapPlaceStorage?.toggleFavorite?.(record);
+          if (result?.toggled || result?.added || result?.removed) {
+            updatePlaceSidebarActionButtons();
+          }
+        });
+      }
+    }
+
+    window.addEventListener("message", (event) => {
+      if (event.data?.type === "twinmap-place-changed") {
+        updatePlaceSidebarActionButtons();
+      }
+    });
+
+    window.addEventListener("storage", (event) => {
+      if (!event.key) return;
+      if (event.key.includes("bitacora") || event.key.includes("favoritos")) {
+        updatePlaceSidebarActionButtons();
+      }
+    });
 
     function placeFromFeature(feature, layerId, lngLat) {
       const p = feature.properties || {};
@@ -2455,6 +3914,39 @@
           },
         };
       }
+      if (layerId === "tourism-points") {
+        const detailLines = [
+          p.category ? `<small><b>Categoría:</b> ${escapeHtml(p.category)}</small>` : "",
+          p.department ? `<small><b>Departamento:</b> ${escapeHtml(p.department)}</small>` : "",
+          p.municipality ? `<small><b>Municipio:</b> ${escapeHtml(p.municipality)}</small>` : "",
+          p.address ? `<small><b>Dirección:</b> ${escapeHtml(p.address)}</small>` : "",
+          p.rating != null ? `<small><b>Rating:</b> ★ ${escapeHtml(String(p.rating))}</small>` : "",
+          p.verified ? "<small>✓ Verificado MITUR</small>" : "<small>Sin verificar</small>",
+          p.featured ? "<small>⭐ Destacado MITUR</small>" : "",
+          p.official_id ? `<small><b>ID oficial:</b> ${escapeHtml(p.official_id)}</small>` : "",
+        ].filter(Boolean).join("<br>");
+        return {
+          id: p.slug || p.official_id,
+          name: p.name || "Destino oficial",
+          category: p.category || "MITUR",
+          kind: p.category || "destino",
+          department: p.department || "",
+          coordinates: coords,
+          imageCategory: p.cat,
+          imageKind: p.category,
+          extrasHtml: detailLines,
+          extra: {
+            official_id: p.official_id,
+            category: p.category,
+            rating: p.rating,
+            verified: p.verified,
+            featured: p.featured,
+            address: p.address,
+            municipality: p.municipality,
+            source: "MITUR",
+          },
+        };
+      }
       return {
         name: p.name || "Sin nombre",
         category: p.cat || "lugar",
@@ -2478,34 +3970,46 @@
     }
 
     function closePlaceSidebar() {
+      placeSidebarCurrentPlace = null;
       const panel = document.getElementById("place-sidebar");
       const backdrop = document.getElementById("place-sidebar-backdrop");
       panel.classList.remove("is-open");
       panel.setAttribute("aria-hidden", "true");
       document.body.classList.remove("place-sidebar-open");
       if (backdrop) backdrop.hidden = true;
+      const actions = document.getElementById("place-sidebar-actions");
+      if (actions) actions.hidden = true;
+      document.getElementById("place-sidebar-travel").innerHTML = "";
+      document.getElementById("place-sidebar-safety").innerHTML = "";
     }
 
     function openPlaceSidebar(map, place) {
       if (!place?.name) return;
+      placeSidebarCurrentPlace = place;
+      wirePlaceSidebarActions();
       const panel = document.getElementById("place-sidebar");
       const backdrop = document.getElementById("place-sidebar-backdrop");
       const title = document.getElementById("place-sidebar-title");
       const meta = document.getElementById("place-sidebar-meta");
       const image = document.getElementById("place-sidebar-image");
       const extras = document.getElementById("place-sidebar-extras");
-      const body = document.getElementById("place-sidebar-body");
+      const info = document.getElementById("place-sidebar-info");
 
       title.textContent = place.name;
       meta.textContent = [place.category, place.kind, place.department].filter(Boolean).join(" · ");
       image.innerHTML = categoryPopupImage(place.imageCategory || place.category, place.imageKind || place.kind);
       extras.innerHTML = place.extrasHtml || "";
-      body.innerHTML = '<span class="place-sidebar-badge">ChatGPT</span><p class="place-sidebar-loading">Buscando información del lugar…</p>';
+      if (info) {
+        info.innerHTML = '<span class="place-sidebar-badge">ChatGPT</span><p class="place-sidebar-loading">Buscando información del lugar…</p>';
+      }
 
       panel.classList.add("is-open");
       panel.setAttribute("aria-hidden", "false");
       document.body.classList.add("place-sidebar-open");
       if (backdrop) backdrop.hidden = false;
+
+      updatePlaceSidebarActionButtons();
+      window.TwinmapPlaceTravelPanel?.renderSidebarExtras?.(place);
 
       if (Array.isArray(place.coordinates) && place.coordinates.length >= 2) {
         map.easeTo({
@@ -2519,10 +4023,12 @@
     }
 
     async function loadPlaceSidebarInfo(place) {
-      const body = document.getElementById("place-sidebar-body");
+      const info = document.getElementById("place-sidebar-info");
       const image = document.getElementById("place-sidebar-image");
       const meta = document.getElementById("place-sidebar-meta");
       const requestId = ++placeSidebarRequestId;
+      if (!info) return;
+      info.innerHTML = '<span class="place-sidebar-badge">ChatGPT</span><p class="place-sidebar-loading">Buscando información del lugar…</p>';
       try {
         const response = await fetch(API + "/api/assistant/place-info", {
           method: "POST",
@@ -2569,7 +4075,7 @@
           ? `<p class="place-sidebar-error">${escapeHtml(data.warning)}</p>`
           : "";
 
-        body.innerHTML = `
+        info.innerHTML = `
           <div class="place-sidebar-kv">
             <div><span>Nombre</span><span>${escapeHtml(data.nombre || place.name)}</span></div>
             <div><span>Categoría</span><span>${escapeHtml(data.categoria || place.category || "—")}</span></div>
@@ -2583,7 +4089,7 @@
           ${warning}`;
       } catch (error) {
         if (requestId !== placeSidebarRequestId) return;
-        body.innerHTML =
+        info.innerHTML =
           '<span class="place-sidebar-badge">ChatGPT</span>' +
           '<p class="place-sidebar-error">' + escapeHtml(error.message || "No se pudo cargar la información.") + "</p>" +
           "<p>Arranca el backend con <code>npm run dev</code> en el puerto 3001.</p>";
@@ -2692,7 +4198,7 @@
         console.warn("Vitals error", error);
         body.innerHTML =
           `<p style="margin:0;color:var(--muted)">No se pudo cargar el clima.</p>` +
-          `<button type="button" id="vitals-refresh" style="margin-top:8px;border:0;border-radius:8px;padding:7px 10px;background:var(--accent);color:#062b28;font-weight:600;cursor:pointer">Reintentar</button>`;
+          `<button type="button" id="vitals-refresh" style="margin-top:8px;border:0;border-radius:8px;padding:7px 10px;background:var(--accent);color:#ffffff;font-weight:600;cursor:pointer">Reintentar</button>`;
         document.getElementById("vitals-refresh").onclick = () => addVitalsDashboard(map);
         return;
       }
@@ -2727,6 +4233,29 @@
       document.getElementById("vitals-refresh").onclick = () => addVitalsDashboard(map);
     }
 
+    // ============ Calles base más delgadas (satellite-streets / streets-v12) ============
+    function scalePaintLineWidth(value, factor) {
+      if (value == null) return undefined;
+      if (typeof value === "number") return Math.max(0.5, value * factor);
+      if (Array.isArray(value)) return ["*", factor, value];
+      return value;
+    }
+
+    function thinBaseRoads(map, factor = 0.58) {
+      if (!map?.getStyle) return;
+      for (const layer of map.getStyle().layers || []) {
+        if (layer.type !== "line") continue;
+        const id = layer.id;
+        if (!/^(road|tunnel|bridge)-/.test(id)) continue;
+        if (/label|shield|arrow|turn|sign|marking|rail/.test(id)) continue;
+        try {
+          const width = map.getPaintProperty(id, "line-width");
+          const scaled = scalePaintLineWidth(width, factor);
+          if (scaled !== undefined) map.setPaintProperty(id, "line-width", scaled);
+        } catch (_) { /* capa sin line-width editable */ }
+      }
+    }
+
     // ============ Estilo plano (colores planos, sin relieve) / satélite 3D ============
     // Alterna recargando con ?flat=1 para re-armar limpio todas las capas.
     function toggleFlat() {
@@ -2736,21 +4265,65 @@
       location.search = params.toString();
     }
 
+    // ============ MODO EXPLORADOR: lugar interesante al azar + distancia ============
+    let exploreData = null;
+    async function loadExploreData() {
+      if (exploreData) return exploreData;
+      const feats = [];
+      for (const url of ["data/nature-curated.geojson", "data/tourism-official.geojson"]) {
+        try {
+          const r = await fetch(url);
+          if (!r.ok) continue;
+          const gj = await r.json();
+          for (const f of gj.features || []) {
+            const c = f.geometry?.coordinates;
+            if (c && Number.isFinite(c[0]) && Number.isFinite(c[1])) feats.push(f);
+          }
+        } catch (e) {}
+      }
+      exploreData = feats;
+      return feats;
+    }
+    function distKmExplore(a, b) {
+      const R = 6371, rad = Math.PI / 180;
+      const dLat = (b[1] - a[1]) * rad, dLng = (b[0] - a[0]) * rad;
+      const s = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * rad) * Math.cos(b[1] * rad) * Math.sin(dLng / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(s));
+    }
+    async function exploreRandom(map) {
+      const btn = document.getElementById("explore-btn");
+      btn.disabled = true; btn.textContent = "🎲 Buscando…";
+      const feats = await loadExploreData();
+      btn.disabled = false; btn.textContent = "🎲 Sorpréndeme (explorador)";
+      if (!feats.length) return;
+      const ref = window._exploreRef || [map.getCenter().lng, map.getCenter().lat];
+      const place = feats[Math.floor(Math.random() * feats.length)];
+      const coords = place.geometry.coordinates;
+      const p = place.properties || {};
+      const km = distKmExplore(ref, coords).toFixed(1);
+      const name = p.name || "Lugar interesante";
+      const cat = p.category || p.official_category || p.categoryLabel || "";
+      const desde = window._exploreRef ? "de tu ubicación" : "del centro del mapa";
+      map.flyTo({ center: coords, zoom: 13, pitch: window._flatMode ? 0 : 55, speed: 1.5, essential: true });
+      new mapboxgl.Popup({ offset: 12 }).setLngLat(coords).setHTML(
+        `🎲 <b>${name}</b>${cat ? "<br><small>" + cat + "</small>" : ""}<br><b>📍 a ${km} km</b> ${desde}`
+      ).addTo(map);
+    }
+
     // ============ Toggles del panel ============
     function wireToggles(map) {
-      const setVis = (id, on) => { if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none"); };
-      document.getElementById("lyr-3d").onchange = (e) => toggle3D(map, e.target.checked);
-      document.getElementById("lyr-dept").onchange = (e) => DEPT_LAYERS.forEach((id) => setVis(id, e.target.checked));
-      document.getElementById("lyr-pois").onchange = (e) => POI_LAYERS.forEach((id) => setVis(id, e.target.checked));
-      document.getElementById("lyr-parking").onchange = (e) => PARKING_LAYERS.forEach((id) => setVis(id, e.target.checked));
-      document.getElementById("lyr-heat").onchange = (e) => ["crowds-heat", "crowds-points", "crowds-pulse"].forEach((id) => setVis(id, e.target.checked));
-      document.getElementById("lyr-traffic").onchange = (e) => TRAFFIC_LAYERS.forEach((id) => setVis(id, e.target.checked));
-      document.getElementById("lyr-nature").onchange = (e) => NATURE_LAYERS.forEach((id) => setVis(id, e.target.checked));
-      document.getElementById("lyr-mobility").onchange = (e) => MOBILITY_LAYERS.forEach((id) => setVis(id, e.target.checked));
-      document.getElementById("lyr-events").onchange = (e) => EVENT_LAYERS.forEach((id) => setVis(id, e.target.checked));
+      document.getElementById("lyr-3d").onchange = () => syncAllLayerToggles(map);
+      document.getElementById("lyr-dept").onchange = () => syncAllLayerToggles(map);
+      document.getElementById("lyr-pois").onchange = () => syncAllLayerToggles(map);
+      document.getElementById("lyr-tourism").onchange = () => syncAllLayerToggles(map);
+      document.getElementById("lyr-parking").onchange = () => syncAllLayerToggles(map);
+      document.getElementById("lyr-heat").onchange = () => syncAllLayerToggles(map);
+      document.getElementById("lyr-traffic").onchange = () => syncAllLayerToggles(map);
+      document.getElementById("lyr-nature").onchange = () => syncAllLayerToggles(map);
+      document.getElementById("lyr-mobility").onchange = () => syncAllLayerToggles(map);
+      document.getElementById("lyr-events").onchange = () => syncAllLayerToggles(map);
       document.getElementById("lyr-hotspots").onchange = (e) => {
-        ["bio-heat", "bio-layer", "fauna-layer"].forEach((id) => setVis(id, e.target.checked));
-        document.getElementById("bio-timeline").style.display = e.target.checked ? "flex" : "none";
+        syncAllLayerToggles(map);
         if (!e.target.checked && bioPlayTimer) toggleBioPlay(map); // pausar al apagar
       };
       document.getElementById("island-btn").onclick = () => toggleIsland(map);
@@ -2758,10 +4331,19 @@
       flatBtn.textContent = window._flatMode ? "🛰️ Satélite 3D" : "🗺️ Colores planos";
       flatBtn.classList.toggle("active", window._flatMode);
       flatBtn.onclick = () => toggleFlat();
+      document.getElementById("explore-btn").onclick = () => exploreRandom(map);
+      // Pedir ubicación una vez para calcular distancia real (si la niegan, usa el centro del mapa)
+      if (navigator.geolocation) navigator.geolocation.getCurrentPosition(
+        (pos) => { window._exploreRef = [pos.coords.longitude, pos.coords.latitude]; },
+        () => {}, { timeout: 5000 },
+      );
 
       // Slider de línea de tiempo de aves
       document.getElementById("bio-time").oninput = (e) => applyBioTime(map, Number(e.target.value));
       document.getElementById("bio-play").onclick = () => toggleBioPlay(map);
+
+      // Sincronizar visibilidad inicial con checkboxes (capas se crean antes de wireToggles)
+      syncAllLayerToggles(map);
     }
   </script>
 </body>

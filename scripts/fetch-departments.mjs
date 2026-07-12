@@ -2,7 +2,7 @@
 // y le asigna un color distinto a cada uno. Correr: node scripts/fetch-departments.mjs
 import { writeFileSync, mkdirSync } from "node:fs";
 
-const UA = { "User-Agent": "TwinMap/1.0 (hackathon; edwineduardoxd@gmail.com)" };
+const UA = { "User-Agent": "Mirus/1.0 (hackathon; edwineduardoxd@gmail.com)" };
 
 // 14 colores bien diferenciados
 const PALETTE = [

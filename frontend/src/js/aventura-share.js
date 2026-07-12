@@ -89,7 +89,7 @@ function buildPrintHtml({ routeName, stops, quiz, summary, createdAt, rating, ta
   return `
     <div class="aventura-print">
       <header class="aventura-print__header">
-        <p class="aventura-print__brand">Twinmap · Modo aventura</p>
+        <p class="aventura-print__brand">Mirus · Modo aventura</p>
         <h1>${routeName || "Mi ruta de aventura"}</h1>
         <p class="aventura-print__meta">${formatShareDate(createdAt || new Date().toISOString())}</p>
         ${rating ? `<p class="aventura-print__rating">${"★".repeat(rating)}${"☆".repeat(5 - rating)} (${rating}/5)</p>` : ""}
@@ -106,7 +106,7 @@ function buildPrintHtml({ routeName, stops, quiz, summary, createdAt, rating, ta
       ${renderQuizSection(quiz)}
 
       <footer class="aventura-print__footer">
-        <p>Generado con Twinmap — ¡Comparte esta aventura con tus amigos!</p>
+        <p>Generado con Mirus — ¡Comparte esta aventura con tus amigos!</p>
       </footer>
     </div>
   `;

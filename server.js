@@ -8,6 +8,7 @@ import birdsRouter from "./routes/birds.js";
 import assistantRouter from "./routes/assistant.js";
 import trafficRouter from "./routes/traffic.js";
 import configRouter from "./routes/config.js";
+import newsRouter from "./routes/news.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -29,6 +30,7 @@ app.use("/api/birds", birdsRouter);
 app.use("/api/assistant", assistantRouter);
 app.use("/api/traffic", trafficRouter);
 app.use("/api/config", configRouter);
+app.use("/api/news", newsRouter);
 
 app.get("/health", (_req, res) => {
   res.json({
@@ -46,5 +48,5 @@ app.get("/api/config", (_req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`TwinMap API escuchando en http://localhost:${port}`);
+  console.log(`Mirus API escuchando en http://localhost:${port}`);
 });

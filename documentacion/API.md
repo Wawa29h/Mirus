@@ -1,4 +1,4 @@
-﻿# API TwinMap — integración frontend
+﻿# API Mirus — integración frontend
 
 Base URL por defecto: `http://localhost:3001` (configurable en `frontend/src/js/config.js` copiado desde `config.example.js`).
 
@@ -31,7 +31,7 @@ Variables: ver `.env.example` en la raíz del repo.
 ## Levantar el proyecto
 
 ```powershell
-cd c:\Users\miche\Desktop\Twinmap\twinmap
+cd mirus
 Copy-Item .env.example .env   # editar llaves
 npm install
 npm start                      # API en :3001

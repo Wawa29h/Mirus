@@ -266,10 +266,10 @@ function startOnboarding(mode) {
   activeMode = mode;
   const copy = INTRO_COPY[mode] || INTRO_COPY.ruta;
 
-  modeLabelEl.textContent = MODE_LABELS[mode] || "Twinmap";
+  modeLabelEl.textContent = MODE_LABELS[mode] || "Mirus";
   titleEl.textContent = copy.title;
   messageEl.textContent = copy.text;
-  introModeEl.textContent = MODE_LABELS[mode] || "Twinmap";
+  introModeEl.textContent = MODE_LABELS[mode] || "Mirus";
   introTitleEl.textContent = copy.title;
   introEl.textContent = copy.text;
   showQuiz();

@@ -6,7 +6,7 @@ const QUERY = `[out:json][timeout:120];area["ISO3166-1"="SV"][admin_level=2]->.s
 async function request() {
   for (const url of MIRRORS) {
     try {
-      const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "TwinMap/1.0" }, body: "data=" + encodeURIComponent(QUERY), signal: AbortSignal.timeout(90000) });
+      const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mirus/1.0" }, body: "data=" + encodeURIComponent(QUERY), signal: AbortSignal.timeout(90000) });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return (await response.json()).elements || [];
     } catch (error) { console.warn(`${url}: ${error.message}`); }

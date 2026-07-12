@@ -1,4 +1,4 @@
-﻿# Documentación Twinmap
+﻿# Documentación Mirus
 
 - [FLUJO.md](./FLUJO.md) — Flujo completo de la aplicación.
 

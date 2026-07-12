@@ -1,5 +1,5 @@
 ﻿/**
- * Cliente HTTP para la API TwinMap (backend Express).
+ * Cliente HTTP para la API Mirus (backend Express).
  * Configura window.TWINMAP_API_BASE o frontend/src/js/config.js
  */
 (function initTwinmapApi(global) {
@@ -89,15 +89,27 @@
     );
   }
 
-  async function planAssistantRoute({ message, location }) {
+  async function planAssistantRoute({ message, location, profile }) {
     return request(
       "/api/assistant/route",
       {
         method: "POST",
-        body: JSON.stringify({ message, location }),
+        body: JSON.stringify({ message, location, profile }),
       },
       null
     );
+  }
+
+  async function fetchNews(query, options = {}) {
+    const params = new URLSearchParams({
+      q: String(query || "").trim(),
+      language: options.language || "es",
+      size: String(options.size || 10),
+    });
+    if (options.country === false) params.set("country", "false");
+    else if (options.country) params.set("country", options.country);
+
+    return request(`/api/news?${params.toString()}`, {}, null);
   }
 
   async function getWeatherBundle() {
@@ -193,6 +205,7 @@
     getBirdForecast,
     calculateRoute,
     planAssistantRoute,
+    fetchNews,
     getWeatherBundle,
     getPlaceForecast,
     getPoisGeojson,

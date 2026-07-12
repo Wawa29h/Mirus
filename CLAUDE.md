@@ -1,6 +1,6 @@
-# TwinMap · Digital Twin Turístico — Documentación del proyecto
+# Mirus · Gemelo digital turístico — Documentación del proyecto
 
-> Contexto para Claude Code y para el equipo. Estado al 2026-07-11.
+> Contexto para Claude Code y para el equipo. Estado al 2026-07-12.
 
 ## Qué es
 
@@ -12,31 +12,36 @@ Enfoque **"low twin"**: no hay sensores IoT ni ML entrenado. Se combinan pocas f
 datos abiertas y se simulan datos con reglas realistas cuando no hay API real. El **mapa es
 el core obligatorio**; encima se agregan capas de diferenciación (rutas, dashboard, etc.).
 
-## Arquitectura (3 piezas)
+## Arquitectura (3 piezas + app shell)
 
 ```
-┌─────────────────┐        ┌──────────────────────┐        ┌─────────────────────┐
-│  FRONTEND        │  HTTP  │  BACKEND (Express)    │  HTTP  │  n8n (orquestación)  │
-│  index.html      │───────▶│  server.js :3001      │───────▶│  webhook digital twin│
-│  (estático)      │        │  /api/routes/calculate│        │  + fallback Mapbox   │
-└─────────────────┘        └──────────────────────┘        └─────────────────────┘
-        │                            
-        │ carga cache local          
-        ▼                            
-┌─────────────────┐   generado por   ┌─────────────────┐
-│  data/*.geojson │◀─────────────────│  scripts/ (Node/ │
-│  data/*.json    │   (correr 1 vez) │  Python fetchers)│
-└─────────────────┘                  └─────────────────┘
+┌──────────────────────┐     ┌──────────────────────┐     ┌─────────────────────┐
+│  frontend/           │     │  BACKEND (Express)    │     │  n8n (orquestación)  │
+│  App Mirus (login,   │     │  server.js :3001      │     │  webhook digital twin│
+│  bitácora, favoritos)│────▶│  /api/*               │────▶│  + fallback Mapbox   │
+│  iframe → index.html │     │  /data (estático)     │     │                      │
+└──────────────────────┘     └──────────────────────┘     └─────────────────────┘
+         │ embed
+         ▼
+┌──────────────────────┐
+│  index.html (raíz)   │  Mapa Mapbox completo: capas, sidebar, rutas, asistente
+└──────────────────────┘
 ```
 
-- **Frontend** (`index.html`): mapa Mapbox + capas + UI. Sitio estático, sin build.
-- **Backend** (`server.js` + `routes/` + `controllers/`): API Express que calcula rutas
-  inteligentes. Llama al webhook de **n8n**; si falla, usa **Mapbox Directions** como fallback.
-- **Scripts** (`scripts/`): traen datos de APIs abiertas y los cachean en `data/`. Se corren
-  a mano, no en producción.
+- **App shell** (`frontend/index.html`): landing, login por perfil, onboarding, bitácora,
+  favoritos, emergencia, mapa personalizado. El mapa real vive en un **iframe** que carga
+  `/index.html?embed=1&ui=frontend&tourism=1&heat=1`.
+- **Mapa** (`index.html` en raíz): Mapbox GL + todas las capas + sidebar de lugar (ChatGPT,
+  Waze/inDrive, noticias). También funciona standalone en `http://localhost:3000/`.
+- **Backend** (`server.js` + `routes/` + `controllers/`): API Express. Rutas inteligentes
+  vía n8n con fallback Mapbox Directions; proxies de crowds, birds, news, traffic, assistant.
+- **Libs compartidas** (`lib/`): `place-storage.js`, `place-travel-panel.js`, `profile-sync.js`,
+  `category-images.js`, `destinations.js`, `popular-times.js` (Node, para scripts/backend).
+- **Scripts** (`scripts/`): cachean datos en `data/`. Se corren a mano, no en producción.
 
-⚠️ **Estado de integración:** el frontend **todavía NO está conectado** al backend ni a los
-datos nuevos (biodiversity/weather). Esa es la tarea pendiente principal (ver Roadmap).
+**Estado de integración (jul 2026):** el frontend **sí está conectado** al mapa vía iframe +
+`postMessage`. Favoritos/bitácora del mapa sincronizan con la app por `TwinmapPlaceStorage`
+(perfil en `localStorage`). El backend alimenta crowds, aves, noticias, asistente y rutas.
 
 ## Stack
 
@@ -46,6 +51,11 @@ datos nuevos (biodiversity/weather). Esa es la tarea pendiente principal (ver Ro
 | Buscador | Plugin `mapbox-gl-geocoder` v5.0.3 | mismo token |
 | Backend | **Express 5** + axios + dotenv (Node, ESM) | `.env` |
 | Rutas | n8n webhook → fallback **Mapbox Directions API** | `N8N_ROUTE_WEBHOOK_URL`, `MAPBOX_ACCESS_TOKEN` |
+| Crowds / heatmap | SerpAPI Popular Times → fallback cache + pesos MITUR | `SERPAPI_KEY` (opcional) |
+| Noticias | Proxy **NewsData.io** | `NEWSDATA_API_KEY` (opcional, hay fallback) |
+| Asistente | OpenRouter (place-info, rutas) | `OPENROUTER_API_KEY` (opcional) |
+| Tráfico | Mapbox Traffic vía proxy backend | `MAPBOX_ACCESS_TOKEN` |
+| Turismo oficial | Catálogo **MITUR** (104 destinos) | sin key (cache local) |
 | POIs | Overpass API (OpenStreetMap) | sin key |
 | Límites país/deptos | geoBoundaries API | sin key |
 | Biodiversidad | **GBIF** API | sin key |
@@ -57,93 +67,114 @@ datos nuevos (biodiversity/weather). Esa es la tarea pendiente principal (ver Ro
 
 ```
 twinmap/
-│  ── FRONTEND ──
-├── index.html              ← Mapa + capas + UI (un solo archivo, ~475 líneas)
-├── config.js               ← Token Mapbox público (navegador).  ⚠️ NO se sube (.gitignore)
-├── config.example.js       ← Plantilla del config
+│  ── APP SHELL (frontend/) ──
+├── frontend/
+│   ├── index.html              ← App Mirus: login, navegación, iframe del mapa
+│   └── src/js/                 ← auth, bitácora, favoritos, mapa-personalizado, api.js
+│
+│  ── MAPA (raíz) ──
+├── index.html                  ← Mapa Mapbox completo (~4300 líneas) + embed mode
+├── config.js                   ← Token Mapbox + API_BASE. ⚠️ NO se sube (.gitignore)
+├── config.example.js
+├── lib/                        ← place-storage, place-travel-panel, profile-sync, etc.
 │
 │  ── BACKEND (Express API) ──
-├── server.js               ← Servidor Express, puerto 3001, monta /api/routes y /health
+├── server.js                   ← Puerto 3001: /api/* + /data estático
 ├── routes/
-│   └── route.js            ← Define POST /api/routes/calculate
+│   ├── route.js                ← /calculate, /smart, /destinations
+│   ├── crowds.js, birds.js, news.js, assistant.js, traffic.js, config.js
 ├── controllers/
-│   └── route.controller.js ← calculateSmartRoute: llama n8n → fallback Mapbox Directions
-├── package.json            ← deps: express, axios, dotenv. Scripts: start / dev (--watch)
-├── .env                    ← Secretos del backend.  ⚠️ NO se sube (crear desde .env.example)
-├── .env.example            ← Plantilla: N8N_ROUTE_WEBHOOK_URL, MAPBOX_ACCESS_TOKEN, PORT
 │
 │  ── DATOS (scripts → cache) ──
 ├── scripts/
-│   ├── fetch-pois.mjs          → data/pois.geojson        (3102 POIs de El Salvador, Overpass)
-│   ├── fetch-departments.mjs   → data/departments.geojson (14 deptos con color, geoBoundaries)
-│   ├── fetch-mask.mjs          → data/mask.geojson + elsalvador.geojson (modo isla)
-│   ├── fetch-biodiversity.mjs  → data/biodiversity.geojson (avistamientos GBIF reales)
-│   ├── fetch-weather.mjs       → data/weather.json         (clima Open-Meteo, actual+7 días)
-│   └── fetch-trends.py         → data/trends.json          (Google Trends, requiere pytrends)
-├── requirements.txt        ← Dependencias Python (pytrends) para fetch-trends.py
-├── data/                   ← Cache local (el frontend carga de aquí)
-│   ├── pois.geojson        (576K)
-│   ├── departments.geojson (984K)
-│   ├── mask.geojson        (8K)
-│   ├── elsalvador.geojson  (272K)
-│   ├── biodiversity.geojson(64K)  ← NUEVO, datos reales GBIF
-│   └── weather.json        (1K)   ← NUEVO
+│   ├── fetch-pois.mjs          → data/pois.geojson
+│   ├── fetch-tourism.mjs       → data/tourism-official.geojson (104 MITUR)
+│   ├── fetch-biodiversity.mjs  → data/biodiversity.geojson (GBIF)
+│   ├── fetch-weather.mjs       → data/weather.json
+│   ├── fetch-popular-times.mjs → data/crowds.geojson
+│   └── … (departments, mask, nature, parking, trends)
+├── data/
+│   ├── tourism-official.geojson  ← 104 destinos MITUR
+│   ├── crowds.geojson            ← heatmap afluencia
+│   ├── biodiversity.geojson        ← GBIF
+│   ├── weather.json, birds.geojson, nature-curated.geojson, …
 │
-│  ── DOCS / CONFIG ──
-├── CLAUDE.md               ← Este archivo
-├── README.md               ← Setup y deploy
-├── .gitignore              ← Ignora config.js, .env, node_modules
-└── .claude/launch.json     ← Server local del frontend (npx serve, puerto 3000)
+│  ── DOCS ──
+├── CLAUDE.md, README.md, .cursorrules
 ```
 
 ## Cómo correr
 
-**Frontend** (mapa):
+**Todo junto (UX actual):**
 ```bash
-# token ya en config.js
-npx serve -l 3000 .        # abrir http://localhost:3000
+# Terminal 1 — sitio estático (raíz + frontend/)
+npx serve -l 3000 .
+# → App: http://localhost:3000/frontend/
+# → Mapa standalone: http://localhost:3000/
+
+# Terminal 2 — API (crowds, news, assistant, rutas)
+npm install
+cp .env.example .env   # MAPBOX_ACCESS_TOKEN, keys opcionales
+npm run dev            # http://localhost:3001
 ```
 
-**Backend** (API de rutas):
+**Solo mapa** (sin app shell):
 ```bash
-npm install                # ya hecho (express, axios, dotenv)
-cp .env.example .env       # y editar: pegar MAPBOX_ACCESS_TOKEN y el webhook n8n
-npm run dev                # server en http://localhost:3001 (--watch)
-# probar:  POST http://localhost:3001/api/routes/calculate
-#          body: { "origin":{"lat":13.7,"lng":-89.2}, "destination":{"lat":13.5,"lng":-89.3} }
+npx serve -l 3000 .
+# config.js con MAPBOX_TOKEN + API_BASE=http://localhost:3001
 ```
+
+Abrir `http://localhost:3000/frontend/` → login → Modo ruta → **Explorar mapa**.
+El iframe carga el mapa con turismo MITUR + heatmap activos por defecto.
 
 **Refrescar datos** (opcional):
 ```bash
 node scripts/fetch-pois.mjs
 node scripts/fetch-biodiversity.mjs --lat 13.74 --lng -90.05 --radius 25
 node scripts/fetch-weather.mjs --lat 13.74 --lng -90.05
+node scripts/fetch-tourism.mjs   # requiere data/tourism-export.json o --url
 pip install -r requirements.txt && python scripts/fetch-trends.py --term "turismo El Salvador" --geo SV
 ```
 
 ## API del backend
 
-`POST /api/routes/calculate`
-- Body: `{ origin:{lat,lng}, destination:{lat,lng}, departureTime? (ISO) }`
-- Flujo: intenta `N8N_ROUTE_WEBHOOK_URL` (el "cerebro" del gemelo en n8n). Si n8n no responde
-  en 4s, cae al **fallback de Mapbox Directions** (conducción). Responde `{success, source, data}`
-  donde `source` = `n8n-digital-twin` o `mapbox-fallback`.
-- `GET /health` → `{ ok: true }`
+| Ruta | Descripción |
+|------|-------------|
+| `POST /api/routes/calculate` | Ruta simple: n8n → fallback Mapbox Directions |
+| `GET /api/routes/destinations` | Destinos por categoría + perfil (POI+nature+MITUR) |
+| `POST /api/routes/smart` | Rutas personalizadas con scoring |
+| `GET /api/crowds` | Afluencia SerpAPI (+ cache `data/crowds.geojson`) |
+| `GET /api/birds` | Avistamientos eBird (+ cache) |
+| `GET /api/birds/forecast` | Pronóstico migratorio |
+| `GET /api/news?q=...` | Proxy NewsData.io (noticias en sidebar y emergencias) |
+| `POST /api/assistant/place-info` | Descripción + clima de un lugar (OpenRouter) |
+| `POST /api/assistant/route` | Ruta conversacional por mensaje |
+| `GET /api/traffic/status` + tiles | Tráfico Mapbox en vivo |
+| `GET /api/config` | Token Mapbox público (si no hay config.js) |
+| `GET /data/*` | GeoJSON/JSON cacheados |
+| `GET /health` | `{ ok: true }` |
 
-## Funcionalidades del frontend (index.html)
+## Funcionalidades del mapa (`index.html`)
 
 Dentro de `boot()` → `map.on("style.load")`:
 
-1. **Mapa base 3D** — `satellite-streets-v12`, terreno DEM, niebla, pitch 60°.
-2. **Edificios 3D** — `fill-extrusion` (capa `3d-buildings`). Barra es rural: casi no hay.
-3. **POIs con clustering** — `loadPOIs()` desde `data/pois.geojson`, colores por categoría + leyenda.
-4. **Departamentos** — `addDepartments()` choropleth de 14 colores, visible al alejar.
-5. **Modo Isla** — `toggleIsland()`: máscara océano + oculta etiquetas base → El Salvador como isla.
-6. **Buscador global** — geocoder Mapbox en `#search`.
-7. **Ocupación** — `addOccupancyHeat()` heatmap simulado.
-8. **Biodiversidad** — `addBiodiversity()` ⚠️ AÚN HARDCODED (no usa `data/biodiversity.geojson`).
+1. **Mapa base 3D** — `satellite-streets-v12`, terreno DEM, niebla, pitch 60°. Calles más finas (`thinBaseRoads`).
+2. **Edificios 3D** — `fill-extrusion` (capa `3d-buildings`).
+3. **POIs con símbolos** — `data/pois.geojson`, 10 categorías en embed (chips izquierda).
+4. **MITUR** — `data/tourism-official.geojson` (104 destinos), símbolos + heatmap con pesos turísticos.
+5. **Heatmap afluencia** — SerpAPI + estimación MITUR; toggle `lyr-heat`.
+6. **Naturaleza** — `data/nature-curated.geojson` con iconos por categoría.
+7. **Biodiversidad** — eBird en vivo/cache + `data/biodiversity.geojson` (GBIF).
+8. **Departamentos / Modo isla** — choropleth + máscara océano.
+9. **Sidebar de lugar** (embed frontend) — ChatGPT, clima, Waze/inDrive, noticias vía `/api/news`.
+10. **Favoritos / visitados** — `TwinmapPlaceStorage` con scope por perfil; `postMessage` al parent.
+11. **Mapa personalizado** — iframe con filtros por zona/categoría del quiz (`shell=personalizado`).
+12. **Dashboard clima** — `data/weather.json` (panel vitals, oculto en embed).
 
-Hooks de depuración: `window._twinmap`.
+**Modo embed** (`?embed=1&ui=frontend`): chips categoría (izq), capas (der), sidebar lateral.
+Parámetros `tourism=1&heat=1` activan MITUR y heatmap al cargar.
+
+Hooks de depuración: `window._twinmap`, `window._geocoder`.
 
 ## Gotchas aprendidos
 
@@ -157,15 +188,11 @@ Hooks de depuración: `window._twinmap`.
 
 ## Roadmap (lo que falta)
 
-- [ ] **Conectar frontend ↔ backend**: que el mapa llame a `/api/routes/calculate` para las rutas.
-- [ ] **Conectar biodiversidad real**: que `addBiodiversity()` cargue `data/biodiversity.geojson`
-      (GBIF) en vez de los 3 puntos hardcoded.
-- [ ] **Dashboard "signos vitales"** en el mapa usando `data/weather.json` (clima) + marea
-      (StormGlass, key gratis pendiente). La marea es clave: el acceso a la Barra depende de ella.
-- [ ] **Montar el flujo n8n** detrás del webhook (scoring de 3 rutas + explicación LLM vía OpenRouter).
-- [ ] **Trends** (`data/trends.json`) para la predicción de afluencia.
-- [ ] **Deploy**: frontend estático (Vercel) + backend Node (Railway/Render). Restringir token
-      público por URL en Mapbox.
+- [ ] **Montar flujo n8n** completo (3 rutas + explicación LLM vía OpenRouter).
+- [ ] **Dashboard signos vitales** visible en embed (clima ya en cache; marea StormGlass pendiente).
+- [ ] **Trends** (`data/trends.json`) para predicción de afluencia.
+- [ ] **Deploy**: frontend estático (Vercel) + backend Node (Railway/Render). Restringir token Mapbox por URL.
+- [ ] **Actualizar** `frontend/README.md` (sigue describiendo el mockup antiguo).
 ```
 
 ## APIs: cuáles necesitan key

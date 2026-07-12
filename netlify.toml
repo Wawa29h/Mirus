@@ -2,8 +2,19 @@
   publish = "."
   command = "node scripts/netlify-config.mjs"
 
-# El mapa real también accesible en /frontend/ (UI modo ruta + iframe)
-# Raíz / sigue siendo el mapa a pantalla completa
+# Landing del frontend en la raíz; el mapa Mapbox sigue en /index.html (iframe)
+[[redirects]]
+  from = "/"
+  to = "/frontend/"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/frontend"
+  to = "/frontend/"
+  status = 302
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

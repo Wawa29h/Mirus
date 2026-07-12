@@ -1,0 +1,10 @@
+{
+  "public": ".",
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/frontend/", "destination": "/frontend/index.html" }
+  ],
+  "redirects": [
+    { "source": "/", "destination": "/frontend/", "type": 302 }
+  ]
+}

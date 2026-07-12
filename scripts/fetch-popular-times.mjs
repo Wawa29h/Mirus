@@ -5,16 +5,25 @@
 // Free tier SerpAPI: 100 búsquedas/mes. Cada lugar = 1 búsqueda.
 
 import { mkdirSync, writeFileSync } from "node:fs";
-import { fetchCrowds } from "../lib/popular-times.js";
+import { buildEstimatedCrowdsFromTourism, fetchCrowds } from "../lib/popular-times.js";
 
+const estimateOnly = process.argv.includes("--estimate-only");
 const KEY = process.env.SERPAPI_KEY;
-if (!KEY) {
-  console.error("✗ Falta la key.  Corre:  SERPAPI_KEY=tu_key node scripts/fetch-popular-times.mjs");
-  process.exit(1);
-}
 
-console.log("Bajando Popular Times del Centro Histórico…");
-const fc = await fetchCrowds(KEY);
+let fc;
+if (estimateOnly) {
+  console.log("Generando crowds.geojson estimado desde MITUR (sin SerpAPI)…");
+  fc = await buildEstimatedCrowdsFromTourism();
+} else {
+  if (!KEY) {
+    console.error("✗ Falta la key.  Corre:  SERPAPI_KEY=tu_key node scripts/fetch-popular-times.mjs");
+    console.error("   O sin key:  node scripts/fetch-popular-times.mjs --estimate-only");
+    process.exit(1);
+  }
+  console.log("Bajando Popular Times de destinos oficiales MITUR…");
+  fc = await fetchCrowds(KEY);
+}
+console.log(`  Lugares consultados: ${fc.metadata?.place_count ?? "?"}`);
 
 for (const f of fc.features) {
   const p = f.properties;

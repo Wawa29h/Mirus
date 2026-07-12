@@ -18,7 +18,7 @@ const AVENTURA_FAVORITOS_MOCK = [
   },
   {
     id: "pupuseria-ceiba",
-    name: "PupuserÃ­a La Ceiba",
+    name: "Pupusería La Ceiba",
     category: "restaurante",
     categoryLabel: "Restaurante",
     location: "San Salvador",
@@ -28,7 +28,7 @@ const AVENTURA_FAVORITOS_MOCK = [
     name: "Cascada Los Tercios",
     category: "naturaleza",
     categoryLabel: "Naturaleza",
-    location: "JuayÃºa, Sonsonate",
+    location: "Juayúa, Sonsonate",
   },
 ];
 
@@ -136,12 +136,12 @@ function renderAventuraFavoritos() {
 
   if (favoritos.length === 0) {
     listEl.innerHTML =
-      '<p class="favoritos-empty">AÃºn no tienes favoritos. Guarda lugares desde el mapa de aventura.</p>';
+      '<p class="favoritos-empty">Aún no tienes favoritos. Guarda lugares desde el mapa de aventura.</p>';
     return;
   }
 
   if (places.length === 0) {
-    listEl.innerHTML = '<p class="favoritos-empty">No hay lugares en esta categorÃ­a.</p>';
+    listEl.innerHTML = '<p class="favoritos-empty">No hay lugares en esta categoría.</p>';
     return;
   }
 
@@ -185,6 +185,7 @@ initAventuraFavoritos();
 
 window.TwinmapAventuraFavoritos = {
   add: addAventuraFavorito,
+  remove: removeAventuraFavorito,
   isFavorite: isAventuraFavorito,
   getAll: () => [...favoritos],
   refresh: renderAventuraFavoritos,

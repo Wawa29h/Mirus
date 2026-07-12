@@ -42,7 +42,7 @@ async function run() {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": "TwinMap/1.0 (hackathon; edwineduardoxd@gmail.com)",
+          "User-Agent": "Mirus/1.0 (hackathon; edwineduardoxd@gmail.com)",
         },
         body: "data=" + encodeURIComponent(QUERY),
       });

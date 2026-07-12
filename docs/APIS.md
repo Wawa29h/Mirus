@@ -1,6 +1,6 @@
 # APIs e integraciones
 
-| Servicio | Uso en TwinMap | Estado | Variable local |
+| Servicio | Uso en Mirus | Estado | Variable local |
 | --- | --- | --- | --- |
 | Mapbox Maps / Directions | mapa base, capas y rutas | conectado | `MAPBOX_ACCESS_TOKEN` |
 | n8n | orquestación de rutas Flash, Vibes y Zen | configurado; requiere webhook activo | `N8N_ROUTE_WEBHOOK_URL` |

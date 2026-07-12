@@ -10,7 +10,7 @@ let elements = [];
 for (const mirror of MIRRORS) {
   try {
     console.log(`Consultando ${mirror}...`);
-    const response = await fetch(mirror, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "TwinMap/1.0" }, body: "data=" + encodeURIComponent(QUERY), signal: AbortSignal.timeout(90000) });
+    const response = await fetch(mirror, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mirus/1.0" }, body: "data=" + encodeURIComponent(QUERY), signal: AbortSignal.timeout(90000) });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     elements = (await response.json()).elements || [];
     break;

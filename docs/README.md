@@ -1,4 +1,4 @@
-# Documentación de TwinMap
+# Documentación de Mirus
 
 Esta carpeta reúne la documentación técnica del proyecto. Las credenciales nunca se guardan aquí: usa `.env` local y toma como guía `.env.example`.
 

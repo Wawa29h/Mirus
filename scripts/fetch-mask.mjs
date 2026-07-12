@@ -4,7 +4,7 @@
 // Correr: node scripts/fetch-mask.mjs
 import { writeFileSync, mkdirSync } from "node:fs";
 
-const UA = { "User-Agent": "TwinMap/1.0 (hackathon; edwineduardoxd@gmail.com)" };
+const UA = { "User-Agent": "Mirus/1.0 (hackathon; edwineduardoxd@gmail.com)" };
 
 // --- Simplificación Douglas-Peucker (reduce puntos manteniendo la forma) ---
 function perpDist(p, a, b) {

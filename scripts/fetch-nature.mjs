@@ -18,7 +18,7 @@ async function query(query) {
     try {
       const response = await fetch(mirror, {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "TwinMap/1.0" },
+        headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Mirus/1.0" },
         body: "data=" + encodeURIComponent(query),
         signal: AbortSignal.timeout(60000),
       });

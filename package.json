@@ -1,11 +1,12 @@
 {
-  "name": "twinmap",
+  "name": "mirus",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "serve": "npx serve -l 3000 . --config serve.json",
     "build": "node scripts/netlify-config.mjs"
   },
   "dependencies": {

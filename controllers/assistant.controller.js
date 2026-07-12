@@ -37,7 +37,7 @@ function fallback(message, candidates) {
 async function rankWithOpenRouter(message, candidates) {
   if (!process.env.OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY no está configurada.");
   const model = process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-5";
-  const prompt = `Eres el asistente de TwinMap en El Salvador. Recomienda una ruta turística usando SOLAMENTE estos lugares reales cercanos. Elige máximo 4 paradas y no inventes horarios, precios, reseñas ni lugares. Prioriza hoteles si se piden y restaurantes si se piden.\n\nSolicitud: ${message}\n\nLugares: ${JSON.stringify(candidates.map(({ id, name, category, kind, distanceKm }) => ({ id, name, category, kind, distanceKm })))}\n\nResponde SOLO JSON: {"reply":"texto breve en español","stopIds":[1,2]}`;
+  const prompt = `Eres el asistente de Mirus en El Salvador. Recomienda una ruta turística usando SOLAMENTE estos lugares reales cercanos. Elige máximo 4 paradas y no inventes horarios, precios, reseñas ni lugares. Prioriza hoteles si se piden y restaurantes si se piden.\n\nSolicitud: ${message}\n\nLugares: ${JSON.stringify(candidates.map(({ id, name, category, kind, distanceKm }) => ({ id, name, category, kind, distanceKm })))}\n\nResponde SOLO JSON: {"reply":"texto breve en español","stopIds":[1,2]}`;
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, "Content-Type": "application/json" },
@@ -53,13 +53,17 @@ async function rankWithOpenRouter(message, candidates) {
 export async function planPlaces(req, res) {
   const message = String(req.body?.message || "").trim().slice(0, 500);
   const location = req.body?.location;
+  const profile = req.body?.profile;
   if (!message) return res.status(400).json({ success: false, error: "Escribe qué tipo de ruta buscas." });
   if (!Number.isFinite(location?.lat) || !Number.isFinite(location?.lng)) return res.status(400).json({ success: false, error: "Falta una ubicación válida." });
+  const enrichedMessage = profile && typeof profile === "object"
+    ? `${message}\n\nContexto del viajero (usa esto para personalizar): ${JSON.stringify(profile).slice(0, 1800)}`
+    : message;
   try {
     const candidates = await nearbyPois([location.lng, location.lat]);
     let answer; let source = "openrouter";
-    try { answer = await rankWithOpenRouter(message, candidates); }
-    catch (error) { answer = fallback(message, candidates); source = "local-fallback"; }
+    try { answer = await rankWithOpenRouter(enrichedMessage, candidates); }
+    catch (error) { answer = fallback(enrichedMessage, candidates); source = "local-fallback"; }
     const stopIds = Array.isArray(answer.stopIds) ? answer.stopIds.slice(0, 4) : [];
     const stops = stopIds.map((id) => candidates.find((place) => place.id === id)).filter(Boolean);
     return res.json({ success: true, source, data: { reply: String(answer.reply || "Ruta sugerida lista."), stops, candidatesCount: candidates.length } });
