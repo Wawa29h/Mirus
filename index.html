@@ -132,6 +132,16 @@
     .forecast-card p { margin: 5px 0; }
     .forecast-card .fc-meta { color: var(--muted); font-size: 10.5px; }
     .forecast-card button { margin-top: 8px; border: 0; border-radius: 8px; padding: 7px 9px; cursor: pointer; background: var(--accent); color: #062b28; font-weight: 700; }
+
+    .assistant-chat { position:absolute; right:24px; bottom:195px; z-index:6; width:min(340px,calc(100vw - 48px)); background:var(--panel); color:var(--text); border:1px solid var(--panel-border); border-radius:14px; padding:12px; box-shadow:0 8px 30px rgba(0,0,0,.35); }
+    .assistant-chat h3 { margin:0 0 5px; font-size:13px; color:var(--accent); }
+    .assistant-chat p { margin:0 0 8px; color:var(--muted); font-size:11px; line-height:1.35; }
+    .assistant-chat .chat-row { display:flex; gap:6px; }
+    .assistant-chat input { min-width:0; flex:1; border:1px solid var(--panel-border); border-radius:8px; background:rgba(255,255,255,.07); color:var(--text); padding:8px; font-size:12px; }
+    .assistant-chat button { border:0; border-radius:8px; background:var(--accent); color:#062b28; font-weight:700; cursor:pointer; padding:8px 10px; }
+    .assistant-chat .chat-answer { margin-top:8px; font-size:11.5px; line-height:1.4; color:var(--text); }
+    @media (max-width: 700px) { .assistant-chat { right:12px; bottom:150px; width:calc(100vw - 24px); } }
+
   </style>
 </head>
 <body>
@@ -193,7 +203,25 @@
       <span><span class="txt">Biodiversidad</span><br><span class="sub">eBird · prob. de reavistamiento</span></span>
     </label>
 
-    <div class="status" id="status">Cargando mapa…</div>
+    <label class="layer">
+      <input type="checkbox" id="lyr-nature" checked />
+      <span class="dot" style="background:#90be6d"></span>
+      <span><span class="txt">Naturaleza de El Salvador</span><br><span class="sub" id="nature-sub">Catalogo de referencia</span></span>
+    </label>
+
+    <label class="layer">
+      <input type="checkbox" id="lyr-mobility" />
+      <span class="dot" style="background:#f4a261"></span>
+      <span><span class="txt">Movilidad estimada</span><br><span class="sub">Patrones de referencia, no en vivo</span></span>
+    </label>
+
+    <label class="layer">
+      <input type="checkbox" id="lyr-events" />
+      <span class="dot" style="background:#c77dff"></span>
+      <span><span class="txt">Agenda cultural</span><br><span class="sub">Eventos recurrentes de referencia</span></span>
+    </label>
+
+    <div class="status" id="status">Cargando mapa...</div>
   </div>
 
   <div class="route-panel" id="route-panel" style="display:none">
@@ -201,6 +229,7 @@
     <div class="hint" id="route-hint">Fija tu punto de partida, luego haz clic para agregar los lugares que quieres visitar.</div>
     <div class="route-row">
       <button id="route-start-btn">📍 Estoy acá</button>
+      <button id="route-pick-btn" type="button">Elegir en mapa</button>
       <select id="route-mode">
         <option value="driving" selected>🚗 Auto</option>
         <option value="walking">🚶 A pie</option>
@@ -224,6 +253,13 @@
   </div>
 
   <div class="forecast-card" id="forecast-card" aria-live="polite"></div>
+
+  <section class="assistant-chat" aria-label="Asistente de rutas">
+    <h3>Ruta inteligente</h3>
+    <p>Pide hotel, comida o ambos. Usa tu ubicacion o el centro actual del mapa.</p>
+    <div class="chat-row"><input id="assistant-input" maxlength="500" placeholder="Ej. hotel cerca de la playa y cena" /><button id="assistant-send" type="button">Enviar</button></div>
+    <div class="chat-answer" id="assistant-answer">Los lugares salen de OpenStreetMap; la IA solo los ordena.</div>
+  </section>
 
   <div id="token-warn">
     <div class="card">
@@ -317,9 +353,12 @@
         addCrowds(map);
         addTraffic(map);
         addBiodiversity(map);
+        addNatureCatalog(map);
+        addReferenceLayers(map);
         addMigrationForecast(map);
         wireToggles(map);
         wireRoute(map);
+        wireAssistant(map);
         setStatus("Mapa listo · <b>Barra de Santiago</b>");
       });
 
@@ -340,6 +379,9 @@
 
     const DEPT_LAYERS = ["dept-fill", "dept-line", "dept-label"];
     const TRAFFIC_LAYERS = ["traffic-live"];
+    const NATURE_LAYERS = ["nature-halo", "nature-points", "nature-labels"];
+    const MOBILITY_LAYERS = ["mobility-ref-halo", "mobility-ref-points"];
+    const EVENT_LAYERS = ["events-ref-points", "events-ref-labels"];
 
     // ============ MODO ISLA: máscara que oculta todo menos El Salvador ============
     let islandOn = false;
@@ -541,10 +583,71 @@
       }
     }
 
+
+    // ============ CAPA: Catalogo natural curado de El Salvador ============
+    async function addNatureCatalog(map) {
+      const empty = { type: "FeatureCollection", features: [] };
+      map.addSource("nature", { type: "geojson", data: empty });
+      map.addLayer({ id: "nature-halo", type: "circle", source: "nature", paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 9, 10, 22],
+        "circle-color": ["match", ["get", "category"], "volcan", "#e76f51", "cascada", "#48cae4", "playa", "#4cc9f0", "parque", "#90be6d", "humedal", "#2a9d8f", "arrecife", "#00b4d8", "#ffbf69"],
+        "circle-opacity": 0.2
+      }});
+      map.addLayer({ id: "nature-points", type: "circle", source: "nature", paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 5, 10, 9],
+        "circle-color": ["match", ["get", "category"], "volcan", "#e76f51", "cascada", "#48cae4", "playa", "#4cc9f0", "parque", "#90be6d", "humedal", "#2a9d8f", "arrecife", "#00b4d8", "#ffbf69"],
+        "circle-stroke-width": 1.5, "circle-stroke-color": "#0d1b2a", "circle-opacity": 0.96
+      }});
+      map.addLayer({ id: "nature-labels", type: "symbol", source: "nature", minzoom: 8, layout: {
+        "text-field": ["get", "name"], "text-size": 11, "text-offset": [0, 1.1], "text-anchor": "top", "text-max-width": 12
+      }, paint: { "text-color": "#ffffff", "text-halo-color": "#0d1b2a", "text-halo-width": 1.4 }});
+      map.on("click", "nature-points", (event) => {
+        const p = event.features[0].properties;
+        const elevation = Number.isFinite(Number(p.elevation_m)) ? "<br>Elevacion: <b>" + escapeHtml(p.elevation_m) + " m</b>" : "";
+        new mapboxgl.Popup().setLngLat(event.lngLat).setHTML(
+          "<b>" + escapeHtml(p.name) + "</b><br><small>" + escapeHtml(p.category) + " | " + escapeHtml(p.department) + "</small>" + elevation +
+          "<br><br>" + escapeHtml(p.access) + "<br><small>Temporada: " + escapeHtml(p.season) + "</small>" + (p.services ? "<br><small>Servicios: " + escapeHtml(p.services) + "</small>" : "") + (p.surf ? "<br><small>Surf/oleaje: " + escapeHtml(p.surf) + "</small>" : "") + (p.safety ? "<br><small>Seguridad: " + escapeHtml(p.safety) + "</small>" : "") + "<br><small>Catalogo de referencia; confirma condiciones antes de visitar.</small>"
+        ).addTo(map);
+      });
+      ["nature-points", "nature-labels"].forEach((id) => {
+        map.on("mouseenter", id, () => map.getCanvas().style.cursor = "pointer");
+        map.on("mouseleave", id, () => map.getCanvas().style.cursor = "");
+      });
+      try {
+        const response = await fetch("data/nature-curated.geojson");
+        if (!response.ok) throw new Error("No se encontro el catalogo");
+        const catalog = await response.json();
+        map.getSource("nature").setData(catalog);
+        const sub = document.getElementById("nature-sub");
+        if (sub) sub.textContent = (catalog.features?.length || 0) + " lugares de referencia";
+      } catch (error) { console.warn("Nature catalog error", error); }
+    }
+
+
+    // ============ CAPAS: movilidad y agenda de referencia ============
+    async function addReferenceLayers(map) {
+      const empty = { type: "FeatureCollection", features: [] };
+      map.addSource("mobility-ref", { type: "geojson", data: empty });
+      map.addLayer({ id: "mobility-ref-halo", type: "circle", source: "mobility-ref", layout: { visibility: "none" }, paint: {
+        "circle-radius": ["interpolate", ["linear"], ["get", "afternoon"], 0, 18, 100, 46], "circle-color": "#f4a261", "circle-opacity": 0.16
+      }});
+      map.addLayer({ id: "mobility-ref-points", type: "circle", source: "mobility-ref", layout: { visibility: "none" }, paint: {
+        "circle-radius": ["interpolate", ["linear"], ["get", "afternoon"], 0, 7, 100, 18], "circle-color": ["interpolate", ["linear"], ["get", "afternoon"], 0, "#2ec4b6", 55, "#ffbf69", 75, "#ff6b6b"], "circle-stroke-width": 2, "circle-stroke-color": "#0d1b2a"
+      }});
+      map.on("click", "mobility-ref-points", (event) => { const p=event.features[0].properties; new mapboxgl.Popup().setLngLat(event.lngLat).setHTML("<b>"+escapeHtml(p.zone)+"</b><br>Indice de referencia: manana <b>"+escapeHtml(p.morning)+"</b> | tarde <b>"+escapeHtml(p.afternoon)+"</b> | fin de semana <b>"+escapeHtml(p.weekend)+"</b><br><small>Modelo de referencia, no trafico en vivo.</small>").addTo(map); });
+      map.addSource("events-ref", { type: "geojson", data: empty });
+      map.addLayer({ id: "events-ref-points", type: "circle", source: "events-ref", layout: { visibility: "none" }, paint: { "circle-radius": 9, "circle-color": "#c77dff", "circle-stroke-width": 2, "circle-stroke-color": "#0d1b2a" }});
+      map.addLayer({ id: "events-ref-labels", type: "symbol", source: "events-ref", minzoom: 7, layout: { visibility: "none", "text-field": ["get", "name"], "text-size": 11, "text-offset": [0,1.1], "text-anchor": "top", "text-max-width": 14 }, paint: { "text-color": "#ffffff", "text-halo-color": "#0d1b2a", "text-halo-width": 1.5 }});
+      map.on("click", "events-ref-points", (event) => { const p=event.features[0].properties; new mapboxgl.Popup().setLngLat(event.lngLat).setHTML("<b>"+escapeHtml(p.name)+"</b><br>"+escapeHtml(p.place)+" | "+escapeHtml(p.month)+"<br><small>"+escapeHtml(p.note)+"</small>").addTo(map); });
+      ["mobility-ref-points", "events-ref-points"].forEach(id => { map.on("mouseenter", id, () => map.getCanvas().style.cursor="pointer"); map.on("mouseleave", id, () => map.getCanvas().style.cursor=""); });
+      try { const [m,e]=await Promise.all([fetch("data/mobility-reference.geojson"),fetch("data/events-reference.geojson")]); if(m.ok) map.getSource("mobility-ref").setData(await m.json()); if(e.ok) map.getSource("events-ref").setData(await e.json()); } catch(error) { console.warn("Reference layers error",error); }
+    }
+
     // ============ CAPA: Biodiversidad (zonas de avistamiento) ============
     async function addBiodiversity(map) {
       const empty = { type: "FeatureCollection", features: [] };
       map.addSource("bio", { type: "geojson", data: empty });
+      map.addSource("fauna", { type: "geojson", data: empty });
       map.addLayer({
         id: "bio-heat", type: "heatmap", source: "bio", layout: { visibility: "none" },
         paint: { "heatmap-weight": ["get", "prediction_score"], "heatmap-radius": 35, "heatmap-intensity": 1, "heatmap-opacity": 0.72, "heatmap-color": ["interpolate", ["linear"], ["heatmap-density"], 0, "rgba(0,0,0,0)", 0.35, "#48cae4", 0.65, "#06d6a0", 1, "#ffbf69"] },
@@ -560,6 +663,10 @@
       });
       map.on("mouseenter", "bio-layer", () => map.getCanvas().style.cursor = "pointer");
       map.on("mouseleave", "bio-layer", () => map.getCanvas().style.cursor = "");
+      map.addLayer({ id: "fauna-layer", type: "circle", source: "fauna", layout: { visibility: "none" }, paint: { "circle-radius": 4.5, "circle-color": "#c77dff", "circle-opacity": 0.68, "circle-stroke-width": 1, "circle-stroke-color": "#0d1b2a" } });
+      map.on("click", "fauna-layer", (event) => { const p=event.features[0].properties; new mapboxgl.Popup().setLngLat(event.lngLat).setHTML("<b>"+escapeHtml(p.common_name || p.scientific_name || "Registro de fauna")+"</b><br><i>"+escapeHtml(p.scientific_name || "")+"</i><br><small>Registro publico: "+escapeHtml(p.observed_on || "sin fecha")+" | "+escapeHtml(p.source || "GBIF")+"</small>").addTo(map); });
+      map.on("mouseenter", "fauna-layer", () => map.getCanvas().style.cursor = "pointer");
+      map.on("mouseleave", "fauna-layer", () => map.getCanvas().style.cursor = "");
       let birds = null;
       try {
         const response = await fetch("http://localhost:3001/api/birds");
@@ -577,6 +684,7 @@
       }
       if (birds && birds.features?.length) setupBirdsTimeline(map, birds);
       else map.getSource("bio").setData(empty);
+      try { const faunaResponse = await fetch("data/biodiversity.geojson"); if (faunaResponse.ok) { const fauna = await faunaResponse.json(); map.getSource("fauna").setData(fauna); } } catch (error) { console.warn("GBIF cache error", error); }
     }
 
     // ============ LÍNEA DE TIEMPO de aves (slider sobre avistamientos reales por fecha) ============
@@ -716,36 +824,55 @@
     }
 
     // "Estoy acá": solicita ubicación precisa, muestra un marcador y deja clic manual como respaldo.
+    // Ubicacion actual: intenta GPS preciso y luego una ubicacion aproximada. Siempre deja un respaldo manual.
     let myLocationMarker = null;
+    function armStartOnMap(message) {
+      clickMode = "start";
+      document.getElementById("route-start-btn").classList.add("armed");
+      document.getElementById("route-stop-btn").classList.remove("armed");
+      routeHint(message || "Haz clic en el mapa para fijar tu punto de partida.");
+    }
+    function setMyStart(map, pos, quality) {
+      routeStart = [pos.coords.longitude, pos.coords.latitude];
+      clickMode = null;
+      const button = document.getElementById("route-start-btn");
+      button.disabled = false; button.textContent = "Estoy aqui"; button.classList.remove("armed");
+      if (myLocationMarker) myLocationMarker.remove();
+      const accuracy = Math.round(pos.coords.accuracy || 0);
+      myLocationMarker = new mapboxgl.Marker({ color: "#2ec4b6" })
+        .setLngLat(routeStart)
+        .setPopup(new mapboxgl.Popup().setHTML("<b>Tu ubicacion</b><br>Precision " + quality + ": " + accuracy + " m"))
+        .addTo(map);
+      map.easeTo({ center: routeStart, zoom: Math.max(map.getZoom(), 14), duration: 900 });
+      routeHint("Partida fijada con ubicacion " + quality + " (aprox. " + accuracy + " m). Ahora agrega una parada.");
+      redrawRoute(map);
+    }
     function useMyLocation(map) {
+      const button = document.getElementById("route-start-btn");
       if (!navigator.geolocation) {
-        routeHint("Tu navegador no permite ubicación. Haz clic en el mapa para fijar la partida.");
-        armMode("start");
+        armStartOnMap("Tu navegador no permite ubicacion. Usa Elegir en mapa y toca tu punto de partida.");
         return;
       }
-      routeHint("Solicitando tu ubicación… Autoriza el permiso del navegador si aparece.");
+      button.disabled = true; button.textContent = "Ubicando...";
+      routeHint("Buscando tu ubicacion precisa. Autoriza el permiso del navegador si aparece.");
+      const manual = (message) => {
+        button.disabled = false; button.textContent = "Estoy aqui";
+        armStartOnMap(message + " Usa Elegir en mapa y toca tu punto de partida.");
+      };
+      const approximate = () => navigator.geolocation.getCurrentPosition(
+        (pos) => setMyStart(map, pos, "aproximada"),
+        () => manual("No se pudo obtener la ubicacion automaticamente."),
+        { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 }
+      );
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          routeStart = [pos.coords.longitude, pos.coords.latitude];
-          clickMode = null;
-          document.getElementById("route-start-btn").classList.remove("armed");
-          if (myLocationMarker) myLocationMarker.remove();
-          myLocationMarker = new mapboxgl.Marker({ color: "#2ec4b6" })
-            .setLngLat(routeStart)
-            .setPopup(new mapboxgl.Popup().setHTML(`<b>Tu ubicación</b><br>Precisión aproximada: ${Math.round(pos.coords.accuracy)} m`))
-            .addTo(map);
-          map.easeTo({ center: routeStart, zoom: Math.max(map.getZoom(), 14), duration: 900 });
-          routeHint(`Partida fijada con precisión aproximada de ${Math.round(pos.coords.accuracy)} m. Ahora agrega una parada.`);
-          redrawRoute(map);
-        },
+        (pos) => setMyStart(map, pos, "precisa"),
         (error) => {
-          const messages = {
-            1: "Permiso de ubicación bloqueado. Actívalo en el icono de candado del navegador.",
-            2: "La ubicación no está disponible en este momento.",
-            3: "La ubicación tardó demasiado. Intenta de nuevo o fija el punto con un clic.",
-          };
-          routeHint(`${messages[error.code] || "No se pudo obtener tu ubicación."} Haz clic en el mapa para fijar la partida.`);
-          armMode("start");
+          if (error.code === 2 || error.code === 3) {
+            routeHint("El GPS preciso no respondio; probando ubicacion aproximada...");
+            approximate();
+            return;
+          }
+          manual("Permiso de ubicacion bloqueado. Activalo en el icono de candado del navegador.");
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
       );
@@ -834,10 +961,52 @@
     function wireRoute(map) {
       document.getElementById("route-panel").style.display = "block";
       document.getElementById("route-start-btn").onclick = () => useMyLocation(map);
+      document.getElementById("route-pick-btn").onclick = () => armStartOnMap("Toca el mapa en tu punto de partida.");
       document.getElementById("route-stop-btn").onclick = () => armMode("stop");
       document.getElementById("route-clear-btn").onclick = () => clearRoute(map);
       document.getElementById("route-mode").onchange = () => redrawRoute(map);
       map.on("click", (e) => onRouteClick(map, e));
+    }
+
+    // ============ MINI CHAT: hoteles y restaurantes cercanos ============
+    async function chatLocation(map) {
+      const center = map.getCenter();
+      if (!navigator.geolocation) return { lat: center.lat, lng: center.lng, source: "mapa" };
+      return new Promise((resolve) => navigator.geolocation.getCurrentPosition(
+        (position) => resolve({ lat: position.coords.latitude, lng: position.coords.longitude, source: "ubicacion" }),
+        () => resolve({ lat: center.lat, lng: center.lng, source: "mapa" }),
+        { enableHighAccuracy: true, timeout: 7000, maximumAge: 60000 }
+      ));
+    }
+    function wireAssistant(map) {
+      const input = document.getElementById("assistant-input");
+      const button = document.getElementById("assistant-send");
+      const answer = document.getElementById("assistant-answer");
+      const send = async () => {
+        const message = input.value.trim();
+        if (!message) { answer.textContent = "Escribe lo que buscas, por ejemplo: hotel y restaurante cerca de mi."; return; }
+        button.disabled = true; button.textContent = "Buscando...";
+        answer.textContent = "Buscando lugares reales cercanos y ordenando la ruta...";
+        try {
+          const location = await chatLocation(map);
+          const response = await fetch("http://localhost:3001/api/assistant/route", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, location }) });
+          const payload = await response.json();
+          if (!response.ok || !payload.success) throw new Error(payload.error || "No se pudo crear la ruta.");
+          const stops = payload.data.stops || [];
+          if (stops.length) {
+            routeStart = [location.lng, location.lat];
+            routeStops = stops.map((place) => place.coordinates);
+            clickMode = null;
+            redrawRoute(map);
+          }
+          const list = stops.map((place) => place.name + " (" + place.category + ", " + place.distanceKm + " km)").join(" -> ");
+          answer.textContent = payload.data.reply + (list ? " Ruta: " + list : "");
+          routeHint(stops.length ? "Ruta creada por el asistente. Puedes ajustarla con el panel de ruta." : "No se encontraron paradas para esa solicitud.");
+        } catch (error) { answer.textContent = error.message || "No se pudo consultar el asistente."; }
+        finally { button.disabled = false; button.textContent = "Enviar"; }
+      };
+      button.onclick = send;
+      input.onkeydown = (event) => { if (event.key === "Enter") send(); };
     }
 
     // ============ Toggles del panel ============
@@ -848,8 +1017,11 @@
       document.getElementById("lyr-pois").onchange = (e) => POI_LAYERS.forEach((id) => setVis(id, e.target.checked));
       document.getElementById("lyr-heat").onchange = (e) => ["crowds-heat", "crowds-points"].forEach((id) => setVis(id, e.target.checked));
       document.getElementById("lyr-traffic").onchange = (e) => TRAFFIC_LAYERS.forEach((id) => setVis(id, e.target.checked));
+      document.getElementById("lyr-nature").onchange = (e) => NATURE_LAYERS.forEach((id) => setVis(id, e.target.checked));
+      document.getElementById("lyr-mobility").onchange = (e) => MOBILITY_LAYERS.forEach((id) => setVis(id, e.target.checked));
+      document.getElementById("lyr-events").onchange = (e) => EVENT_LAYERS.forEach((id) => setVis(id, e.target.checked));
       document.getElementById("lyr-hotspots").onchange = (e) => {
-        ["bio-heat", "bio-layer"].forEach((id) => setVis(id, e.target.checked));
+        ["bio-heat", "bio-layer", "fauna-layer"].forEach((id) => setVis(id, e.target.checked));
         document.getElementById("bio-timeline").style.display = e.target.checked ? "flex" : "none";
         if (!e.target.checked && bioPlayTimer) toggleBioPlay(map); // pausar al apagar
       };

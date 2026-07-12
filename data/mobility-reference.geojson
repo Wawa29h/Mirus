@@ -1,0 +1,11 @@
+{"type":"FeatureCollection","metadata":{"title":"Patrones de movilidad de referencia","disclaimer":"Modelo de referencia para demostracion. No representa trafico actual ni un estudio anual oficial."},"features":[
+{"type":"Feature","geometry":{"type":"Point","coordinates":[-89.191,13.700]},"properties":{"zone":"Centro de San Salvador","morning":82,"afternoon":88,"weekend":55,"note":"Zona urbana central; patron de referencia."}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[-89.218,13.708]},"properties":{"zone":"Escalon / zona poniente","morning":75,"afternoon":84,"weekend":60,"note":"Corredor urbano; patron de referencia."}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[-89.151,13.710]},"properties":{"zone":"Soyapango","morning":87,"afternoon":91,"weekend":58,"note":"Corredor metropolitano; patron de referencia."}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[-89.207,13.744]},"properties":{"zone":"Mejicanos","morning":76,"afternoon":83,"weekend":52,"note":"Zona urbana; patron de referencia."}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[-89.181,13.810]},"properties":{"zone":"Apopa","morning":73,"afternoon":81,"weekend":48,"note":"Acceso norte; patron de referencia."}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[-89.280,13.676]},"properties":{"zone":"Santa Tecla","morning":70,"afternoon":80,"weekend":62,"note":"Zona urbana; patron de referencia."}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[-89.559,13.994]},"properties":{"zone":"Santa Ana centro","morning":58,"afternoon":67,"weekend":49,"note":"Zona urbana; patron de referencia."}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[-88.177,13.483]},"properties":{"zone":"San Miguel centro","morning":60,"afternoon":70,"weekend":51,"note":"Zona urbana; patron de referencia."}},
+{"type":"Feature","geometry":{"type":"Point","coordinates":[-89.384,13.493]},"properties":{"zone":"Acceso a playas La Libertad","morning":42,"afternoon":58,"weekend":78,"note":"Patron turistico de fin de semana; referencia."}}
+]}

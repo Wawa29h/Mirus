@@ -3,6 +3,7 @@ import express from "express";
 import routeRouter from "./routes/route.js";
 import crowdsRouter from "./routes/crowds.js";
 import birdsRouter from "./routes/birds.js";
+import assistantRouter from "./routes/assistant.js";
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -20,6 +21,7 @@ app.use(express.json({ limit: "100kb" }));
 app.use("/api/routes", routeRouter);
 app.use("/api/crowds", crowdsRouter);
 app.use("/api/birds", birdsRouter);
+app.use("/api/assistant", assistantRouter);
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
