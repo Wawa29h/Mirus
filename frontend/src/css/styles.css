@@ -113,6 +113,7 @@ main {
 .landing-hero-image {
   overflow: hidden;
   width: calc(100% + 56px);
+  max-height: min(40vw, 520px);
   margin: -28px -28px 28px;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
@@ -122,6 +123,7 @@ main {
   display: block;
   width: 100%;
   height: auto;
+  object-position: center top;
 }
 
 .landing-frame {
@@ -203,14 +205,14 @@ h1 {
   line-height: 1.45;
 }
 
-.frontend-placeholders {
+.landing-details {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
   padding: 28px 0 0;
 }
 
-.frontend-placeholders article,
+.landing-details article,
 .content-section,
 .news-panel,
 .simple-view {
@@ -219,22 +221,42 @@ h1 {
   background: var(--surface);
 }
 
-.frontend-placeholders article {
+.landing-details article {
   padding: 18px;
 }
 
-.frontend-placeholders span,
+.landing-details .value-card {
+  grid-column: 1 / -1;
+}
+
+.landing-details .value-card h2 {
+  max-width: 920px;
+  margin-bottom: 0;
+  font-size: clamp(28px, 4vw, 48px);
+  line-height: 1.08;
+}
+
+.landing-details ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.landing-details li {
+  margin-bottom: 8px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.landing-details p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
 .image-placeholder,
 .thumb {
   display: block;
   background: var(--surface-soft);
   border: 1px dashed var(--muted-line);
-}
-
-.frontend-placeholders span {
-  width: 100%;
-  height: 90px;
-  margin-bottom: 14px;
 }
 
 .dashboard-view {
@@ -683,7 +705,7 @@ h1 {
   }
 
   .recommendation-grid,
-  .frontend-placeholders,
+  .landing-details,
   .stats-row {
     grid-template-columns: 1fr;
   }
