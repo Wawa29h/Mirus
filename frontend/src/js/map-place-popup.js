@@ -424,8 +424,9 @@ function updateSaveFavoriteButton() {
     return;
   }
 
-  popupSaveFavoriteBtn.textContent = "Guardar lugar";
-  popupSaveFavoriteBtn.disabled = false;
+  const inBitacora = window.TwinmapBitacora?.hasPlace?.(currentPlace);
+  popupSaveFavoriteBtn.textContent = inBitacora ? "Guardado en bitacora" : "Guardar lugar";
+  popupSaveFavoriteBtn.disabled = Boolean(inBitacora);
 }
 
 function updateAddRouteButton() {
@@ -509,7 +510,26 @@ popupDrive?.addEventListener("click", (event) => {
 });
 
 popupSaveFavoriteBtn?.addEventListener("click", () => {
-  if (!currentPlace || !isAdventureMode()) return;
+  if (!currentPlace) return;
+
+  if (!isAdventureMode()) {
+    const result = window.TwinmapBitacora?.addPlace?.(currentPlace);
+
+    if (result?.added) {
+      window.TwinmapRoute?.showRouteToast(`${currentPlace.name} guardado en bitacora`);
+      updateSaveFavoriteButton();
+      window.TwinmapPersonalizado?.render?.();
+      window.TwinmapPersonalizado?.renderDashboard?.();
+      return;
+    }
+
+    if (result?.alreadyExists) {
+      window.TwinmapRoute?.showRouteToast("Este lugar ya esta en tu bitacora");
+      updateSaveFavoriteButton();
+    }
+
+    return;
+  }
 
   const result = window.TwinmapAventuraFavoritos?.add({
     id: currentPlace.id || document.querySelector(".map-pin.is-active")?.dataset.placeId,

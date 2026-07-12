@@ -1,0 +1,56 @@
+[
+  {
+    "id": "pupuseria-la-ceiba-san-salvador",
+    "name": "Pupuseria La Ceiba",
+    "category": "restaurante",
+    "categoryLabel": "Restaurante",
+    "location": "San Salvador",
+    "department": "San Salvador",
+    "visitedAt": "5 mar 2026"
+  },
+  {
+    "id": "tazumal-chalchuapa-santa-ana",
+    "name": "Tazumal",
+    "category": "arqueologico",
+    "categoryLabel": "Arqueologico",
+    "location": "Chalchuapa, Santa Ana",
+    "department": "Santa Ana",
+    "visitedAt": "6 mar 2026"
+  },
+  {
+    "id": "playa-el-tunco-la-libertad",
+    "name": "Playa El Tunco",
+    "category": "playa",
+    "categoryLabel": "Playa",
+    "location": "La Libertad",
+    "department": "La Libertad",
+    "visitedAt": "7 mar 2026"
+  },
+  {
+    "id": "joya-de-ceren-san-juan-opico",
+    "name": "Joya de Ceren",
+    "category": "arqueologico",
+    "categoryLabel": "Arqueologico",
+    "location": "San Juan Opico",
+    "department": "La Libertad",
+    "visitedAt": "8 mar 2026"
+  },
+  {
+    "id": "lago-de-coatepeque-santa-ana",
+    "name": "Lago de Coatepeque",
+    "category": "naturaleza",
+    "categoryLabel": "Naturaleza",
+    "location": "Santa Ana",
+    "department": "Santa Ana",
+    "visitedAt": "9 mar 2026"
+  },
+  {
+    "id": "el-boqueron-san-salvador",
+    "name": "El Boqueron",
+    "category": "naturaleza",
+    "categoryLabel": "Naturaleza",
+    "location": "San Salvador",
+    "department": "San Salvador",
+    "visitedAt": "13 mar 2026"
+  }
+]

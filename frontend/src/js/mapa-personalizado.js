@@ -89,6 +89,8 @@ const detailTitleEl = document.getElementById("personalizado-detail-title");
 const detailTextEl = document.getElementById("personalizado-detail-text");
 const detailImageEl = document.getElementById("personalizado-detail-image");
 const detailListEl = document.getElementById("personalizado-detail-list");
+const aiSummaryEl = document.getElementById("personalizado-ai-summary");
+const learningProfileEl = document.getElementById("personalizado-learning-profile");
 const perfectRouteEl = document.getElementById("personalizado-perfect-route");
 const dashboardAiEl = document.getElementById("dashboard-ai-text");
 const dashboardRecommendationsEl = document.getElementById("dashboard-recommendations");
@@ -183,6 +185,38 @@ function getPlacesPool() {
   });
 }
 
+function makePlaceLookupId(place) {
+  return normalizeName(place.id || place.name).replace(/[^a-z0-9]+/g, "-");
+}
+
+function findPoolPlaceId(item, pool = getPlacesPool()) {
+  const itemId = makePlaceLookupId(item);
+  const itemName = normalizeName(item.name);
+
+  const match = pool.find(
+    (place) =>
+      place.id === item.id ||
+      makePlaceLookupId(place) === itemId ||
+      normalizeName(place.name) === itemName,
+  );
+
+  return match?.id;
+}
+
+function countCategory(categoryMap, category, label, weight = 1) {
+  const id = normalizeName(category || label || "lugar");
+  if (!id) return;
+
+  const current = categoryMap.get(id) || {
+    id,
+    label: label || category || "Lugar",
+    count: 0,
+  };
+
+  current.count += weight;
+  categoryMap.set(id, current);
+}
+
 function scorePlaceQuiz(place, quiz) {
   let score = 1;
 
@@ -206,26 +240,55 @@ function scorePlaceQuiz(place, quiz) {
 }
 
 function getBitacoraContext() {
+  const pool = getPlacesPool();
+  const bitacoraPlaces =
+    window.TwinmapBitacora?.getPlaces?.() ||
+    BITACORA_VISITED.map((name) => ({
+      id: NAME_TO_ID[normalizeName(name)],
+      name,
+      category: pool.find((place) => place.id === NAME_TO_ID[normalizeName(name)])?.category,
+    }));
+
   const visitedIds = new Set(
-    BITACORA_VISITED.map((name) => NAME_TO_ID[normalizeName(name)]).filter(Boolean),
+    bitacoraPlaces
+      .map((item) => findPoolPlaceId(item, pool) || item.id)
+      .filter(Boolean),
   );
 
   let favoritos = [];
   try {
-    const raw = localStorage.getItem("twinmap-favoritos");
-    favoritos = raw ? JSON.parse(raw) : [];
+    if (window.TwinmapFavoritos?.getAll) {
+      favoritos = window.TwinmapFavoritos.getAll();
+    } else {
+      const key = window.TwinmapAuth?.getProfileStorageKey?.("favoritos") || "twinmap-favoritos";
+      const raw = localStorage.getItem(key);
+      favoritos = raw ? JSON.parse(raw) : [];
+    }
   } catch {
     favoritos = [];
   }
 
-  const favoriteIds = new Set(favoritos.map((item) => item.id));
+  const favoriteIds = new Set(
+    favoritos
+      .map((item) => findPoolPlaceId(item, pool) || item.id)
+      .filter(Boolean),
+  );
   const favoriteCategories = new Set(favoritos.map((item) => normalizeName(item.category)));
+  const categoryFrequency = new Map();
+
+  bitacoraPlaces.forEach((item) => {
+    countCategory(categoryFrequency, item.category, item.categoryLabel, 2);
+  });
+
+  favoritos.forEach((item) => {
+    countCategory(categoryFrequency, item.category, item.categoryLabel, 1);
+  });
 
   const routeItems = window.TwinmapRoute?.getRouteItems() || [];
   const routeIds = new Set(
     routeItems
       .map((item) => {
-        const match = getPlacesPool().find(
+        const match = pool.find(
           (place) =>
             normalizeName(place.name) === normalizeName(item.name) ||
             normalizeName(item.id).includes(place.id),
@@ -237,9 +300,13 @@ function getBitacoraContext() {
 
   const visitedCategories = new Set();
   visitedIds.forEach((id) => {
-    const place = getPlacesPool().find((item) => item.id === id);
+    const place = pool.find((item) => item.id === id);
     if (place) visitedCategories.add(normalizeName(place.category));
   });
+
+  const dominantCategories = [...categoryFrequency.values()]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
 
   return {
     visitedIds,
@@ -247,6 +314,8 @@ function getBitacoraContext() {
     favoriteCategories,
     routeIds,
     visitedCategories,
+    categoryFrequency,
+    dominantCategories,
     visitedCount: visitedIds.size,
     favoritosCount: favoritos.length,
     routeCount: routeItems.length,
@@ -263,6 +332,13 @@ function scorePlacePersonalizado(place, quiz, context) {
   const placeCategory = normalizeName(place.category);
   if (context.favoriteCategories.has(placeCategory)) score += 2;
   if (context.visitedCategories.has(placeCategory) && !context.visitedIds.has(place.id)) score += 1;
+
+  const learnedFrequency = context.categoryFrequency.get(placeCategory)?.count || 0;
+  if (learnedFrequency > 0) score += Math.min(6, learnedFrequency * 1.5);
+
+  const learnedLayers = new Set(context.dominantCategories.map((category) => category.id));
+  const layerMatch = place.filterCategories.some((category) => learnedLayers.has(normalizeName(category)));
+  if (layerMatch) score += 2;
 
   return score;
 }
@@ -402,13 +478,22 @@ function crowdPhrase(quiz) {
 function generateAISummary(quiz, topPlaces, context) {
   const hasQuiz = Object.keys(quiz).length > 0;
   const names = topPlaces.slice(0, 3).map((entry) => entry.place.name);
+  const learnedCategories = context.dominantCategories.map((category) => category.label);
 
   if (!hasQuiz) {
-    return "Completa el cuestionario del modo ruta para que la IA personalice tus recomendaciones segÃºn tus gustos y tu bitÃ¡cora.";
+    if (learnedCategories.length) {
+      return `Tu mapa ya esta aprendiendo de tu bitacora. Las categorias mas repetidas son ${learnedCategories.join(", ")}; por eso se priorizan lugares similares.`;
+    }
+
+    return "Completa el cuestionario del modo ruta y guarda lugares en tu bitacora para personalizar recomendaciones.";
   }
 
   let summary = `Basado en tu quiz y tu bitÃ¡cora (${context.visitedCount} lugares visitados, ${context.favoritosCount} favoritos), `;
   summary += `tu perfil apunta a ${landscapePhrase(quiz)} con ${crowdPhrase(quiz)}. `;
+
+  if (learnedCategories.length) {
+    summary += `El aprendizaje local detecta mas interes en ${learnedCategories.join(", ")}. `;
+  }
 
   if (names.length) {
     summary += `Destacamos ${names.join(", ")}`;
@@ -428,6 +513,31 @@ function generateAISummary(quiz, topPlaces, context) {
   }
 
   return summary;
+}
+
+function renderLearningProfile(context) {
+  if (!learningProfileEl) return;
+
+  if (!context.dominantCategories.length) {
+    learningProfileEl.innerHTML = `
+      <span>Perfil en aprendizaje</span>
+      <p>Guarda lugares en tu bitacora para que el mapa detecte tus categorias frecuentes.</p>
+    `;
+    return;
+  }
+
+  learningProfileEl.innerHTML = `
+    <span>Perfil aprendido</span>
+    <div class="personalizado-learning-tags">
+      ${context.dominantCategories
+        .map(
+          (category) => `
+            <strong>${category.label}<small>${category.count}</small></strong>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
 }
 
 function placeToPinAttrs(place) {
@@ -680,13 +790,17 @@ function renderPerfectRoute(container, perfectRoute) {
   });
 }
 
-function renderAISummaries(summary) {
+function renderAISummaries(summary, context) {
   if (aiSummaryEl) {
     aiSummaryEl.textContent = summary;
   }
 
   if (dashboardAiEl) {
     dashboardAiEl.textContent = summary;
+  }
+
+  if (context) {
+    renderLearningProfile(context);
   }
 }
 
@@ -746,7 +860,6 @@ function renderPersonalizadoMap() {
   const visiblePins = getVisiblePins(quiz, context);
   const pinsToShow = getPinsForMap(visiblePins, perfectRoute);
   const summary = generateAISummary(quiz, topPlaces, context);
-  renderAISummaries(summary);
   const anchor = topPlaces[0]?.place || getPlacesPool()[0];
   if (window.TwinmapApi?.planAssistantRoute && Object.keys(quiz).length && anchor?.lat != null) {
     window.TwinmapApi.planAssistantRoute({
@@ -762,6 +875,8 @@ function renderPersonalizadoMap() {
   renderRouteLine(perfectRoute);
   renderDetailPanel(quiz, context, ranked);
   renderPerfectRoute(perfectRouteEl, perfectRoute);
+  renderAISummaries(summary, context);
+}
 
 function renderDashboardFeed() {
   const quiz = getQuizAnswers();
@@ -769,7 +884,6 @@ function renderDashboardFeed() {
   const perfectRoute = buildPerfectRoute(quiz, context, { respectFilters: false });
   const topPlaces = perfectRoute.length ? perfectRoute.slice(0, 3) : getTopRecommendations(quiz, context, 3);
   const summary = generateAISummary(quiz, topPlaces, context);
-  renderAISummaries(summary);
   const dashAnchor = topPlaces[0]?.place || getPlacesPool()[0];
   if (window.TwinmapApi?.planAssistantRoute && Object.keys(quiz).length && dashAnchor?.lat != null) {
     window.TwinmapApi.planAssistantRoute({
@@ -781,12 +895,40 @@ function renderDashboardFeed() {
   }
 
   renderRecommendations(dashboardRecommendationsEl, topPlaces);
+  renderAISummaries(summary, context);
+}
 
 function initPersonalizadoMap() {
   if (!panelEl && !dashboardAiEl) return;
 
   bindFilters();
   hydratePlacesFromApi().finally(() => {
+    renderPersonalizadoMap();
+    renderDashboardFeed();
+  });
+
+  window.addEventListener("twinmap-bitacora-change", () => {
+    selectedPlaceId = null;
+    renderPersonalizadoMap();
+    renderDashboardFeed();
+  });
+
+  window.addEventListener("storage", (event) => {
+    if (
+      event.key !== "twinmap-bitacora" &&
+      event.key !== "twinmap-db:bitacora" &&
+      event.key !== "twinmap-favoritos" &&
+      !event.key?.includes(":favoritos")
+    ) {
+      return;
+    }
+
+    renderPersonalizadoMap();
+    renderDashboardFeed();
+  });
+
+  window.addEventListener("twinmap-database-change", (event) => {
+    if (event.detail?.collection !== "bitacora") return;
     renderPersonalizadoMap();
     renderDashboardFeed();
   });
