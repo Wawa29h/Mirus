@@ -158,11 +158,13 @@ function getQuestionsForMode(mode) {
 }
 
 function getOnboardingKey(mode) {
-  return `twinmap-onboarding-${mode}`;
+  const key = `onboarding-${mode}`;
+  return window.TwinmapAuth?.getProfileStorageKey?.(key) || `twinmap-${key}`;
 }
 
 function getQuizKey(mode) {
-  return `twinmap-quiz-${mode}`;
+  const key = `quiz-${mode}`;
+  return window.TwinmapAuth?.getProfileStorageKey?.(key) || `twinmap-${key}`;
 }
 
 function isOnboardingComplete(mode) {
@@ -250,6 +252,9 @@ function showQuiz() {
 
 function finishOnboarding() {
   saveQuiz(activeMode, answers);
+  if (activeMode === "ruta") {
+    window.TwinmapProfileSync?.saveFromFrontendQuiz?.(answers);
+  }
   if (activeMode === "aventura") {
     localStorage.removeItem("twinmap-aventura-route");
   }

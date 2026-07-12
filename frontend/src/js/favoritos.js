@@ -1,9 +1,13 @@
-const FAVORITOS_STORAGE_KEY = "twinmap-favoritos";
+﻿const FAVORITOS_STORAGE_KEY = "twinmap-favoritos";
+
+function getFavoritosStorageKey() {
+  return window.TwinmapAuth?.getProfileStorageKey?.("favoritos") || FAVORITOS_STORAGE_KEY;
+}
 
 const FAVORITOS_CATEGORIES = [
   { id: "todos", label: "Todos" },
   { id: "restaurante", label: "Restaurantes" },
-  { id: "arqueologico", label: "Arqueológicos" },
+  { id: "arqueologico", label: "ArqueolÃ³gicos" },
   { id: "playa", label: "Playas" },
   { id: "naturaleza", label: "Naturaleza" },
   { id: "ciudad", label: "Ciudad" },
@@ -12,7 +16,7 @@ const FAVORITOS_CATEGORIES = [
 const FAVORITOS_MOCK = [
   {
     id: "pupuseria-la-ceiba",
-    name: "Pupusería La Ceiba",
+    name: "PupuserÃ­a La Ceiba",
     category: "restaurante",
     categoryLabel: "Restaurante",
     location: "San Salvador",
@@ -21,7 +25,7 @@ const FAVORITOS_MOCK = [
     id: "tazumal",
     name: "Tazumal",
     category: "arqueologico",
-    categoryLabel: "Arqueológico",
+    categoryLabel: "ArqueolÃ³gico",
     location: "Chalchuapa, Santa Ana",
   },
   {
@@ -33,9 +37,9 @@ const FAVORITOS_MOCK = [
   },
   {
     id: "joya-de-ceren",
-    name: "Joya de Cerén",
+    name: "Joya de CerÃ©n",
     category: "arqueologico",
-    categoryLabel: "Arqueológico",
+    categoryLabel: "ArqueolÃ³gico",
     location: "San Juan Opico",
   },
   {
@@ -47,7 +51,7 @@ const FAVORITOS_MOCK = [
   },
   {
     id: "centro-suchitoto",
-    name: "Centro histórico de Suchitoto",
+    name: "Centro histÃ³rico de Suchitoto",
     category: "ciudad",
     categoryLabel: "Ciudad",
     location: "Suchitoto",
@@ -63,7 +67,7 @@ let favoritos = loadFavoritos();
 
 function loadFavoritos() {
   try {
-    const stored = localStorage.getItem(FAVORITOS_STORAGE_KEY);
+    const stored = localStorage.getItem(getFavoritosStorageKey());
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) return parsed;
@@ -76,7 +80,7 @@ function loadFavoritos() {
 }
 
 function saveFavoritos() {
-  localStorage.setItem(FAVORITOS_STORAGE_KEY, JSON.stringify(favoritos));
+  localStorage.setItem(getFavoritosStorageKey(), JSON.stringify(favoritos));
 }
 
 function getFilteredFavoritos() {
@@ -130,13 +134,13 @@ function renderFavoritos() {
 
   if (favoritos.length === 0) {
     listEl.innerHTML =
-      '<p class="favoritos-empty">Aún no tienes favoritos. Guarda lugares desde el mapa.</p>';
+      '<p class="favoritos-empty">AÃºn no tienes favoritos. Guarda lugares desde el mapa.</p>';
     return;
   }
 
   if (places.length === 0) {
     listEl.innerHTML =
-      '<p class="favoritos-empty">No hay lugares en esta categoría.</p>';
+      '<p class="favoritos-empty">No hay lugares en esta categorÃ­a.</p>';
     return;
   }
 
@@ -144,7 +148,7 @@ function renderFavoritos() {
     .map(
       (place) => `
         <article class="favoritos-card" data-id="${place.id}">
-          <div class="image-placeholder" aria-hidden="true"></div>
+          ${window.TwinmapCategoryImages?.thumbHtml(favorite.categoryLabel || favorite.category) || '<div class="image-placeholder" aria-hidden="true"></div>'}
           <div class="favoritos-card__meta">
             <span class="favoritos-card__category">${place.categoryLabel}</span>
             <h3>${place.name}</h3>
@@ -178,3 +182,21 @@ function initFavoritos() {
 }
 
 initFavoritos();
+
+window.addEventListener("twinmap-auth-change", () => {
+  favoritos = loadFavoritos();
+  activeCategory = "todos";
+  initFavoritos();
+});
+
+window.TwinmapFavoritos = {
+  getAll: () => favoritos.map((place) => ({ ...place })),
+  refresh() {
+    favoritos = loadFavoritos();
+    renderFilters();
+    renderFavoritos();
+  },
+};
+
+
+

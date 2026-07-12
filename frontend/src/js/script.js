@@ -7,6 +7,10 @@ const modeButtons = document.querySelectorAll(".mode-grid [data-mode]");
 const panels = document.querySelectorAll("[data-panel]");
 const navLinks = document.querySelectorAll(".nav-link");
 const brandModeEl = document.querySelector(".brand-mode");
+const profileButton = document.querySelector(".profile-button");
+const loginForm = document.getElementById("login-form");
+const loginNameInput = document.getElementById("login-name");
+const loginActiveProfileEl = document.getElementById("login-active-profile");
 
 const routePanels = new Set([
   "inicio-app",
@@ -31,6 +35,35 @@ const MODE_ENTRY = {
   [ADVENTURE_MODE]: "aventura-mapa",
 };
 
+const MAP_EMBED_SRC = "/index.html?embed=1&ui=frontend";
+
+function ensureMapIframeLoaded() {
+  const iframe = document.getElementById("twinmap-real-map");
+  if (!iframe) return null;
+
+  const wanted = iframe.dataset.src || MAP_EMBED_SRC;
+  const absolute = new URL(wanted, location.origin).href;
+  const current = iframe.getAttribute("src");
+
+  if (!current || !current.includes("embed=1")) {
+    iframe.src = absolute;
+  }
+
+  return iframe;
+}
+
+function pingEmbeddedMap() {
+  const iframe = document.getElementById("twinmap-real-map");
+  iframe?.contentWindow?.postMessage({ type: "twinmap-embed-init", ui: "frontend" }, "*");
+  iframe?.contentWindow?.postMessage({ type: "twinmap-profile-updated" }, "*");
+  iframe?.contentWindow?.postMessage({ type: "twinmap-resize" }, "*");
+  [150, 400, 900, 1500, 2500].forEach((ms) => {
+    window.setTimeout(() => {
+      iframe?.contentWindow?.postMessage({ type: "twinmap-resize" }, "*");
+    }, ms);
+  });
+}
+
 function getSavedMode() {
   return sessionStorage.getItem(MODE_STORAGE_KEY);
 }
@@ -53,6 +86,13 @@ function setActiveMode(mode) {
 
 function showView(viewName, options = {}) {
   const target = viewName || "mode-select";
+  const needsProfile = target === "mode-select" || routePanels.has(target) || adventurePanels.has(target);
+
+  if (needsProfile && !window.TwinmapAuth?.hasProfile?.()) {
+    showView("login");
+    return;
+  }
+
   const isRoutePanel = routePanels.has(target);
   const isAdventurePanel = adventurePanels.has(target);
   const isOnboarding = target === "onboarding";
@@ -96,7 +136,9 @@ function showView(viewName, options = {}) {
   }
 
   if (target === "mapa") {
-    window.TwinmapExplorar?.ensureMap();
+    window.TwinmapProfileSync?.syncFromFrontendQuiz?.();
+    ensureMapIframeLoaded();
+    pingEmbeddedMap();
   }
 
   if (target === "mapa-personalizado") {
@@ -148,17 +190,68 @@ function returnToModeSelect() {
   showView("mode-select");
 }
 
+function updateProfileUI() {
+  const profile = window.TwinmapAuth?.getProfile?.();
+
+  if (profileButton) {
+    profileButton.textContent = profile ? profile.name : "Perfil";
+    profileButton.title = profile ? "Cambiar perfil" : "Iniciar sesion";
+  }
+
+  if (loginActiveProfileEl) {
+    loginActiveProfileEl.textContent = profile
+      ? `Perfil activo: ${profile.name}. Puedes entrar con otro nombre para cambiar.`
+      : "Tus datos se guardaran solo en este navegador.";
+  }
+}
+
 viewButtons.forEach((button) => {
   button.addEventListener("click", (event) => {
     event.preventDefault();
 
-    if (button.dataset.view === "mode-select") {
-      returnToModeSelect();
+    if (button.dataset.view === "mode-select" || button.dataset.view === "landing") {
+      if (button.dataset.view === "landing") {
+        returnToModeSelect();
+        return;
+      }
+      setActiveMode(null);
+      document.body.classList.remove("is-onboarding");
+      showView("mode-select");
       return;
     }
 
     showView(button.dataset.view);
   });
+});
+
+loginForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const profile = window.TwinmapAuth?.login?.(loginNameInput?.value);
+
+  if (!profile) {
+    loginActiveProfileEl.textContent = "Escribe un nombre para crear o abrir tu perfil.";
+    return;
+  }
+
+  if (loginNameInput) {
+    loginNameInput.value = "";
+  }
+
+  updateProfileUI();
+  showView("mode-select");
+});
+
+profileButton?.addEventListener("click", () => {
+  setActiveMode(null);
+  document.body.classList.remove("is-onboarding");
+  showView("login");
+});
+
+window.addEventListener("twinmap-auth-change", () => {
+  updateProfileUI();
+  window.TwinmapBitacora?.refresh?.();
+  window.TwinmapPersonalizado?.render?.();
+  window.TwinmapPersonalizado?.renderDashboard?.();
 });
 
 modeButtons.forEach((button) => {
@@ -181,5 +274,26 @@ document.querySelectorAll(".map-search").forEach((form) => {
   });
 });
 
-showView("mode-select");
+updateProfileUI();
+
+const quickView = new URLSearchParams(location.search).get("view");
+if (quickView) {
+  const quickMode = new URLSearchParams(location.search).get("mode") || ROUTE_MODE;
+  if (quickMode === ROUTE_MODE || quickMode === ADVENTURE_MODE) {
+    setActiveMode(quickMode);
+    showView(quickView);
+    if (quickView === "mapa") ensureMapIframeLoaded();
+  }
+} else {
+  showView("landing");
+}
+
+const mapIframe = document.getElementById("twinmap-real-map");
+if (mapIframe) {
+  mapIframe.addEventListener("load", () => {
+    pingEmbeddedMap();
+  });
+  window.addEventListener("resize", pingEmbeddedMap);
+}
+
 

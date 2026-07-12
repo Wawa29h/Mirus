@@ -1,4 +1,4 @@
-const AVENTURA_FAVORITOS_KEY = "twinmap-aventura-favoritos";
+﻿const AVENTURA_FAVORITOS_KEY = "twinmap-aventura-favoritos";
 
 const AVENTURA_FAVORITOS_CATEGORIES = [
   { id: "todos", label: "Todos" },
@@ -18,7 +18,7 @@ const AVENTURA_FAVORITOS_MOCK = [
   },
   {
     id: "pupuseria-ceiba",
-    name: "Pupusería La Ceiba",
+    name: "PupuserÃ­a La Ceiba",
     category: "restaurante",
     categoryLabel: "Restaurante",
     location: "San Salvador",
@@ -28,7 +28,7 @@ const AVENTURA_FAVORITOS_MOCK = [
     name: "Cascada Los Tercios",
     category: "naturaleza",
     categoryLabel: "Naturaleza",
-    location: "Juayúa, Sonsonate",
+    location: "JuayÃºa, Sonsonate",
   },
 ];
 
@@ -136,12 +136,12 @@ function renderAventuraFavoritos() {
 
   if (favoritos.length === 0) {
     listEl.innerHTML =
-      '<p class="favoritos-empty">Aún no tienes favoritos. Guarda lugares desde el mapa de aventura.</p>';
+      '<p class="favoritos-empty">AÃºn no tienes favoritos. Guarda lugares desde el mapa de aventura.</p>';
     return;
   }
 
   if (places.length === 0) {
-    listEl.innerHTML = '<p class="favoritos-empty">No hay lugares en esta categoría.</p>';
+    listEl.innerHTML = '<p class="favoritos-empty">No hay lugares en esta categorÃ­a.</p>';
     return;
   }
 
@@ -149,7 +149,7 @@ function renderAventuraFavoritos() {
     .map(
       (place) => `
         <article class="favoritos-card" data-id="${place.id}">
-          <div class="image-placeholder" aria-hidden="true"></div>
+          ${window.TwinmapCategoryImages?.thumbHtml(item.categoryLabel || item.category) || '<div class="image-placeholder" aria-hidden="true"></div>'}
           <div class="favoritos-card__meta">
             <span class="favoritos-card__category">${place.categoryLabel}</span>
             <h3>${place.name}</h3>
@@ -189,3 +189,4 @@ window.TwinmapAventuraFavoritos = {
   getAll: () => [...favoritos],
   refresh: renderAventuraFavoritos,
 };
+

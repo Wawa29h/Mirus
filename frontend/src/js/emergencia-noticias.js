@@ -1,4 +1,4 @@
-const PRIMARY_ZONES = ["Occidente", "Centro", "Oriente", "Costa"];
+﻿const PRIMARY_ZONES = ["Occidente", "Centro", "Oriente", "Costa"];
 
 const PLACE_ZONES = {
   "lago-coatepeque": ["Occidente"],
@@ -24,19 +24,19 @@ const PLACE_ZONES = {
 };
 
 const NAME_TO_PLACE_ID = {
-  "pupusería la ceiba": "pupuseria-ceiba",
+  "pupuserÃ­a la ceiba": "pupuseria-ceiba",
   tazumal: "tazumal",
   "playa el tunco": "playa-el-tunco",
-  "joya de cerén": "joya-ceren",
+  "joya de cerÃ©n": "joya-ceren",
   "lago de coatepeque": "lago-coatepeque",
-  "san andrés": "san-andres",
+  "san andrÃ©s": "san-andres",
   "playa el zonte": "playa-el-zonte",
-  "el boquerón": "el-boqueron",
-  "café talnamica": "cafe-talnamica",
-  "centro histórico de suchitoto": "suchitoto",
+  "el boquerÃ³n": "el-boqueron",
+  "cafÃ© talnamica": "cafe-talnamica",
+  "centro histÃ³rico de suchitoto": "suchitoto",
   "cascada los tercios": "cascada-tercios",
   "ruta de las flores": "ruta-flores",
-  juayúa: "juayua",
+  juayÃºa: "juayua",
   "playa costa del sol": "playa-costa-sol",
   "lago de ilopango": "lago-ilopango",
   "cerro verde": "cerro-verde",
@@ -46,16 +46,16 @@ const NAME_TO_PLACE_ID = {
 };
 
 const LOCATION_ZONE_HINTS = [
-  { pattern: /santa ana|ahuachap[áa]n|sonsonate|metap[áa]n|ataco|juayua|nahuizalco/i, zones: ["Occidente", "Ruta de las Flores"] },
-  { pattern: /san salvador|cuscatl[áa]n|la libertad centro|antiguo cuscatl[áa]n|apopa|soyapango|ilopango/i, zones: ["Centro"] },
-  { pattern: /suchitoto|san miguel|moraz[áa]n|usulut[áa]n|la uni[óo]n|berl[ií]n|perqu[ií]n/i, zones: ["Oriente"] },
+  { pattern: /santa ana|ahuachap[Ã¡a]n|sonsonate|metap[Ã¡a]n|ataco|juayua|nahuizalco/i, zones: ["Occidente", "Ruta de las Flores"] },
+  { pattern: /san salvador|cuscatl[Ã¡a]n|la libertad centro|antiguo cuscatl[Ã¡a]n|apopa|soyapango|ilopango/i, zones: ["Centro"] },
+  { pattern: /suchitoto|san miguel|moraz[Ã¡a]n|usulut[Ã¡a]n|la uni[Ã³o]n|berl[iÃ­]n|perqu[iÃ­]n/i, zones: ["Oriente"] },
   { pattern: /la libertad|costa del sol|el tunco|el zonte|el sunzal|surf city|playa/i, zones: ["Costa"] },
 ];
 
-const RSS_PROXY_URLS = [
-  (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-];
+const NEWSDATA_API_ENDPOINT = "https://newsdata.io/api/1/latest";
+const NEWSDATA_API_KEY_STORAGE = "twinmap-newsdata-api-key";
+const NEWSDATA_FALLBACK_API_KEY = "pub_d8b03bdf6f384468b9474b71221c5f64";
+const NEWSDATA_DEFAULT_QUERY = "El Salvador turismo emergencia";
 
 const newsState = {
   searchQuery: "",
@@ -70,53 +70,60 @@ const newsState = {
 
 const EMERGENCY_NUMBERS = [
   {
-    id: "911",
-    label: "Emergencias unificadas",
+    id: "pnc",
+    label: "Policia Nacional Civil",
     number: "911",
-    description: "Policía, bomberos y ambulancia · atención 24 h",
-    icon: "🆘",
+    description: "Atencion inmediata ante delitos, violencia, amenazas o riesgo para la seguridad.",
+    icon: "PNC",
   },
   {
-    id: "cruz-roja",
-    label: "Cruz Roja Salvadoreña",
+    id: "sem",
+    label: "Sistema de Emergencias Medicas",
     number: "132",
-    description: "Ambulancias y rescate en carretera",
-    icon: "➕",
+    description: "Asistencia prehospitalaria y coordinacion de ambulancias para emergencias medicas.",
+    icon: "SEM",
   },
   {
     id: "bomberos",
     label: "Cuerpo de Bomberos",
     number: "913",
-    description: "Incendios, rescates y emergencias estructurales",
-    icon: "🚒",
-  },
-  {
-    id: "pnc",
-    label: "Policía Nacional Civil",
-    number: "194",
-    description: "Denuncias y apoyo policial · también vía 911",
-    icon: "🚔",
+    description: "Incendios, rescates, fugas, accidentes estructurales y emergencias con riesgo fisico.",
+    icon: "913",
   },
   {
     id: "proteccion-civil",
-    label: "Protección Civil",
-    number: "2281-0888",
-    description: "Desastres naturales, evacuaciones y alertas",
-    icon: "⚠️",
+    label: "Proteccion Civil",
+    number: "2201-2424",
+    description: "Alertas, evacuaciones, gestion de riesgos y apoyo ante desastres naturales.",
+    icon: "PC",
   },
   {
-    id: "salud",
-    label: "Ministerio de Salud",
-    number: "2221-8200",
-    description: "Orientación sanitaria y emergencias de salud pública",
-    icon: "🏥",
+    id: "comandos",
+    label: "Comandos de Salvamento",
+    number: "2133-0000",
+    description: "Rescate, primeros auxilios, ambulancias y apoyo en accidentes de transito.",
+    icon: "CS",
+  },
+  {
+    id: "cruz-roja",
+    label: "Cruz Roja Salvadorena",
+    number: "2239-4930",
+    description: "Servicios humanitarios, ambulancias, rescate y atencion de emergencias.",
+    icon: "CR",
+  },
+  {
+    id: "cruz-verde",
+    label: "Cruz Verde Salvadorena",
+    number: "2284-5792",
+    description: "Atencion prehospitalaria, traslados, primeros auxilios y rescate comunitario.",
+    icon: "CV",
   },
 ];
 
 const MOCK_NEWS = [
   {
     id: "n1",
-    title: "Carretera a Santa Ana con reducción de carriles por mantenimiento",
+    title: "Carretera a Santa Ana con reducciÃ³n de carriles por mantenimiento",
     summary: "Trabajos entre El Congo y Coatepeque. Tiempo extra estimado: 25 min.",
     zone: "Occidente",
     publishedAt: Date.now() - 45 * 60 * 1000,
@@ -127,19 +134,19 @@ const MOCK_NEWS = [
   },
   {
     id: "n2",
-    title: "Feria gastronómica de fin de semana en Juayúa",
-    summary: "Más de 40 puestos locales en el parque central desde las 8:00.",
+    title: "Feria gastronÃ³mica de fin de semana en JuayÃºa",
+    summary: "MÃ¡s de 40 puestos locales en el parque central desde las 8:00.",
     zone: "Occidente",
     publishedAt: Date.now() - 2 * 60 * 60 * 1000,
     severity: "info",
     source: "MITUR",
     url: "#",
-    places: ["Juayúa", "Ruta de las Flores"],
+    places: ["JuayÃºa", "Ruta de las Flores"],
   },
   {
     id: "n3",
     title: "Condiciones de surf favorables en La Libertad",
-    summary: "Olas de 1.2 a 1.8 m en El Tunco y El Zonte. Precaución en corrientes.",
+    summary: "Olas de 1.2 a 1.8 m en El Tunco y El Zonte. PrecauciÃ³n en corrientes.",
     zone: "Costa",
     publishedAt: Date.now() - 90 * 60 * 1000,
     severity: "info",
@@ -149,23 +156,23 @@ const MOCK_NEWS = [
   },
   {
     id: "n4",
-    title: "Cierre temporal de sendero en El Boquerón por neblina densa",
-    summary: "Parque Nacional San Salvador reabrirá miradores cuando mejore visibilidad.",
+    title: "Cierre temporal de sendero en El BoquerÃ³n por neblina densa",
+    summary: "Parque Nacional San Salvador reabrirÃ¡ miradores cuando mejore visibilidad.",
     zone: "Centro",
     publishedAt: Date.now() - 35 * 60 * 1000,
     severity: "alerta",
     source: "MARN",
     url: "#",
-    places: ["El Boquerón", "San Salvador"],
+    places: ["El BoquerÃ³n", "San Salvador"],
   },
   {
     id: "n5",
     title: "Festival cultural nocturno en Suchitoto",
-    summary: "Actividades en el malecón del lago hasta las 22:00. Tráfico lento en accesos.",
+    summary: "Actividades en el malecÃ³n del lago hasta las 22:00. TrÃ¡fico lento en accesos.",
     zone: "Oriente",
     publishedAt: Date.now() - 4 * 60 * 60 * 1000,
     severity: "info",
-    source: "Alcaldía de Suchitoto",
+    source: "AlcaldÃ­a de Suchitoto",
     url: "#",
     places: ["Suchitoto"],
   },
@@ -183,18 +190,18 @@ const MOCK_NEWS = [
   {
     id: "n7",
     title: "Operativo de seguridad reforzado en Ruta de las Flores",
-    summary: "PNC refuerza patrullaje en Juayúa, Nahuizalco y Ataco durante temporada alta.",
+    summary: "PNC refuerza patrullaje en JuayÃºa, Nahuizalco y Ataco durante temporada alta.",
     zone: "Occidente",
     publishedAt: Date.now() - 6 * 60 * 60 * 1000,
     severity: "info",
     source: "PNC",
     url: "#",
-    places: ["Juayúa", "Nahuizalco", "Ataco", "Ruta de las Flores"],
+    places: ["JuayÃºa", "Nahuizalco", "Ataco", "Ruta de las Flores"],
   },
   {
     id: "n8",
-    title: "Marea alta en playas del Pacífico",
-    summary: "Precaución para bañistas en Costa del Sol y Surf City entre 14:00 y 18:00.",
+    title: "Marea alta en playas del PacÃ­fico",
+    summary: "PrecauciÃ³n para baÃ±istas en Costa del Sol y Surf City entre 14:00 y 18:00.",
     zone: "Costa",
     publishedAt: Date.now() - 55 * 60 * 1000,
     severity: "alerta",
@@ -204,40 +211,40 @@ const MOCK_NEWS = [
   },
   {
     id: "n9",
-    title: "Nuevo horario de visitas en Joya de Cerén",
-    summary: "Último ingreso a las 16:00 de martes a domingo.",
+    title: "Nuevo horario de visitas en Joya de CerÃ©n",
+    summary: "Ãšltimo ingreso a las 16:00 de martes a domingo.",
     zone: "Centro",
     publishedAt: Date.now() - 8 * 60 * 60 * 1000,
     severity: "info",
     source: "CONCULTURA",
     url: "#",
-    places: ["Joya de Cerén"],
+    places: ["Joya de CerÃ©n"],
   },
   {
     id: "n10",
-    title: "Restauración de calles en San Miguel centro",
-    summary: "Desvíos por trabajos en 4a Avenida Norte hasta el viernes.",
+    title: "RestauraciÃ³n de calles en San Miguel centro",
+    summary: "DesvÃ­os por trabajos en 4a Avenida Norte hasta el viernes.",
     zone: "Oriente",
     publishedAt: Date.now() - 3 * 60 * 60 * 1000,
     severity: "alerta",
-    source: "Alcaldía de San Miguel",
+    source: "AlcaldÃ­a de San Miguel",
     url: "#",
     places: ["San Miguel"],
   },
   {
     id: "n11",
     title: "Avistamiento de aves migratorias en Parque El Imposible",
-    summary: "Guías locales recomiendan visitas temprano para observación.",
+    summary: "GuÃ­as locales recomiendan visitas temprano para observaciÃ³n.",
     zone: "Occidente",
     publishedAt: Date.now() - 12 * 60 * 60 * 1000,
     severity: "info",
     source: "EcoTour SV",
     url: "#",
-    places: ["Parque El Imposible", "Ahuachapán"],
+    places: ["Parque El Imposible", "AhuachapÃ¡n"],
   },
   {
     id: "n12",
-    title: "Plan Piloto 911 amplía cobertura en zonas turísticas",
+    title: "Plan Piloto 911 amplÃ­a cobertura en zonas turÃ­sticas",
     summary: "Respuesta unificada disponible en La Libertad, Santa Ana y Suchitoto.",
     zone: "Centro",
     publishedAt: Date.now() - 24 * 60 * 60 * 1000,
@@ -249,7 +256,7 @@ const MOCK_NEWS = [
   {
     id: "n13",
     title: "Alerta amarilla por calor en la costa",
-    summary: "Índice UV alto. Hidratación y sombra recomendadas en playas.",
+    summary: "Ãndice UV alto. HidrataciÃ³n y sombra recomendadas en playas.",
     zone: "Costa",
     publishedAt: Date.now() - 70 * 60 * 1000,
     severity: "alerta",
@@ -259,8 +266,8 @@ const MOCK_NEWS = [
   },
   {
     id: "n14",
-    title: "Mercado de artesanías en Nahuizalco",
-    summary: "Productos locales y café de altura cada sábado en la plaza.",
+    title: "Mercado de artesanÃ­as en Nahuizalco",
+    summary: "Productos locales y cafÃ© de altura cada sÃ¡bado en la plaza.",
     zone: "Occidente",
     publishedAt: Date.now() - 5 * 60 * 60 * 1000,
     severity: "info",
@@ -270,7 +277,7 @@ const MOCK_NEWS = [
   },
   {
     id: "n15",
-    title: "Actualización de rutas de buses hacia Lago de Coatepeque",
+    title: "ActualizaciÃ³n de rutas de buses hacia Lago de Coatepeque",
     summary: "Ruta 201 amplia frecuencia los fines de semana desde Santa Ana.",
     zone: "Occidente",
     publishedAt: Date.now() - 7 * 60 * 60 * 1000,
@@ -292,25 +299,25 @@ const MOCK_NEWS = [
   },
   {
     id: "n17",
-    title: "Semana de patrimonio en sitios arqueológicos",
-    summary: "Entrada con descuento en Tazumal y San Andrés durante julio.",
+    title: "Semana de patrimonio en sitios arqueolÃ³gicos",
+    summary: "Entrada con descuento en Tazumal y San AndrÃ©s durante julio.",
     zone: "Occidente",
     publishedAt: Date.now() - 18 * 60 * 60 * 1000,
     severity: "info",
     source: "CONCULTURA",
     url: "#",
-    places: ["Tazumal", "San Andrés", "Santa Ana"],
+    places: ["Tazumal", "San AndrÃ©s", "Santa Ana"],
   },
   {
     id: "n18",
-    title: "Actividad sísmica leve registrada en Usulután",
-    summary: "Sin daños reportados. Servicios normales en la zona oriental.",
+    title: "Actividad sÃ­smica leve registrada en UsulutÃ¡n",
+    summary: "Sin daÃ±os reportados. Servicios normales en la zona oriental.",
     zone: "Oriente",
     publishedAt: Date.now() - 9 * 60 * 60 * 1000,
     severity: "alerta",
     source: "MARN",
     url: "#",
-    places: ["Usulután"],
+    places: ["UsulutÃ¡n"],
   },
 ];
 
@@ -477,9 +484,17 @@ function getNewsQueryContext(places, zones) {
   return "El Salvador noticias";
 }
 
-function buildGoogleNewsQuery(rawQuery) {
+function getNewsDataApiKey() {
+  return (
+    window.TWINMAP_NEWSDATA_API_KEY ||
+    localStorage.getItem(NEWSDATA_API_KEY_STORAGE) ||
+    NEWSDATA_FALLBACK_API_KEY
+  ).trim();
+}
+
+function buildNewsDataQuery(rawQuery) {
   const query = (rawQuery || "").trim();
-  if (!query) return "El Salvador noticias";
+  if (!query) return NEWSDATA_DEFAULT_QUERY;
 
   const normalized = normalizeName(query);
   if (normalized.includes("el salvador")) return query;
@@ -487,28 +502,21 @@ function buildGoogleNewsQuery(rawQuery) {
   return `${query} El Salvador`;
 }
 
-function buildGoogleNewsRssUrl(query) {
-  const params = new URLSearchParams({
-    q: buildGoogleNewsQuery(query),
-    hl: "es",
-    gl: "SV",
-    ceid: "SV:es",
-  });
-  return `https://news.google.com/rss/search?${params.toString()}`;
-}
+function buildNewsDataUrl(query) {
+  const apiKey = getNewsDataApiKey();
+  if (!apiKey) {
+    throw new Error("Agrega tu API key de NewsData.io para activar noticias en vivo.");
+  }
 
-function buildGoogleNewsSearchUrl(query) {
   const params = new URLSearchParams({
-    q: buildGoogleNewsQuery(query),
-    hl: "es",
-    gl: "SV",
-    ceid: "SV:es",
+    apikey: apiKey,
+    q: buildNewsDataQuery(query),
+    country: "sv",
+    language: "es",
+    size: "10",
   });
-  return `https://news.google.com/search?${params.toString()}`;
-}
 
-function buildGoogleNewsEmbedUrl(query) {
-  return buildGoogleNewsSearchUrl(query);
+  return `${NEWSDATA_API_ENDPOINT}?${params.toString()}`;
 }
 
 function stripHtml(value) {
@@ -517,95 +525,52 @@ function stripHtml(value) {
   return node.textContent || "";
 }
 
-function parseRssItems(xmlText) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xmlText, "text/xml");
-
-  if (doc.querySelector("parsererror")) {
-    throw new Error("No se pudo interpretar el feed RSS.");
-  }
-
-  return [...doc.querySelectorAll("item")].map((item, index) => ({
-    title: item.querySelector("title")?.textContent?.trim() || "Sin título",
-    description: item.querySelector("description")?.textContent,
-    link: item.querySelector("link")?.textContent?.trim() || "#",
-    guid: item.querySelector("guid")?.textContent?.trim(),
-    pubDate: item.querySelector("pubDate")?.textContent,
-    author: item.querySelector("source")?.textContent?.trim(),
-    index,
-  }));
+function inferNewsDataZone(item, query) {
+  const text = [item.title, item.description, item.content, query].filter(Boolean).join(" ");
+  const match = LOCATION_ZONE_HINTS.find((hint) => hint.pattern.test(text));
+  return match?.zones?.[0] || "NewsData.io";
 }
 
-function extractSourceFromTitle(title) {
-  const parts = (title || "").split(" - ");
-  if (parts.length < 2) return null;
-  return parts[parts.length - 1].trim();
-}
-
-function mapRssItem(item, index) {
-  const link = item.link?.trim() || "#";
-  const guid = item.guid?.trim() || link || `rss-${index}`;
-  const pubDate = item.pubDate || item.publishedAt;
+function mapNewsDataItem(item, index, query) {
+  const title = item.title?.trim() || "Noticia sin titulo";
+  const publishedAt = item.pubDate ? new Date(item.pubDate).getTime() : Date.now() - index * 60000;
 
   return {
-    id: `rss-${guid}`,
-    title: item.title?.trim() || "Sin título",
-    summary: stripHtml(item.description || item.content || item.summary).trim(),
-    zone: "Google Noticias",
-    publishedAt: pubDate ? new Date(pubDate).getTime() : Date.now() - index * 60000,
+    id: `newsdata-${item.article_id || item.link || index}`,
+    title,
+    summary: stripHtml(item.description || item.content || "Sin descripcion disponible.").trim(),
+    zone: inferNewsDataZone(item, query),
+    publishedAt: Number.isNaN(publishedAt) ? Date.now() - index * 60000 : publishedAt,
     severity: "info",
-    source: extractSourceFromTitle(item.title) || item.author?.trim() || "Google Noticias",
-    url: link,
+    source: item.source_name || item.source_id || "NewsData.io",
+    url: item.link || "#",
     isLive: true,
+    places: item.country || [],
   };
 }
 
-async function fetchGoogleNewsRss(query) {
-  const rssUrl = buildGoogleNewsRssUrl(query);
-  let lastError = null;
+async function fetchNewsDataLatest(query) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 12000);
 
   try {
-    const rss2jsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
-    const response = await fetch(rss2jsonUrl);
+    const response = await fetch(buildNewsDataUrl(query), { signal: controller.signal });
+    window.clearTimeout(timeoutId);
+
     if (!response.ok) {
-      lastError = new Error(`rss2json respondió ${response.status}`);
-    } else {
-      const data = await response.json();
-      if (data.status === "ok" && data.items?.length) {
-        return data.items.map(mapRssItem);
-      }
-      lastError = new Error(data.message || "Feed vacío en rss2json");
+      throw new Error(`NewsData.io respondio ${response.status}`);
     }
+
+    const data = await response.json();
+    if (data.status !== "success") {
+      throw new Error(data.results?.message || data.message || "NewsData.io no devolvio resultados.");
+    }
+
+    return (data.results || []).map((item, index) => mapNewsDataItem(item, index, query));
   } catch (error) {
-    lastError = error;
+    window.clearTimeout(timeoutId);
+    throw error;
   }
-
-  for (const buildProxyUrl of RSS_PROXY_URLS) {
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 12000);
-
-    try {
-      const response = await fetch(buildProxyUrl(rssUrl), { signal: controller.signal });
-      window.clearTimeout(timeoutId);
-      if (!response.ok) {
-        lastError = new Error(`Proxy respondió ${response.status}`);
-        continue;
-      }
-
-      const xmlText = await response.text();
-      if (!xmlText.includes("<item")) {
-        lastError = new Error("Feed vacío o bloqueado");
-        continue;
-      }
-
-      return parseRssItems(xmlText).map((item, index) => mapRssItem(item, index));
-    } catch (error) {
-      window.clearTimeout(timeoutId);
-      lastError = error;
-    }
-  }
-
-  throw lastError || new Error("No se pudo cargar Google Noticias.");
 }
 
 function textMatchesQuery(text, query) {
@@ -791,8 +756,8 @@ function renderNewsCard(item) {
                 href="${escapeHtml(item.url)}"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Abrir noticia en nueva pestaña"
-                title="Abrir en nueva pestaña"
+                aria-label="Abrir noticia en nueva pestaÃ±a"
+                title="Abrir en nueva pestaÃ±a"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
                   <path fill="currentColor" d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3zM5 5h7v2H7v10h10v-5h2v7H5V5z"/>
@@ -809,7 +774,7 @@ function renderNewsCard(item) {
               ${
                 hasExternalUrl
                   ? `<p class="emergencia-noticia-card__detail-link">
-                      <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">Ver fuente completa ↗</a>
+                      <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">Ver fuente completa â†—</a>
                     </p>`
                   : ""
               }
@@ -824,46 +789,39 @@ function renderNewsCard(item) {
   `;
 }
 
-function renderGoogleNewsEmbed(query) {
-  const embedUrl = buildGoogleNewsEmbedUrl(query);
-  const externalUrl = buildGoogleNewsSearchUrl(query);
+function renderNewsDataPanel(query) {
+  const apiKey = getNewsDataApiKey();
+  const queryLabel = buildNewsDataQuery(query);
 
   return `
-    <section class="emergencia-google-news" aria-label="Google Noticias embebido">
+    <section class="emergencia-google-news" aria-label="Integracion NewsData.io">
       <div class="emergencia-google-news__header">
-        <h3>Google Noticias</h3>
-        <span class="emergencia-google-news__query">${escapeHtml(buildGoogleNewsQuery(query))}</span>
+        <h3>NewsData.io</h3>
+        <span class="emergencia-google-news__query">${escapeHtml(queryLabel)}</span>
       </div>
-      <div class="emergencia-google-news__frame-wrap">
-        <iframe
-          class="emergencia-google-news__iframe"
-          src="${escapeHtml(embedUrl)}"
-          title="Resultados de Google Noticias para ${escapeHtml(buildGoogleNewsQuery(query))}"
-          loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-        ></iframe>
-        <p class="emergencia-google-news__fallback" hidden>
-          Google puede bloquear la vista embebida. Usa las tarjetas de arriba o abre la búsqueda completa.
-          <a href="${escapeHtml(externalUrl)}" target="_blank" rel="noopener noreferrer">Abrir en Google Noticias ↗</a>
+      <div class="emergencia-google-news__frame-wrap emergencia-google-news__frame-wrap--info">
+        <p class="emergencia-google-news__note">
+          ${apiKey
+            ? "Noticias en vivo activas con NewsData.io. Las tarjetas superiores combinan resultados reales con mocks locales."
+            : "Configura tu API key para activar noticias en vivo. Mientras tanto se muestran noticias simuladas filtradas."}
+        </p>
+        <p class="emergencia-google-news__fallback">
+          En consola: <code>localStorage.setItem("${NEWSDATA_API_KEY_STORAGE}", "TU_API_KEY")</code> y luego recarga la pagina.
         </p>
       </div>
-      <p class="emergencia-google-news__note">
-        Vista embebida de Google Noticias. Si no carga, las tarjetas locales y el feed RSS siguen disponibles arriba.
-      </p>
     </section>
   `;
 }
 
 function renderRssStatus() {
   if (newsState.rssStatus === "loading") {
-    return `<p class="emergencia-noticias-status">Cargando noticias en vivo desde Google Noticias…</p>`;
+    return `<p class="emergencia-noticias-status">Cargando noticias en vivo desde NewsData.io...</p>`;
   }
 
   if (newsState.rssStatus === "error") {
     return `
       <p class="emergencia-noticias-status emergencia-noticias-status--warn">
-        No se pudo conectar al feed en vivo (${escapeHtml(newsState.rssError || "error desconocido")}).
+        No se pudo conectar a NewsData.io (${escapeHtml(newsState.rssError || "error desconocido")}).
         Mostrando noticias locales filtradas.
       </p>
     `;
@@ -900,7 +858,7 @@ function bindNewsCardInteractions() {
           revealFallback();
         }
       } catch {
-        /* cross-origin: el iframe cargó contenido externo */
+        /* cross-origin: el iframe cargÃ³ contenido externo */
       }
     }, 3500);
   }
@@ -919,11 +877,11 @@ function renderNewsContent({ places, zones, hasRoute, preserveScroll = false }) 
 
   if (zonesSummaryEl) {
     if (!hasRoute && !hasSearch) {
-      zonesSummaryEl.textContent = "Sin ruta activa · busca un lugar";
+      zonesSummaryEl.textContent = "Sin ruta activa Â· busca un lugar";
     } else if (hasSearch) {
-      zonesSummaryEl.textContent = `${mergedNews.length} resultado${mergedNews.length === 1 ? "" : "s"} · ${effectiveQuery}`;
+      zonesSummaryEl.textContent = `${mergedNews.length} resultado${mergedNews.length === 1 ? "" : "s"} Â· ${effectiveQuery}`;
     } else {
-      zonesSummaryEl.textContent = `${mergedNews.length} alerta${mergedNews.length === 1 ? "" : "s"} · ${zones.length} zona${zones.length === 1 ? "" : "s"}`;
+      zonesSummaryEl.textContent = `${mergedNews.length} alerta${mergedNews.length === 1 ? "" : "s"} Â· ${zones.length} zona${zones.length === 1 ? "" : "s"}`;
     }
   }
 
@@ -932,8 +890,8 @@ function renderNewsContent({ places, zones, hasRoute, preserveScroll = false }) 
       <div class="emergencia-noticias-empty">
         <p>Completa tu ruta o busca un lugar para ver noticias relevantes.</p>
         <p class="emergencia-noticias-empty__hint">
-          Prueba <strong>Santa Ana</strong>, <strong>El Tunco</strong> o <strong>Juayúa</strong> en el buscador.
-          También puedes añadir paradas en <strong>Mi ruta</strong>.
+          Prueba <strong>Santa Ana</strong>, <strong>El Tunco</strong> o <strong>JuayÃºa</strong> en el buscador.
+          TambiÃ©n puedes aÃ±adir paradas en <strong>Mi ruta</strong>.
         </p>
         <div class="emergencia-noticias-empty__actions">
           <button class="outline-button" type="button" data-view="mi-ruta">Ir a Mi ruta</button>
@@ -955,15 +913,15 @@ function renderNewsContent({ places, zones, hasRoute, preserveScroll = false }) 
     ? `<div class="emergencia-noticias-grid">${mergedNews.map((item) => renderNewsCard(item)).join("")}</div>`
     : `
       <div class="emergencia-noticias-empty emergencia-noticias-empty--compact">
-        <p>No hay noticias recientes para "${escapeHtml(effectiveQuery || "tu búsqueda")}".</p>
-        <p class="emergencia-noticias-empty__hint">Prueba otro lugar o revisa el panel de Google Noticias abajo.</p>
+        <p>No hay noticias recientes para "${escapeHtml(effectiveQuery || "tu bÃºsqueda")}".</p>
+        <p class="emergencia-noticias-empty__hint">Prueba otro lugar o revisa la configuracion de NewsData.io abajo.</p>
       </div>
     `;
 
   noticiasEl.innerHTML = `
     ${renderRssStatus()}
     ${cardsHtml}
-    ${showEmbed ? renderGoogleNewsEmbed(newsQuery) : ""}
+    ${showEmbed ? renderNewsDataPanel(newsQuery) : ""}
   `;
 
   bindNewsCardInteractions();
@@ -996,7 +954,7 @@ async function refreshNewsContent(options = {}) {
   renderNewsContent({ places, zones, hasRoute, preserveScroll: true });
 
   try {
-    const rssItems = await fetchGoogleNewsRss(newsQuery);
+    const rssItems = await fetchNewsDataLatest(newsQuery);
     if (token !== newsState.fetchToken) return;
 
     newsState.rssItems = rssItems.slice(0, 12);
@@ -1059,3 +1017,6 @@ window.TwinmapEmergencia = {
 };
 
 refreshEmergenciaPanel();
+
+
+

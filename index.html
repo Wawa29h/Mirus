@@ -9,8 +9,42 @@
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.css" rel="stylesheet" />
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.min.js"></script>
+  <script src="lib/profile-sync.js"></script>
+  <script src="lib/category-images.js?v=7"></script>
   <script src="config.js" onerror="window.__TWINMAP_CONFIG_MISSING__=true"></script>
   <meta name="mapbox-token" content="" id="mapbox-token-meta" />
+  <script>
+    (function () {
+      const token = window.TWINMAP_CONFIG?.MAPBOX_TOKEN;
+      if (token?.startsWith("pk.")) {
+        const meta = document.getElementById("mapbox-token-meta");
+        if (meta) meta.content = token;
+      }
+    })();
+  </script>
+  <script>
+    (function () {
+      const params = new URLSearchParams(location.search);
+
+      function applyEmbedMode(frontendUi) {
+        document.documentElement.classList.add("embed-mode");
+        if (frontendUi) document.documentElement.classList.add("frontend-ui");
+      }
+
+      if (params.get("embed") === "1") {
+        applyEmbedMode(params.get("ui") === "frontend");
+      } else if (window.self !== window.top) {
+        // Fallback: iframe del frontend sin query params
+        applyEmbedMode(true);
+      }
+
+      window.addEventListener("message", (event) => {
+        if (event.data?.type === "twinmap-embed-init") {
+          applyEmbedMode(event.data.ui === "frontend");
+        }
+      });
+    })();
+  </script>
 
   <style>
     :root {
@@ -120,7 +154,364 @@
     #token-warn code { background: rgba(255,255,255,.08); padding: 2px 6px; border-radius: 5px; }
     #token-warn a { color: var(--accent); }
 
+    /* Modo embed: mapa dentro del frontend (iframe) */
+    html.embed-mode, html.embed-mode body {
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+    html.embed-mode {
+      --dock-w: 176px;
+      --ui-pad: 6px;
+      --ui-gap: 4px;
+      --ui-radius: 10px;
+    }
+    html.embed-mode #map {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    html.embed-mode .ui-shell {
+      position: fixed;
+      inset: 0;
+      grid-template-columns: minmax(0, 1fr) var(--dock-w) !important;
+      grid-template-rows: auto 1fr auto !important;
+      padding: var(--ui-pad);
+      pointer-events: none;
+    }
+    html.embed-mode .ui-col-left,
+    html.embed-mode #route-panel,
+    html.embed-mode .route-panel,
+    html.embed-mode .brand,
+    html.embed-mode .timeline,
+    html.embed-mode .ui-tools,
+    html.embed-mode .vitals,
+    html.embed-mode #vitals-panel { display: none !important; }
+    html.embed-mode:not(.frontend-ui) #island-btn,
+    html.embed-mode:not(.frontend-ui) #flat-btn { display: none !important; }
+    html.embed-mode.frontend-ui .embed-frontend-controls {
+      position: fixed;
+      left: 12px;
+      bottom: 12px;
+      z-index: 8;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: min(168px, 40vw);
+      pointer-events: auto;
+    }
+    html.embed-mode.frontend-ui .embed-frontend-controls #island-btn,
+    html.embed-mode.frontend-ui .embed-frontend-controls #flat-btn {
+      display: block !important;
+      position: static;
+      width: 100%;
+      margin: 0;
+    }
+    html.embed-mode.frontend-ui .ui-col-right {
+      grid-column: 2 !important;
+      grid-row: 1 / -1 !important;
+      max-height: calc(100% - 12px);
+      overflow-y: auto;
+      pointer-events: auto;
+    }
+    html.embed-mode.frontend-ui .ui-shell {
+      grid-template-columns: minmax(0, 1fr) var(--dock-w) !important;
+    }
+    html.embed-mode #search {
+      grid-column: 1 !important;
+      grid-row: 1 !important;
+      width: min(calc(100% - var(--dock-w) - 16px), 280px);
+      justify-self: center;
+      z-index: 6;
+    }
+    html.embed-mode .panel {
+      padding: 8px 10px;
+      font-size: 11px;
+      max-height: none;
+    }
+    html.embed-mode .panel h2 { font-size: 11px; margin-bottom: 6px; }
+    html.embed-mode .layer { padding: 4px; }
+    html.embed-mode .layer .txt { font-size: 11px; }
+    html.embed-mode .layer .sub { font-size: 9.5px; }
+    html.embed-mode .legend { padding-left: 16px; gap: 2px 6px; }
+    html.embed-mode .status { font-size: 10px; margin-top: 6px; padding-top: 6px; }
+    html.embed-mode #token-warn { font-size: 13px; }
+    html.embed-mode #token-warn .card { max-width: 320px; padding: 16px; }
+    html.embed-mode .mapboxgl-ctrl-bottom-right {
+      right: calc(var(--dock-w) + var(--ui-pad) + 2px) !important;
+      bottom: 6px !important;
+    }
+    html.embed-mode .mapboxgl-map,
+    html.embed-mode .mapboxgl-canvas-container {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* Integrado con frontend: panel claro, mapa a pantalla completa */
+    html.embed-mode.frontend-ui {
+      --bg: #eef1f4;
+      --panel: rgba(255, 255, 255, 0.96);
+      --panel-border: rgba(20, 20, 20, 0.1);
+      --text: #141414;
+      --muted: #5f6368;
+      --accent: #141414;
+      --accent2: #2ec4b6;
+      --dock-w: 220px;
+      --ui-pad: 10px;
+      --ui-radius: 8px;
+    }
+    html.embed-mode.frontend-ui #map { background: #eef1f4; }
+    html.embed-mode.frontend-ui .ui-card {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      backdrop-filter: none;
+    }
+    html.embed-mode.frontend-ui .ui-col-right .panel h2 {
+      color: var(--muted);
+      font-size: 11px;
+    }
+    html.embed-mode.frontend-ui #search .mapboxgl-ctrl-geocoder {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    html.embed-mode.frontend-ui #search .mapboxgl-ctrl-geocoder input {
+      color: #141414;
+    }
+    html.embed-mode.frontend-ui .layer:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+    html.embed-mode.frontend-ui .tool-toggle,
+    html.embed-mode.frontend-ui .embed-frontend-controls #island-btn,
+    html.embed-mode.frontend-ui .embed-frontend-controls #flat-btn {
+      background: #141414;
+      color: #fff;
+      border: none;
+    }
+    html.embed-mode.frontend-ui .embed-frontend-controls #island-btn.active,
+    html.embed-mode.frontend-ui .embed-frontend-controls #flat-btn.active {
+      background: #2ec4b6;
+      color: #062b28;
+    }
+
     .maplibre-marker { font-size: 22px; cursor: pointer; }
+    .twinmap-popup-img {
+      display: block;
+      width: calc(100% + 24px);
+      max-height: 140px;
+      margin: -10px -12px 10px;
+      object-fit: cover;
+      object-position: center;
+      border-radius: 999px;
+      aspect-ratio: 1;
+      max-width: 140px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .mapboxgl-popup-content { padding-top: 10px; overflow: hidden; }
+    .sr-chips button[data-cat="playa"] { background-image: linear-gradient(rgba(13,27,42,.72), rgba(13,27,42,.72)), url("/frontend/assets/playa.png"); background-size: cover; }
+    .sr-chips button[data-cat="naturaleza"] { background-image: linear-gradient(rgba(13,27,42,.72), rgba(13,27,42,.72)), url("/frontend/assets/montana.png"); background-size: cover; }
+    .sr-chips button[data-cat="comida"] { background-image: linear-gradient(rgba(13,27,42,.72), rgba(13,27,42,.72)), url("/frontend/assets/comida.png"); background-size: cover; }
+    .sr-chips button[data-cat="cultura"] { background-image: linear-gradient(rgba(13,27,42,.72), rgba(13,27,42,.72)), url("/frontend/assets/iglesia.png"); background-size: cover; }
+    .sr-chips button[data-cat="aves"] { background-image: linear-gradient(rgba(13,27,42,.72), rgba(13,27,42,.72)), url("/frontend/assets/parque.png"); background-size: cover; }
+    .sr-chips button { color: #fff; min-height: 52px; background-position: center; border: 1px solid rgba(255,255,255,.18); }
+    .twinmap-category-marker {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid #fff;
+      box-shadow: 0 3px 10px rgba(0,0,0,.45);
+      cursor: pointer;
+    }
+    .twinmap-category-marker img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;  /* recorta la imagen para llenar el círculo */
+      border-radius: 50%;
+    }
+
+    /* ---- Sidebar: info del lugar (ChatGPT) ---- */
+    .place-sidebar-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 18;
+      background: rgba(0, 0, 0, 0.35);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .22s ease;
+    }
+    body.place-sidebar-open .place-sidebar-backdrop {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .place-sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 19;
+      width: min(380px, 92vw);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: var(--panel);
+      color: var(--text);
+      border-right: 1px solid var(--panel-border);
+      box-shadow: 8px 0 32px rgba(0, 0, 0, 0.35);
+      transform: translateX(-105%);
+      transition: transform .25s ease;
+      pointer-events: auto;
+    }
+    .place-sidebar.is-open { transform: translateX(0); }
+    .place-sidebar-head {
+      position: relative;
+      padding: 14px 44px 12px 14px;
+      border-bottom: 1px solid var(--panel-border);
+      flex-shrink: 0;
+    }
+    .place-sidebar-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 32px;
+      height: 32px;
+      border: 0;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .place-sidebar-image {
+      width: 88px;
+      height: 88px;
+      margin: 0 auto 10px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid #fff;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    }
+    .place-sidebar-image img,
+    .place-sidebar-image .twinmap-popup-img {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: none !important;
+      max-height: none !important;
+      margin: 0 !important;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .place-sidebar-title {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.25;
+      text-align: center;
+    }
+    .place-sidebar-meta {
+      margin: 6px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.35;
+    }
+    .place-sidebar-extras {
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .place-sidebar-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 14px 16px 20px;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .place-sidebar-body .place-sidebar-loading {
+      color: var(--muted);
+      font-style: italic;
+    }
+    .place-sidebar-body .place-sidebar-error {
+      color: #ffbf69;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .place-sidebar-badge {
+      display: inline-block;
+      margin-bottom: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      background: rgba(46, 196, 182, 0.18);
+      color: var(--accent);
+    }
+    html.embed-mode.frontend-ui .place-sidebar {
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 8px 0 28px rgba(0, 0, 0, 0.12);
+    }
+    html.embed-mode.frontend-ui .place-sidebar-close {
+      background: rgba(0, 0, 0, 0.06);
+    }
+    html.embed-mode.frontend-ui .place-sidebar-badge {
+      background: rgba(46, 196, 182, 0.15);
+      color: #0d6b62;
+    }
+    .place-sidebar-section {
+      margin-bottom: 16px;
+    }
+    .place-sidebar-section h3 {
+      margin: 0 0 8px;
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .place-sidebar-weather-days {
+      display: grid;
+      gap: 8px;
+    }
+    .place-sidebar-weather-day {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    html.embed-mode.frontend-ui .place-sidebar-weather-day {
+      background: rgba(0, 0, 0, 0.03);
+    }
+    .place-sidebar-weather-day strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .place-sidebar-kv {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+    .place-sidebar-kv div {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+    .place-sidebar-kv span:last-child {
+      text-align: right;
+      color: var(--text);
+      font-weight: 600;
+    }
 
     /* ---- Panel de rutas ---- */
     .route-panel { flex-shrink: 0; overflow: visible; }
@@ -238,21 +629,36 @@
       :root { --dock-w: 210px; }
     }
     @media (max-width: 680px) {
-      .ui-shell {
+      html:not(.embed-mode) .ui-shell {
         grid-template-columns: 1fr 1fr;
         grid-template-rows: auto auto 1fr auto auto;
       }
-      #search { grid-column: 1 / -1; grid-row: 1; width: 100%; }
-      .ui-col-left { grid-column: 1; grid-row: 2 / 4; }
-      .ui-col-right { grid-column: 2; grid-row: 2 / 4; }
-      .timeline { grid-column: 1 / -1; grid-row: 5; width: 100%; }
-      .mapboxgl-ctrl-bottom-right, .mapboxgl-ctrl-bottom-left { bottom: 8px !important; }
+      html:not(.embed-mode) #search { grid-column: 1 / -1; grid-row: 1; width: 100%; }
+      html:not(.embed-mode) .ui-col-left { grid-column: 1; grid-row: 2 / 4; }
+      html:not(.embed-mode) .ui-col-right { grid-column: 2; grid-row: 2 / 4; }
+      html:not(.embed-mode) .timeline { grid-column: 1 / -1; grid-row: 5; width: 100%; }
+      html:not(.embed-mode) .mapboxgl-ctrl-bottom-right,
+      html:not(.embed-mode) .mapboxgl-ctrl-bottom-left { bottom: 8px !important; }
     }
 
   </style>
 </head>
 <body>
   <div id="map"></div>
+
+  <div class="place-sidebar-backdrop" id="place-sidebar-backdrop" hidden></div>
+  <aside class="place-sidebar" id="place-sidebar" aria-hidden="true" aria-label="Información del lugar">
+    <div class="place-sidebar-head">
+      <button type="button" class="place-sidebar-close" id="place-sidebar-close" aria-label="Cerrar">×</button>
+      <div class="place-sidebar-image" id="place-sidebar-image"></div>
+      <h2 class="place-sidebar-title" id="place-sidebar-title">Lugar</h2>
+      <p class="place-sidebar-meta" id="place-sidebar-meta"></p>
+      <div class="place-sidebar-extras" id="place-sidebar-extras"></div>
+    </div>
+    <div class="place-sidebar-body" id="place-sidebar-body">
+      <p class="place-sidebar-loading">Haz clic en un icono del mapa para ver información.</p>
+    </div>
+  </aside>
 
   <div class="ui-shell">
     <div class="ui-col-left">
@@ -269,7 +675,7 @@
             <button type="button" id="sr-locate-btn">📍 Usar mi ubicación actual</button>
             <div id="sr-origin-label">Origen: <b>pendiente</b> — pulsa el botón o permite GPS</div>
           </div>
-          <div class="hint" id="smart-hint">Según tu perfil, te sugerimos destino y rutas Flash, Vibes y Zen.</div>
+          <div class="hint" id="smart-hint">Según tu cuestionario inicial, te sugerimos destino y rutas Flash, Vibes y Zen.</div>
           <div id="profile-summary"></div>
 
           <div id="sr-step-category">
@@ -436,18 +842,6 @@
     </div>
   </div>
 
-  <div id="quiz-overlay" role="dialog" aria-modal="true" aria-labelledby="quiz-title">
-    <div class="ui-card quiz-card">
-      <h2 id="quiz-title">Tu perfil turístico</h2>
-      <p>Respondemos 4 preguntas para recomendar destinos y rutas (Flash, Vibes, Zen).</p>
-      <div id="quiz-body"></div>
-      <div class="route-row" style="margin-top:12px">
-        <button type="button" id="quiz-skip">Saltar</button>
-        <button type="button" id="quiz-next" class="primary">Siguiente</button>
-      </div>
-    </div>
-  </div>
-
   <div id="token-warn">
     <div class="card">
       <h2>Configura Mapbox para ver el mapa</h2>
@@ -500,12 +894,101 @@
         document.getElementById("token-warn").style.display = "flex";
         return;
       }
-      boot();
+      const startBoot = () => boot();
+      if (document.documentElement.classList.contains("embed-mode")) {
+        const run = () => requestAnimationFrame(() => requestAnimationFrame(startBoot));
+        if (document.readyState === "complete") run();
+        else window.addEventListener("load", run, { once: true });
+      } else if (window.self !== window.top) {
+        document.documentElement.classList.add("embed-mode", "frontend-ui");
+        const run = () => requestAnimationFrame(() => requestAnimationFrame(startBoot));
+        if (document.readyState === "complete") run();
+        else window.addEventListener("load", run, { once: true });
+      } else {
+        boot();
+      }
     })();
+
+    function poiPopupHtml(p) {
+      const web = p.website ? `<br><a href="${p.website}" target="_blank" rel="noopener">web</a>` : "";
+      const tel = p.phone ? `<br>📞 ${p.phone}` : "";
+      return `${categoryPopupImage(p.cat, p.kind)}<b>${escapeHtml(p.name)}</b><br><small>${escapeHtml(p.cat)} · ${escapeHtml(p.kind)}</small>${tel}${web}${placeDetailsHtml(p)}`;
+    }
+
+    function categoryPopupImage(cat, kind) {
+      return window.TwinmapCategoryImages?.popupImageHtml(cat, undefined, kind) || "";
+    }
+
+    const POI_ICON_LAYOUT = {
+      "icon-image": [
+        "match", ["get", "cat"],
+        "comida", "tm-comida",
+        "hospedaje", "tm-alojamiento",
+        "playa", "tm-playa",
+        "historico", "tm-iglesia",
+        "turismo", "tm-eventos",
+        "parque", "tm-parque",
+        "tm-parque",
+      ],
+      "icon-size": ["interpolate", ["linear"], ["zoom"], 8, 0.14, 12, 0.18, 16, 0.22],
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+      "icon-pitch-alignment": "viewport",
+      "icon-rotation-alignment": "viewport",
+      "icon-anchor": "bottom",
+    };
+
+    const NATURE_ICON_LAYOUT = {
+      "icon-image": [
+        "match", ["get", "category"],
+        "volcan", "tm-volcan",
+        "montana", "tm-montana",
+        "mirador", "tm-montana",
+        "cascada", "tm-cascada",
+        "playa", "tm-playa",
+        "arrecife", "tm-playa",
+        "parque", "tm-parque",
+        "sendero", "tm-parque",
+        "humedal", "tm-parque",
+        "tm-parque",
+      ],
+      "icon-size": ["interpolate", ["linear"], ["zoom"], 8, 0.14, 12, 0.18, 16, 0.22],
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+      "icon-pitch-alignment": "viewport",
+      "icon-rotation-alignment": "viewport",
+      "icon-anchor": "bottom",
+    };
+
+    function mapIconsReady(map) {
+      return ["tm-comida", "tm-playa", "tm-volcan", "tm-montana", "tm-cascada"].some((id) => map.hasImage(id));
+    }
+
+    function removeMapLayer(map, id) {
+      if (map.getLayer(id)) map.removeLayer(id);
+    }
+
+    function removeMapSource(map, id) {
+      if (map.getSource(id)) map.removeSource(id);
+    }
 
     function setStatus(html) { document.getElementById("status").innerHTML = html; }
 
+    function setupEmbedFrontendUi() {
+      if (!document.documentElement.classList.contains("frontend-ui")) return;
+      if (document.getElementById("embed-frontend-controls")) return;
+      const island = document.getElementById("island-btn");
+      const flat = document.getElementById("flat-btn");
+      if (!island || !flat) return;
+      const bar = document.createElement("div");
+      bar.id = "embed-frontend-controls";
+      bar.className = "embed-frontend-controls";
+      bar.append(island, flat);
+      document.body.appendChild(bar);
+    }
+
     function boot() {
+      setupEmbedFrontendUi();
       mapboxgl.accessToken = mapboxToken;
       document.getElementById("panel").style.display = "block";
 
@@ -522,6 +1005,29 @@
         bearing: flatMode ? 0 : -20,
         antialias: true,
       });
+
+      if (document.documentElement.classList.contains("embed-mode")) {
+        const resizeMap = () => {
+          try { map.resize(); } catch { /* ignore */ }
+        };
+        window.addEventListener("message", (event) => {
+          if (event.data?.type === "twinmap-resize") resizeMap();
+          if (event.data?.type === "twinmap-profile-updated") {
+            try { wireProfile(map); } catch { /* ignore */ }
+          }
+        });
+        document.addEventListener("visibilitychange", () => {
+          if (!document.hidden) resizeMap();
+        });
+        if (typeof ResizeObserver !== "undefined") {
+          new ResizeObserver(resizeMap).observe(document.documentElement);
+          const mapEl = document.getElementById("map");
+          if (mapEl) new ResizeObserver(resizeMap).observe(mapEl);
+        }
+        map.on("load", resizeMap);
+        map.on("idle", resizeMap);
+        [50, 150, 400, 900, 1500, 2500].forEach((ms) => window.setTimeout(resizeMap, ms));
+      }
 
       map.addControl(new mapboxgl.NavigationControl(), "bottom-right");
       map.addControl(new mapboxgl.ScaleControl());
@@ -540,20 +1046,26 @@
       window._geocoder = geocoder; // para depurar en consola
 
       map.on("style.load", async () => {
+        try {
+        delete map.__twinmapIconsReady;
+        await window.TwinmapCategoryImages?.loadMapIcons?.(map, { force: true });
+
         // En modo plano NO se agrega relieve, niebla ni edificios 3D (colores planos, sin elevación)
-        if (!flatMode) {
-          // ---- Terreno 3D + cielo ----
+        if (!window._flatMode) {
+          if (!map.getSource("dem")) {
           map.addSource("dem", {
             type: "raster-dem",
             url: "mapbox://mapbox.mapbox-terrain-dem-v1",
             tileSize: 512, maxzoom: 14,
           });
           map.setTerrain({ source: "dem", exaggeration: 1.4 });
+          }
 
           // Cielo atmosférico
           map.setFog({ "horizon-blend": 0.2, color: "#cfe8f0", "high-color": "#245", "space-color": "#0d1b2a" });
 
           // ---- Edificios 3D (fill-extrusion desde tiles vectoriales) ----
+          if (!map.getLayer("3d-buildings")) {
           map.addLayer({
             id: "3d-buildings",
             source: "composite",
@@ -568,34 +1080,42 @@
               "fill-extrusion-opacity": 0.85,
             },
           });
+          }
         }
-
-        // Punto de referencia principal
-        new mapboxgl.Marker({ color: "#2ec4b6" })
-          .setLngLat(CFG.CENTER || [-90.05, 13.74])
-          .setPopup(new mapboxgl.Popup().setHTML(
-            "<b>Barra de Santiago</b><br>Humedal RAMSAR · manglar · ecoturismo comunitario"
-          ))
-          .addTo(map);
 
         addDepartments(map);
         addIslandMask(map);
-        loadPOIs(map);
+        await loadPOIs(map);
         addParking(map);
         addCrowds(map);
         await addTraffic(map);
         addBiodiversity(map);
-        addNatureCatalog(map);
+        await addNatureCatalog(map);
         addReferenceLayers(map);
         addMigrationForecast(map);
         addVitalsDashboard(map);
         wireToggles(map);
         wireRoute(map);
         wireSmartRoute(map);
-        wireQuiz(map);
+        wireProfile(map);
         wireAssistant(map);
+        wirePlaceSidebar(map);
         wireToolToggles();
+        // "Solo El Salvador" por defecto: activa el modo isla al arrancar (cubre calles/países vecinos)
+        try { if (typeof toggleIsland === "function" && !islandOn) toggleIsland(map); } catch (e) {}
         setStatus("Mapa listo · <b>Barra de Santiago</b>");
+        } catch (layerError) {
+          console.error("TwinMap capas:", layerError);
+          setStatus("Mapa base listo · algunas capas no cargaron");
+        }
+        map.resize();
+      });
+
+      map.once("load", () => {
+        map.resize();
+        if (document.documentElement.classList.contains("embed-mode")) {
+          [80, 250, 600, 1200].forEach((ms) => window.setTimeout(() => map.resize(), ms));
+        }
       });
 
       window._twinmap = map; // para depurar en consola
@@ -615,7 +1135,7 @@
     const PARKING_LAYERS = ["parking-clusters", "parking-cluster-count", "parking-points"];
 
     const DEPT_LAYERS = ["dept-fill", "dept-line", "dept-label"];
-    const TRAFFIC_LAYERS = ["traffic-live"];
+    const TRAFFIC_LAYERS = ["traffic-casing", "traffic-live"];
     const NATURE_LAYERS = ["nature-halo", "nature-points", "nature-labels"];
     const MOBILITY_LAYERS = ["mobility-ref-halo", "mobility-ref-points"];
     const EVENT_LAYERS = ["events-ref-points", "events-ref-labels"];
@@ -623,6 +1143,7 @@
     // ============ MODO ISLA: máscara que oculta todo menos El Salvador ============
     let islandOn = false;
     function addIslandMask(map) {
+      if (map.getSource("mask")) return;
       map.addSource("mask", { type: "geojson", data: "data/mask.geojson" });
       map.addSource("country", { type: "geojson", data: "data/elsalvador.geojson" });
 
@@ -660,27 +1181,28 @@
 
     // ============ CAPA: Departamentos de El Salvador (choropleth por color) ============
     function addDepartments(map) {
+      if (map.getSource("departments")) return;
       map.addSource("departments", { type: "geojson", data: "data/departments.geojson" });
 
       // Relleno de color por departamento — visible al alejar, se desvanece al acercar
       map.addLayer({
-        id: "dept-fill", type: "fill", source: "departments", maxzoom: 10,
+        id: "dept-fill", type: "fill", source: "departments", maxzoom: 13,
         paint: {
           "fill-color": ["get", "color"],
-          "fill-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.6, 9, 0.4, 10, 0],
+          "fill-opacity": ["interpolate", ["linear"], ["zoom"], 5, 0.72, 10, 0.58, 12.5, 0.2, 13, 0],
         },
       });
       // Bordes
       map.addLayer({
-        id: "dept-line", type: "line", source: "departments", maxzoom: 11,
+        id: "dept-line", type: "line", source: "departments", maxzoom: 14,
         paint: {
-          "line-color": "#ffffff", "line-width": 1.3,
-          "line-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.7, 10, 0.3, 11, 0],
+          "line-color": "#ffffff", "line-width": 1.6,
+          "line-opacity": ["interpolate", ["linear"], ["zoom"], 5, 0.85, 12, 0.4, 14, 0],
         },
       });
       // Etiquetas con el nombre del departamento
       map.addLayer({
-        id: "dept-label", type: "symbol", source: "departments", maxzoom: 10,
+        id: "dept-label", type: "symbol", source: "departments", maxzoom: 13,
         layout: {
           "text-field": ["get", "name"], "text-size": 13,
           "text-transform": "uppercase", "text-letter-spacing": 0.05,
@@ -715,6 +1237,12 @@
     // ============ CAPA: POIs desde cache local (data/pois.geojson) con clustering ============
     async function loadPOIs(map) {
       try {
+        const loaded = await window.TwinmapCategoryImages?.loadMapIcons?.(map);
+        if (!loaded) console.warn("TwinMap: ningún icono PNG cargó; revisa /frontend/assets/");
+
+        ["pois-layer", "cluster-count", "clusters"].forEach((id) => removeMapLayer(map, id));
+        removeMapSource(map, "pois");
+
         const res = await fetch("data/pois.geojson");
         const geojson = await res.json();
         try {
@@ -726,14 +1254,15 @@
             geojson.features.forEach((feature) => { const rich = index.get(keyOf(feature)); if (rich) Object.assign(feature.properties, rich); });
           }
         } catch (error) { console.warn("Place details cache error", error); }
+        window.TwinmapCategoryImages?.enrichGeoJson?.(geojson);
         const total = geojson.features.length;
 
         map.addSource("pois", {
           type: "geojson", data: geojson,
-          cluster: true, clusterMaxZoom: 13, clusterRadius: 50,
+          cluster: true, clusterMaxZoom: 11, clusterRadius: 42,
         });
 
-        // Clusters (círculos que crecen con la cantidad)
+        // Clusters visibles al alejar (agrupan muchos POIs)
         map.addLayer({
           id: "clusters", type: "circle", source: "pois", filter: ["has", "point_count"],
           paint: {
@@ -749,18 +1278,28 @@
           paint: { "text-color": "#0d1b2a" },
         });
 
-        // Puntos individuales, coloreados por categoría
-        map.addLayer({
-          id: "pois-layer", type: "circle", source: "pois", filter: ["!", ["has", "point_count"]],
-          paint: {
-            "circle-radius": 6,
-            "circle-color": ["match", ["get", "cat"],
-              "comida", CAT_COLORS.comida, "hospedaje", CAT_COLORS.hospedaje,
-              "playa", CAT_COLORS.playa, "historico", CAT_COLORS.historico,
-              "turismo", CAT_COLORS.turismo, "parque", CAT_COLORS.parque, CAT_COLORS.otro],
-            "circle-stroke-width": 1.5, "circle-stroke-color": "#0d1b2a",
-          },
-        });
+        // Iconos de categoría (playa, comida, cultura…) — visibles al acercar
+        const iconReady = mapIconsReady(map);
+        if (iconReady) {
+          map.addLayer({
+            id: "pois-layer", type: "symbol", source: "pois", filter: ["!", ["has", "point_count"]],
+            layout: POI_ICON_LAYOUT,
+            minzoom: 8,
+          });
+        } else {
+          console.warn("POI symbols fallback to circles — iconos PNG no disponibles");
+          map.addLayer({
+            id: "pois-layer", type: "circle", source: "pois", filter: ["!", ["has", "point_count"]],
+            paint: {
+              "circle-radius": 7,
+              "circle-color": ["match", ["get", "cat"],
+                "comida", CAT_COLORS.comida, "hospedaje", CAT_COLORS.hospedaje,
+                "playa", CAT_COLORS.playa, "historico", CAT_COLORS.historico,
+                "turismo", CAT_COLORS.turismo, "parque", CAT_COLORS.parque, CAT_COLORS.otro],
+              "circle-stroke-width": 1.5, "circle-stroke-color": "#0d1b2a",
+            },
+          });
+        }
 
         // Click en cluster → hacer zoom para expandirlo
         map.on("click", "clusters", (e) => {
@@ -769,13 +1308,11 @@
             if (!err) map.easeTo({ center: f.geometry.coordinates, zoom });
           });
         });
-        // Click en punto → popup con info
+        // Click en punto → sidebar con info de ChatGPT
         map.on("click", "pois-layer", (e) => {
-          const p = e.features[0].properties;
-          const web = p.website ? `<br><a href="${p.website}" target="_blank">web</a>` : "";
-          const tel = p.phone ? `<br>📞 ${p.phone}` : "";
-          new mapboxgl.Popup().setLngLat(e.lngLat)
-            .setHTML(`<b>${p.name}</b><br><small>${p.cat} · ${p.kind}</small>${tel}${web}${placeDetailsHtml(p)}`).addTo(map);
+          if (clickMode) return;
+          const feature = e.features[0];
+          openPlaceSidebar(map, placeFromFeature(feature, "pois-layer", e.lngLat));
         });
         ["clusters", "pois-layer"].forEach((id) => {
           map.on("mouseenter", id, () => map.getCanvas().style.cursor = "pointer");
@@ -917,14 +1454,26 @@
 
       try {
         map.addSource("traffic", { type: "vector", url: "mapbox://mapbox.mapbox-traffic-v1" });
+        // Contorno oscuro debajo: hace que las líneas de flujo resalten sobre el mapa
+        map.addLayer({
+          id: "traffic-casing", type: "line", source: "traffic", "source-layer": "traffic",
+          minzoom: 6,
+          layout: { visibility: "visible", "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": "#08131f",
+            "line-width": ["interpolate", ["linear"], ["zoom"], 8, 5.5, 11, 10, 14, 17, 16, 24],
+            "line-opacity": 0.55,
+          },
+        });
         map.addLayer({
           id: "traffic-live", type: "line", source: "traffic", "source-layer": "traffic",
           minzoom: 6,
           layout: { visibility: "visible", "line-cap": "round", "line-join": "round" },
           paint: {
-            "line-color": ["match", ["get", "congestion"], "low", "#2ec4b6", "moderate", "#ffbf69", "heavy", "#ff8c42", "severe", "#ff4d4d", "#c8d6df"],
-            "line-width": ["interpolate", ["linear"], ["zoom"], 8, 2.5, 11, 5, 14, 9, 16, 14],
-            "line-opacity": 0.95,
+            // Colores más vivos para el flujo: verde fluido → rojo severo
+            "line-color": ["match", ["get", "congestion"], "low", "#12e29a", "moderate", "#ffd23f", "heavy", "#ff8c1a", "severe", "#ff2e2e", "#c8d6df"],
+            "line-width": ["interpolate", ["linear"], ["zoom"], 8, 3, 11, 6.5, 14, 12, 16, 18],
+            "line-opacity": 1,
           },
         });
         map.on("error", (event) => {
@@ -972,28 +1521,43 @@
 
     // ============ CAPA: Catalogo natural curado de El Salvador ============
     async function addNatureCatalog(map) {
+      const loaded = await window.TwinmapCategoryImages?.loadMapIcons?.(map);
+      if (!loaded) console.warn("TwinMap: iconos naturaleza no cargaron");
+
+      ["nature-labels", "nature-points", "nature-halo"].forEach((id) => removeMapLayer(map, id));
+      removeMapSource(map, "nature");
+
       const empty = { type: "FeatureCollection", features: [] };
       map.addSource("nature", { type: "geojson", data: empty });
       map.addLayer({ id: "nature-halo", type: "circle", source: "nature", paint: {
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 9, 10, 22],
-        "circle-color": ["match", ["get", "category"], "volcan", "#e76f51", "cascada", "#48cae4", "playa", "#4cc9f0", "parque", "#90be6d", "humedal", "#2a9d8f", "arrecife", "#00b4d8", "#ffbf69"],
-        "circle-opacity": 0.2
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 14, 10, 28],
+        "circle-color": "#2ec4b6",
+        "circle-opacity": 0.15
       }});
-      map.addLayer({ id: "nature-points", type: "circle", source: "nature", paint: {
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 5, 10, 9],
-        "circle-color": ["match", ["get", "category"], "volcan", "#e76f51", "cascada", "#48cae4", "playa", "#4cc9f0", "parque", "#90be6d", "humedal", "#2a9d8f", "arrecife", "#00b4d8", "#ffbf69"],
-        "circle-stroke-width": 1.5, "circle-stroke-color": "#0d1b2a", "circle-opacity": 0.96
-      }});
+      const iconReady = mapIconsReady(map);
+      if (iconReady) {
+        map.addLayer({
+          id: "nature-points", type: "symbol", source: "nature",
+          layout: NATURE_ICON_LAYOUT,
+          minzoom: 7,
+        });
+      } else {
+        map.addLayer({
+          id: "nature-points", type: "circle", source: "nature",
+          paint: {
+            "circle-radius": 8,
+            "circle-color": "#90be6d",
+            "circle-stroke-width": 2,
+            "circle-stroke-color": "#fff",
+          },
+        });
+      }
       map.addLayer({ id: "nature-labels", type: "symbol", source: "nature", minzoom: 8, layout: {
-        "text-field": ["get", "name"], "text-size": 11, "text-offset": [0, 1.1], "text-anchor": "top", "text-max-width": 12
+        "text-field": ["get", "name"], "text-size": 11, "text-offset": [0, 0.55], "text-anchor": "top", "text-max-width": 12
       }, paint: { "text-color": "#ffffff", "text-halo-color": "#0d1b2a", "text-halo-width": 1.4 }});
       map.on("click", "nature-points", (event) => {
-        const p = event.features[0].properties;
-        const elevation = Number.isFinite(Number(p.elevation_m)) ? "<br>Elevacion: <b>" + escapeHtml(p.elevation_m) + " m</b>" : "";
-        new mapboxgl.Popup().setLngLat(event.lngLat).setHTML(
-          "<b>" + escapeHtml(p.name) + "</b><br><small>" + escapeHtml(p.category) + " | " + escapeHtml(p.department) + "</small>" + elevation +
-          "<br><br>" + escapeHtml(p.access) + "<br><small>Temporada: " + escapeHtml(p.season) + "</small>" + (p.services ? "<br><small>Servicios: " + escapeHtml(p.services) + "</small>" : "") + (p.surf ? "<br><small>Surf/oleaje: " + escapeHtml(p.surf) + "</small>" : "") + (p.safety ? "<br><small>Seguridad: " + escapeHtml(p.safety) + "</small>" : "") + "<br><small>Catalogo de referencia; confirma condiciones antes de visitar.</small>"
-        ).addTo(map);
+        if (clickMode) return;
+        openPlaceSidebar(map, placeFromFeature(event.features[0], "nature-points", event.lngLat));
       });
       ["nature-points", "nature-labels"].forEach((id) => {
         map.on("mouseenter", id, () => map.getCanvas().style.cursor = "pointer");
@@ -1003,6 +1567,7 @@
         const response = await fetch("data/nature-curated.geojson");
         if (!response.ok) throw new Error("No se encontro el catalogo");
         const catalog = await response.json();
+        window.TwinmapCategoryImages?.enrichGeoJson?.(catalog);
         map.getSource("nature").setData(catalog);
         const sub = document.getElementById("nature-sub");
         if (sub) sub.textContent = (catalog.features?.length || 0) + " lugares de referencia";
@@ -1345,48 +1910,14 @@
       routeHint("Fija tu punto de partida, luego agrega las paradas.");
     }
 
-    // ============ Quiz de perfil + rutas inteligentes personalizadas ============
+    // ============ Perfil turístico (desde quiz del frontend, sin quiz en el mapa) ============
     const PROFILE_KEY = "twinmapProfile";
-    const QUIZ_QUESTIONS = [
-      {
-        key: "pace", label: "¿Qué ritmo prefieres?",
-        options: [
-          { value: "flash", text: "⚡ Rápido — maximizar tiempo" },
-          { value: "balance", text: "⚖️ Equilibrado" },
-          { value: "zen", text: "🌿 Tranquilo — sin prisa" },
-        ],
-      },
-      {
-        key: "interest", label: "¿Qué te interesa más?",
-        options: [
-          { value: "playa", text: "🏖️ Playa y costa" },
-          { value: "naturaleza", text: "🌿 Naturaleza y humedales" },
-          { value: "gastronomia", text: "🍽️ Gastronomía" },
-          { value: "aves", text: "🐦 Aves y biodiversidad" },
-          { value: "cultura", text: "🏛️ Cultura e historia" },
-        ],
-      },
-      {
-        key: "crowds", label: "¿Cómo te llevas con las multitudes?",
-        options: [
-          { value: "avoid", text: "Evitarlas" },
-          { value: "ok", text: "Me da igual" },
-          { value: "like", text: "Me gusta el ambiente" },
-        ],
-      },
-      {
-        key: "transport", label: "¿Cómo te mueves?",
-        options: [
-          { value: "driving", text: "🚗 Auto" },
-          { value: "walking", text: "🚶 A pie" },
-          { value: "cycling", text: "🚴 Bici" },
-        ],
-      },
-    ];
 
     const smartState = { category: null, destination: null, origin: null, routes: [], previewId: null, chosenId: null, destMarker: null, originMarker: null, travelMarker: null, navCancel: false };
-    let quizStep = 0;
-    let quizDraft = {};
+
+    function syncProfileFromFrontend() {
+      return window.TwinmapProfileSync?.syncFromFrontendQuiz?.() || null;
+    }
 
     function loadProfile() {
       try {
@@ -1395,15 +1926,12 @@
       } catch { return null; }
     }
 
-    function saveProfile(profile) {
-      localStorage.setItem(PROFILE_KEY, JSON.stringify({ ...profile, completedAt: new Date().toISOString() }));
-    }
-
     function defaultProfile() {
       return { pace: "balance", interest: "playa", crowds: "ok", transport: "driving" };
     }
 
     function getProfile() {
+      syncProfileFromFrontend();
       return loadProfile() || defaultProfile();
     }
 
@@ -1414,48 +1942,37 @@
 
     function renderProfileSummary() {
       const el = document.getElementById("profile-summary");
+      if (!el) return;
       const profile = getProfile();
-      if (!loadProfile()) {
-        el.innerHTML = '<span class="profile-pill" id="open-quiz">Hacer quiz de perfil</span>';
-        document.getElementById("open-quiz")?.addEventListener("click", () => openQuiz());
-        return;
-      }
-      el.innerHTML = `<small>${profileLabel(profile)}</small><br><span class="profile-pill" id="open-quiz">Editar perfil</span>`;
-      document.getElementById("open-quiz")?.addEventListener("click", () => openQuiz(true));
+      const fromQuiz = profile.source === "frontend-onboarding" ? " · desde tu cuestionario inicial" : "";
+      el.innerHTML = `<small>${profileLabel(profile)}${fromQuiz}</small>`;
     }
 
-    function renderQuizStep() {
-      const q = QUIZ_QUESTIONS[quizStep];
-      const body = document.getElementById("quiz-body");
-      body.innerHTML = `<div class="quiz-q"><label>${q.label}</label><div class="quiz-opts" id="quiz-opts"></div></div>`;
-      const opts = document.getElementById("quiz-opts");
-      q.options.forEach((opt) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.textContent = opt.text;
-        if (quizDraft[q.key] === opt.value) btn.classList.add("selected");
-        btn.onclick = () => {
-          quizDraft[q.key] = opt.value;
-          opts.querySelectorAll("button").forEach((b) => b.classList.remove("selected"));
-          btn.classList.add("selected");
-        };
-        opts.appendChild(btn);
-      });
-      document.getElementById("quiz-next").textContent = quizStep === QUIZ_QUESTIONS.length - 1 ? "Guardar perfil" : "Siguiente";
-    }
-
-    function openQuiz(reset = false) {
-      quizStep = 0;
-      quizDraft = reset ? { ...getProfile() } : {};
-      renderQuizStep();
-      document.getElementById("quiz-overlay").classList.add("open");
-    }
-
-    function closeQuiz() {
-      document.getElementById("quiz-overlay").classList.remove("open");
+    function wireProfile(map) {
+      syncProfileFromFrontend();
       renderProfileSummary();
       preselectCategoryFromProfile();
-      startSmartRouteFlow(window._twinmap);
+
+      window.addEventListener("storage", (event) => {
+        if (event.key === "twinmap-quiz-ruta" || event.key === PROFILE_KEY) {
+          syncProfileFromFrontend();
+          renderProfileSummary();
+          preselectCategoryFromProfile();
+        }
+      });
+
+      window.addEventListener("message", (event) => {
+        if (event.data?.type === "twinmap-profile-updated") {
+          syncProfileFromFrontend();
+          renderProfileSummary();
+          preselectCategoryFromProfile();
+          startSmartRouteFlow(map);
+        }
+      });
+
+      if (loadProfile() && !document.documentElement.classList.contains("embed-mode")) {
+        setTimeout(() => startSmartRouteFlow(map), 600);
+      }
     }
 
     async function startSmartRouteFlow(map) {
@@ -1469,28 +1986,6 @@
         showSmartStep(1);
         document.getElementById("smart-hint").textContent = error.message;
       }
-    }
-
-    function wireQuiz(map) {
-      if (!loadProfile()) setTimeout(() => openQuiz(), 800);
-      renderProfileSummary();
-
-      document.getElementById("quiz-skip").onclick = () => {
-        if (!loadProfile()) saveProfile(defaultProfile());
-        closeQuiz();
-      };
-      document.getElementById("quiz-next").onclick = () => {
-        const q = QUIZ_QUESTIONS[quizStep];
-        if (!quizDraft[q.key]) quizDraft[q.key] = q.options[0].value;
-        if (quizStep < QUIZ_QUESTIONS.length - 1) {
-          quizStep += 1;
-          renderQuizStep();
-          return;
-        }
-        saveProfile(quizDraft);
-        closeQuiz();
-        setStatus("Perfil guardado · <b>elige tu destino</b>");
-      };
     }
 
     async function updateSmartOrigin(map, loc, label) {
@@ -1595,19 +2090,14 @@
           smartState.destination = dest;
           document.getElementById("sr-calc-routes").disabled = false;
           if (smartState.destMarker) smartState.destMarker.remove();
-          smartState.destMarker = new mapboxgl.Marker({ color: "#ffbf69" })
-            .setLngLat([dest.lng, dest.lat])
-            .setPopup(new mapboxgl.Popup().setHTML(`<b>${escapeHtml(dest.name)}</b><br><small>Destino elegido</small>`))
-            .addTo(map);
+          smartState.destMarker = addCategoryDestMarker(map, dest);
           map.flyTo({ center: [dest.lng, dest.lat], zoom: 13, pitch: 52, speed: 1.4, essential: true });
         };
         list.appendChild(btn);
         if (index === 0) {
           smartState.destination = dest;
           document.getElementById("sr-calc-routes").disabled = false;
-          smartState.destMarker = new mapboxgl.Marker({ color: "#ffbf69" })
-            .setLngLat([dest.lng, dest.lat])
-            .addTo(map);
+          smartState.destMarker = addCategoryDestMarker(map, dest);
         }
       });
 
@@ -1616,7 +2106,24 @@
       }
     }
 
-    function boundsFromLine(geometry) {
+    function addCategoryDestMarker(map, dest) {
+      const lngLat = [dest.lng, dest.lat];
+      const marker = window.TwinmapCategoryImages?.createMapboxMarker?.(
+        mapboxgl,
+        lngLat,
+        smartState.category || dest.kind,
+        dest.kind,
+        { size: 48 },
+      );
+      if (marker) {
+        marker.setPopup(new mapboxgl.Popup().setHTML(`<b>${escapeHtml(dest.name)}</b><br><small>Destino elegido</small>`));
+        marker.addTo(map);
+        return marker;
+      }
+      return new mapboxgl.Marker({ color: "#ffbf69" }).setLngLat(lngLat).addTo(map);
+    }
+
+    function routeBounds(geometry) {
       const coords = geometry?.type === "LineString" ? geometry.coordinates : [];
       if (!coords.length) return null;
       let minLng = Infinity; let minLat = Infinity; let maxLng = -Infinity; let maxLat = -Infinity;
@@ -1854,7 +2361,7 @@
           document.getElementById("smart-hint").textContent = "Cargando opciones de " + btn.textContent.trim() + "...";
           try {
             await loadDestinationsForCategory(map, smartState.category);
-            document.getElementById("smart-hint").textContent = "Elige el destino exacto. El % refleja tu perfil del quiz.";
+            document.getElementById("smart-hint").textContent = "Elige el destino exacto. El % refleja tu perfil del cuestionario.";
           } catch (error) {
             document.getElementById("smart-hint").textContent = error.message;
           }
@@ -1868,14 +2375,12 @@
         catch (error) { document.getElementById("smart-hint").textContent = error.message; }
       };
       document.getElementById("sr-confirm-route").onclick = () => startNavigation(map);
-
-      if (loadProfile()) {
-        setTimeout(() => startSmartRouteFlow(map), 900);
-      }
     }
 
     function wireRoute(map) {
-      document.getElementById("route-panel").style.display = "block";
+      if (!document.documentElement.classList.contains("embed-mode")) {
+        document.getElementById("route-panel").style.display = "block";
+      }
       document.getElementById("route-start-btn").onclick = () => useMyLocation(map);
       document.getElementById("route-pick-btn").onclick = () => armStartOnMap("Toca el mapa en tu punto de partida.");
       document.getElementById("route-stop-btn").onclick = () => armMode("stop");
@@ -1917,6 +2422,183 @@
     async function chatLocation(map) {
       return getDeviceLocation(map);
     }
+
+    let placeSidebarRequestId = 0;
+
+    function placeFromFeature(feature, layerId, lngLat) {
+      const p = feature.properties || {};
+      const coords = feature.geometry?.coordinates || [lngLat.lng, lngLat.lat];
+      if (layerId === "nature-points") {
+        return {
+          name: p.name || "Lugar natural",
+          category: p.category || "naturaleza",
+          kind: "naturaleza",
+          department: p.department || "",
+          coordinates: coords,
+          imageCategory: p.category,
+          imageKind: "naturaleza",
+          extrasHtml: [
+            Number.isFinite(Number(p.elevation_m)) ? "Elevación: " + p.elevation_m + " m" : "",
+            p.access ? String(p.access) : "",
+            p.season ? "Temporada: " + p.season : "",
+            p.services ? "Servicios: " + p.services : "",
+            p.surf ? "Surf: " + p.surf : "",
+            p.safety ? "Seguridad: " + p.safety : "",
+          ].filter(Boolean).map((line) => "<small>" + escapeHtml(line) + "</small>").join("<br>"),
+          extra: {
+            elevation_m: p.elevation_m,
+            access: p.access,
+            season: p.season,
+            services: p.services,
+            surf: p.surf,
+            safety: p.safety,
+          },
+        };
+      }
+      return {
+        name: p.name || "Sin nombre",
+        category: p.cat || "lugar",
+        kind: p.kind || "",
+        department: "",
+        coordinates: coords,
+        imageCategory: p.cat,
+        imageKind: p.kind,
+        extrasHtml: [
+          p.phone ? "📞 " + p.phone : "",
+          p.website ? '<a href="' + escapeHtml(p.website) + '" target="_blank" rel="noopener">Sitio web</a>' : "",
+        ].filter(Boolean).join("<br>") + placeDetailsHtml(p),
+        extra: {
+          phone: p.phone,
+          website: p.website,
+          opening_hours: p.opening_hours,
+          cuisine: p.cuisine,
+          stars: p.stars,
+        },
+      };
+    }
+
+    function closePlaceSidebar() {
+      const panel = document.getElementById("place-sidebar");
+      const backdrop = document.getElementById("place-sidebar-backdrop");
+      panel.classList.remove("is-open");
+      panel.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("place-sidebar-open");
+      if (backdrop) backdrop.hidden = true;
+    }
+
+    function openPlaceSidebar(map, place) {
+      if (!place?.name) return;
+      const panel = document.getElementById("place-sidebar");
+      const backdrop = document.getElementById("place-sidebar-backdrop");
+      const title = document.getElementById("place-sidebar-title");
+      const meta = document.getElementById("place-sidebar-meta");
+      const image = document.getElementById("place-sidebar-image");
+      const extras = document.getElementById("place-sidebar-extras");
+      const body = document.getElementById("place-sidebar-body");
+
+      title.textContent = place.name;
+      meta.textContent = [place.category, place.kind, place.department].filter(Boolean).join(" · ");
+      image.innerHTML = categoryPopupImage(place.imageCategory || place.category, place.imageKind || place.kind);
+      extras.innerHTML = place.extrasHtml || "";
+      body.innerHTML = '<span class="place-sidebar-badge">ChatGPT</span><p class="place-sidebar-loading">Buscando información del lugar…</p>';
+
+      panel.classList.add("is-open");
+      panel.setAttribute("aria-hidden", "false");
+      document.body.classList.add("place-sidebar-open");
+      if (backdrop) backdrop.hidden = false;
+
+      if (Array.isArray(place.coordinates) && place.coordinates.length >= 2) {
+        map.easeTo({
+          center: place.coordinates,
+          zoom: Math.max(map.getZoom(), 11.5),
+          duration: 700,
+        });
+      }
+
+      loadPlaceSidebarInfo(place);
+    }
+
+    async function loadPlaceSidebarInfo(place) {
+      const body = document.getElementById("place-sidebar-body");
+      const image = document.getElementById("place-sidebar-image");
+      const meta = document.getElementById("place-sidebar-meta");
+      const requestId = ++placeSidebarRequestId;
+      try {
+        const response = await fetch(API + "/api/assistant/place-info", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: place.name,
+            category: place.category,
+            kind: place.kind,
+            department: place.department,
+            location: { lat: place.coordinates[1], lng: place.coordinates[0] },
+            extra: place.extra || {},
+          }),
+        });
+        const payload = await response.json();
+        if (requestId !== placeSidebarRequestId) return;
+        if (!response.ok || !payload.success) throw new Error(payload.error || "No se pudo consultar la IA.");
+
+        const data = payload.data || {};
+        if (data.imagen) {
+          image.innerHTML = `<img class="twinmap-popup-img" src="${escapeHtml(data.imagen)}" alt="${escapeHtml(data.nombre || place.name)}" loading="lazy">`;
+        }
+        if (data.lugar) meta.textContent = [data.categoria, data.lugar].filter(Boolean).join(" · ");
+
+        const weatherDays = Array.isArray(data.clima?.dias) ? data.clima.dias : [];
+        const weatherHtml = weatherDays.length ? `
+          <div class="place-sidebar-section">
+            <h3>Clima · 3 días (${escapeHtml(data.clima?.fuente || "Open-Meteo")})</h3>
+            <p>${escapeHtml(data.clima?.resumen || "")}</p>
+            <div class="place-sidebar-weather-days">
+              ${weatherDays.map((day) => {
+                const label = day.fecha
+                  ? new Date(day.fecha + "T12:00:00").toLocaleDateString("es", { weekday: "short", day: "numeric", month: "short" })
+                  : "Día";
+                return `<article class="place-sidebar-weather-day">
+                  <strong>${escapeHtml(label)} · ${escapeHtml(day.condicion || "")}</strong>
+                  ${Math.round(day.min_c)}° – ${Math.round(day.max_c)}°C · Lluvia ${Math.round(day.lluvia_pct || 0)}%
+                  ${day.consejo ? `<br><small>${escapeHtml(day.consejo)}</small>` : ""}
+                </article>`;
+              }).join("")}
+            </div>
+          </div>` : "";
+
+        const warning = data.warning
+          ? `<p class="place-sidebar-error">${escapeHtml(data.warning)}</p>`
+          : "";
+
+        body.innerHTML = `
+          <div class="place-sidebar-kv">
+            <div><span>Nombre</span><span>${escapeHtml(data.nombre || place.name)}</span></div>
+            <div><span>Categoría</span><span>${escapeHtml(data.categoria || place.category || "—")}</span></div>
+            <div><span>Lugar</span><span>${escapeHtml(data.lugar || place.department || "El Salvador")}</span></div>
+          </div>
+          <div class="place-sidebar-section">
+            <h3>Descripción · ChatGPT</h3>
+            <div>${escapeHtml(data.descripcion || data.summary || "").replace(/\n/g, "<br>")}</div>
+          </div>
+          ${weatherHtml}
+          ${warning}`;
+      } catch (error) {
+        if (requestId !== placeSidebarRequestId) return;
+        body.innerHTML =
+          '<span class="place-sidebar-badge">ChatGPT</span>' +
+          '<p class="place-sidebar-error">' + escapeHtml(error.message || "No se pudo cargar la información.") + "</p>" +
+          "<p>Arranca el backend con <code>npm run dev</code> en el puerto 3001.</p>";
+      }
+    }
+
+    function wirePlaceSidebar(map) {
+      document.getElementById("place-sidebar-close").onclick = () => closePlaceSidebar();
+      const backdrop = document.getElementById("place-sidebar-backdrop");
+      if (backdrop) backdrop.onclick = () => closePlaceSidebar();
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closePlaceSidebar();
+      });
+    }
+
     function wireAssistant(map) {
       const input = document.getElementById("assistant-input");
       const button = document.getElementById("assistant-send");

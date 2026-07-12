@@ -1,20 +1,20 @@
-const AVENTURA_BITACORA_KEY = "twinmap-aventura-bitacora";
+﻿const AVENTURA_BITACORA_KEY = "twinmap-aventura-bitacora";
 
 const AVENTURA_VIBE_TAGS = [
-  { id: "loca", label: "Loca", emoji: "🤪" },
-  { id: "entretenida", label: "Entretenida", emoji: "🎉" },
-  { id: "epica", label: "Épica", emoji: "⚡" },
-  { id: "chill", label: "Chill", emoji: "😎" },
-  { id: "gastronomica", label: "Gastronómica", emoji: "🍽️" },
-  { id: "salvaje", label: "Salvaje", emoji: "🌿" },
+  { id: "loca", label: "Loca", emoji: "ðŸ¤ª" },
+  { id: "entretenida", label: "Entretenida", emoji: "ðŸŽ‰" },
+  { id: "epica", label: "Ã‰pica", emoji: "âš¡" },
+  { id: "chill", label: "Chill", emoji: "ðŸ˜Ž" },
+  { id: "gastronomica", label: "GastronÃ³mica", emoji: "ðŸ½ï¸" },
+  { id: "salvaje", label: "Salvaje", emoji: "ðŸŒ¿" },
 ];
 
 const ROUTE_NAME_TEMPLATES = [
-  (n) => `La ruta más loca: ${n}`,
+  (n) => `La ruta mÃ¡s loca: ${n}`,
   (n) => `Aventura ${n}`,
-  (n) => `Recorrido épico · ${n}`,
+  (n) => `Recorrido Ã©pico Â· ${n}`,
   (n) => `Ruta salvaje por ${n}`,
-  (n) => `Expedición ${n}`,
+  (n) => `ExpediciÃ³n ${n}`,
 ];
 
 const statsEl = document.getElementById("aventura-bitacora-stats");
@@ -74,7 +74,7 @@ function inferAutoTags(places) {
   if (places.length >= 5) tags.add("epica");
   if (types.filter((t) => t === "playa").length >= 2) tags.add("loca");
   if (types.some((t) => t === "restaurante")) tags.add("gastronomica");
-  if (types.some((t) => ["Naturaleza", "naturaleza", "Volcán"].includes(t))) tags.add("salvaje");
+  if (types.some((t) => ["Naturaleza", "naturaleza", "VolcÃ¡n"].includes(t))) tags.add("salvaje");
   if (!tags.size) tags.add("entretenida");
 
   return [...tags];
@@ -82,7 +82,7 @@ function inferAutoTags(places) {
 
 function buildVibeSummary(places, quiz) {
   const names = places.slice(0, 3).map((p) => p.name);
-  const trail = names.length ? names.join(" → ") : "paradas por descubrir";
+  const trail = names.length ? names.join(" â†’ ") : "paradas por descubrir";
   const prefs = [];
 
   if (quiz?.experiencia) prefs.push(quiz.experiencia.toLowerCase());
@@ -90,8 +90,8 @@ function buildVibeSummary(places, quiz) {
   if (quiz?.paisaje) prefs.push(quiz.paisaje.split(",")[0].toLowerCase());
   if (quiz?.clima) prefs.push(quiz.clima.split(" ")[0].toLowerCase());
 
-  const vibe = prefs.length ? `Vibe: ${prefs.join(" · ")}.` : "Ruta personalizada según tu quiz.";
-  return `${trail}. ${vibe} ¡Lista para compartir con tus amigos!`;
+  const vibe = prefs.length ? `Vibe: ${prefs.join(" Â· ")}.` : "Ruta personalizada segÃºn tu quiz.";
+  return `${trail}. ${vibe} Â¡Lista para compartir con tus amigos!`;
 }
 
 function placesToStops(places) {
@@ -165,7 +165,7 @@ function getBitacoraStats() {
   const rated = entries.filter((e) => e.rating > 0);
   const avgRating = rated.length
     ? (rated.reduce((sum, e) => sum + e.rating, 0) / rated.length).toFixed(1)
-    : "—";
+    : "â€”";
 
   return {
     rutas: entries.length,
@@ -246,7 +246,7 @@ function renderStars(entryId, currentRating) {
           data-rating="${star}"
           aria-label="Calificar con ${star} estrellas"
         >
-          ★
+          â˜…
         </button>
       `,
     )
@@ -281,7 +281,7 @@ function renderList() {
   if (!filtered.length) {
     listEl.innerHTML = entries.length
       ? '<p class="bitacora-empty">No hay rutas con este filtro. Prueba otra etiqueta.</p>'
-      : `<p class="bitacora-empty">Aún no tienes rutas locas guardadas. Genera o regenera una ruta en el mapa de aventura y aparecerá aquí.</p>`;
+      : `<p class="bitacora-empty">AÃºn no tienes rutas locas guardadas. Genera o regenera una ruta en el mapa de aventura y aparecerÃ¡ aquÃ­.</p>`;
     return;
   }
 
@@ -292,7 +292,7 @@ function renderList() {
           <header class="aventura-bitacora-card__header">
             <div>
               <h3>${entry.routeName}</h3>
-              <p class="aventura-bitacora-card__date">${formatDate(entry.createdAt)} · ${entry.stops.length} paradas</p>
+              <p class="aventura-bitacora-card__date">${formatDate(entry.createdAt)} Â· ${entry.stops.length} paradas</p>
             </div>
             <div class="aventura-bitacora-card__rating" role="group" aria-label="Calificar ruta">
               ${renderStars(entry.id, entry.rating)}
@@ -340,7 +340,7 @@ function bindListInteractions() {
       const entryId = button.dataset.entryId;
       const rating = Number(button.dataset.rating);
       updateEntry(entryId, { rating });
-      window.TwinmapRoute?.showRouteToast(`¡${rating} estrellas! Gracias por calificar`);
+      window.TwinmapRoute?.showRouteToast(`Â¡${rating} estrellas! Gracias por calificar`);
     });
   });
 
@@ -392,3 +392,4 @@ window.TwinmapAventuraBitacora = {
   refresh: refreshBitacora,
   updateEntry,
 };
+

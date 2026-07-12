@@ -1,4 +1,4 @@
-const AVENTURA_ROUTE_STORAGE_KEY = "twinmap-aventura-route";
+﻿const AVENTURA_ROUTE_STORAGE_KEY = "twinmap-aventura-route";
 const AVENTURA_ROUTE_COUNT = 5;
 
 const AVENTURA_PLACES = [
@@ -9,10 +9,10 @@ const AVENTURA_PLACES = [
     categoryLabel: "Naturaleza",
     type: "lugar",
     location: "Santa Ana, El Salvador",
-    description: "Cráter volcánico con aguas turquesas ideal para kayak, miradores y gastronomía en la orilla.",
+    description: "CrÃ¡ter volcÃ¡nico con aguas turquesas ideal para kayak, miradores y gastronomÃ­a en la orilla.",
     lat: 13.819,
     lng: -89.559,
-    weather: "24°C · Parcialmente nublado",
+    weather: "24Â°C Â· Parcialmente nublado",
     tags: {
       clima: ["fresco"],
       paisaje: ["volcan", "mezcla"],
@@ -25,15 +25,15 @@ const AVENTURA_PLACES = [
   },
   {
     id: "el-boqueron",
-    name: "El Boquerón",
-    category: "Volcán",
-    categoryLabel: "Volcán",
+    name: "El BoquerÃ³n",
+    category: "VolcÃ¡n",
+    categoryLabel: "VolcÃ¡n",
     type: "lugar",
     location: "San Salvador, El Salvador",
-    description: "Volcán activo con senderos, miradores y clima fresco sobre la capital.",
+    description: "VolcÃ¡n activo con senderos, miradores y clima fresco sobre la capital.",
     lat: 13.734,
     lng: -89.287,
-    weather: "19°C · Brisa fresca",
+    weather: "19Â°C Â· Brisa fresca",
     tags: {
       clima: ["fresco"],
       paisaje: ["volcan"],
@@ -51,10 +51,10 @@ const AVENTURA_PLACES = [
     categoryLabel: "Playa",
     type: "playa",
     location: "La Libertad, El Salvador",
-    description: "Destino de surf, atardeceres y ambiente relajado en la costa del Pacífico.",
+    description: "Destino de surf, atardeceres y ambiente relajado en la costa del PacÃ­fico.",
     lat: 13.493,
     lng: -89.385,
-    weather: "29°C · Soleado",
+    weather: "29Â°C Â· Soleado",
     tags: {
       clima: ["sol"],
       paisaje: ["playa"],
@@ -72,10 +72,10 @@ const AVENTURA_PLACES = [
     categoryLabel: "Playa",
     type: "playa",
     location: "La Libertad, El Salvador",
-    description: "Playa más tranquila con olas suaves, hostels y cafés frente al mar.",
+    description: "Playa mÃ¡s tranquila con olas suaves, hostels y cafÃ©s frente al mar.",
     lat: 13.496,
     lng: -89.441,
-    weather: "28°C · Soleado",
+    weather: "28Â°C Â· Soleado",
     tags: {
       clima: ["sol"],
       paisaje: ["playa"],
@@ -93,10 +93,10 @@ const AVENTURA_PLACES = [
     categoryLabel: "Ruta",
     type: "lugar",
     location: "Sonsonate, El Salvador",
-    description: "Recorrido por pueblos, café, artesanías y naturaleza en el occidente del país.",
+    description: "Recorrido por pueblos, cafÃ©, artesanÃ­as y naturaleza en el occidente del paÃ­s.",
     lat: 13.749,
     lng: -89.714,
-    weather: "23°C · Nublado ligero",
+    weather: "23Â°C Â· Nublado ligero",
     tags: {
       clima: ["fresco", "adaptable"],
       paisaje: ["pueblo", "mezcla"],
@@ -109,15 +109,15 @@ const AVENTURA_PLACES = [
   },
   {
     id: "juayua",
-    name: "Juayúa",
+    name: "JuayÃºa",
     category: "Pueblo",
     categoryLabel: "Pueblo",
     type: "lugar",
     location: "Sonsonate, El Salvador",
-    description: "Pueblo de la Ruta de las Flores famoso por su feria gastronómica y cascadas cercanas.",
+    description: "Pueblo de la Ruta de las Flores famoso por su feria gastronÃ³mica y cascadas cercanas.",
     lat: 13.717,
     lng: -89.745,
-    weather: "22°C · Fresco",
+    weather: "22Â°C Â· Fresco",
     tags: {
       clima: ["fresco"],
       paisaje: ["pueblo", "cascada"],
@@ -130,15 +130,15 @@ const AVENTURA_PLACES = [
   },
   {
     id: "joya-ceren",
-    name: "Joya de Cerén",
-    category: "Arqueológico",
-    categoryLabel: "Arqueológico",
+    name: "Joya de CerÃ©n",
+    category: "ArqueolÃ³gico",
+    categoryLabel: "ArqueolÃ³gico",
     type: "lugar",
     location: "La Libertad, El Salvador",
-    description: "Sitio arqueológico Patrimonio de la Humanidad, conocido como la Pompeya de América.",
+    description: "Sitio arqueolÃ³gico Patrimonio de la Humanidad, conocido como la Pompeya de AmÃ©rica.",
     lat: 13.827,
     lng: -89.356,
-    weather: "27°C · Calor moderado",
+    weather: "27Â°C Â· Calor moderado",
     tags: {
       clima: ["sol", "adaptable"],
       paisaje: ["pueblo"],
@@ -155,11 +155,11 @@ const AVENTURA_PLACES = [
     category: "Ciudad",
     categoryLabel: "Ciudad",
     type: "lugar",
-    location: "Cuscatlán, El Salvador",
-    description: "Pueblo colonial con calles empedradas, arte y vistas al lago Suchitlán.",
+    location: "CuscatlÃ¡n, El Salvador",
+    description: "Pueblo colonial con calles empedradas, arte y vistas al lago SuchitlÃ¡n.",
     lat: 13.978,
     lng: -89.028,
-    weather: "26°C · Soleado",
+    weather: "26Â°C Â· Soleado",
     tags: {
       clima: ["adaptable"],
       paisaje: ["pueblo"],
@@ -173,14 +173,14 @@ const AVENTURA_PLACES = [
   {
     id: "tazumal",
     name: "Tazumal",
-    category: "Arqueológico",
-    categoryLabel: "Arqueológico",
+    category: "ArqueolÃ³gico",
+    categoryLabel: "ArqueolÃ³gico",
     type: "lugar",
     location: "Chalchuapa, Santa Ana",
-    description: "Complejo maya con estructuras impresionantes y museo arqueológico.",
+    description: "Complejo maya con estructuras impresionantes y museo arqueolÃ³gico.",
     lat: 13.979,
     lng: -89.674,
-    weather: "25°C · Soleado",
+    weather: "25Â°C Â· Soleado",
     tags: {
       clima: ["adaptable"],
       paisaje: ["pueblo"],
@@ -197,11 +197,11 @@ const AVENTURA_PLACES = [
     category: "Naturaleza",
     categoryLabel: "Naturaleza",
     type: "lugar",
-    location: "Juayúa, Sonsonate",
-    description: "Cascada de columnas basálticas en sendero verde del occidente.",
+    location: "JuayÃºa, Sonsonate",
+    description: "Cascada de columnas basÃ¡lticas en sendero verde del occidente.",
     lat: 13.704,
     lng: -89.752,
-    weather: "21°C · Fresco",
+    weather: "21Â°C Â· Fresco",
     tags: {
       clima: ["fresco"],
       paisaje: ["cascada"],
@@ -218,11 +218,11 @@ const AVENTURA_PLACES = [
     category: "Naturaleza",
     categoryLabel: "Naturaleza",
     type: "lugar",
-    location: "Ahuachapán, El Salvador",
-    description: "Reserva con bosque nuboso, aves endémicas y senderos de biodiversidad.",
+    location: "AhuachapÃ¡n, El Salvador",
+    description: "Reserva con bosque nuboso, aves endÃ©micas y senderos de biodiversidad.",
     lat: 13.817,
     lng: -89.871,
-    weather: "20°C · Brisa fresca",
+    weather: "20Â°C Â· Brisa fresca",
     tags: {
       clima: ["fresco"],
       paisaje: ["cascada", "mezcla"],
@@ -240,10 +240,10 @@ const AVENTURA_PLACES = [
     categoryLabel: "Restaurante",
     type: "restaurante",
     location: "Santa Tecla, La Libertad",
-    description: "Comida típica salvadoreña junto a cascadas naturales y áreas verdes.",
+    description: "Comida tÃ­pica salvadoreÃ±a junto a cascadas naturales y Ã¡reas verdes.",
     lat: 13.676,
     lng: -89.279,
-    weather: "24°C · Fresco",
+    weather: "24Â°C Â· Fresco",
     tags: {
       clima: ["fresco", "adaptable"],
       paisaje: ["cascada", "pueblo"],
@@ -256,15 +256,15 @@ const AVENTURA_PLACES = [
   },
   {
     id: "pupuseria-ceiba",
-    name: "Pupusería La Ceiba",
+    name: "PupuserÃ­a La Ceiba",
     category: "Restaurante",
     categoryLabel: "Restaurante",
     type: "restaurante",
     location: "San Salvador, El Salvador",
-    description: "Pupusas artesanales y ambiente local en el corazón de la capital.",
+    description: "Pupusas artesanales y ambiente local en el corazÃ³n de la capital.",
     lat: 13.692,
     lng: -89.218,
-    weather: "26°C · Soleado",
+    weather: "26Â°C Â· Soleado",
     tags: {
       clima: ["adaptable"],
       paisaje: ["pueblo"],
@@ -278,14 +278,14 @@ const AVENTURA_PLACES = [
   {
     id: "cerro-verde",
     name: "Cerro Verde",
-    category: "Volcán",
-    categoryLabel: "Volcán",
+    category: "VolcÃ¡n",
+    categoryLabel: "VolcÃ¡n",
     type: "lugar",
     location: "Santa Ana, El Salvador",
     description: "Parque nacional con miradores, neblina y vistas a volcanes vecinos.",
     lat: 13.832,
     lng: -89.626,
-    weather: "18°C · Neblina",
+    weather: "18Â°C Â· Neblina",
     tags: {
       clima: ["fresco"],
       paisaje: ["volcan"],
@@ -303,10 +303,10 @@ const AVENTURA_PLACES = [
     categoryLabel: "Playa",
     type: "playa",
     location: "La Paz, El Salvador",
-    description: "Playa familiar con resorts, mariscos y aguas cálidas del Pacífico.",
+    description: "Playa familiar con resorts, mariscos y aguas cÃ¡lidas del PacÃ­fico.",
     lat: 13.345,
     lng: -88.988,
-    weather: "30°C · Soleado",
+    weather: "30Â°C Â· Soleado",
     tags: {
       clima: ["sol"],
       paisaje: ["playa"],
@@ -324,10 +324,10 @@ const AVENTURA_PLACES = [
     categoryLabel: "Naturaleza",
     type: "lugar",
     location: "San Salvador, El Salvador",
-    description: "Lago volcánico para kayak, veleros y atardeceres cerca de la capital.",
+    description: "Lago volcÃ¡nico para kayak, veleros y atardeceres cerca de la capital.",
     lat: 13.672,
     lng: -89.056,
-    weather: "27°C · Soleado",
+    weather: "27Â°C Â· Soleado",
     tags: {
       clima: ["sol", "adaptable"],
       paisaje: ["volcan", "mezcla"],
@@ -340,15 +340,15 @@ const AVENTURA_PLACES = [
   },
   {
     id: "san-andres",
-    name: "San Andrés",
-    category: "Arqueológico",
-    categoryLabel: "Arqueológico",
+    name: "San AndrÃ©s",
+    category: "ArqueolÃ³gico",
+    categoryLabel: "ArqueolÃ³gico",
     type: "lugar",
-    location: "San Andrés, Santa Ana",
-    description: "Sitio arqueológico con acrópolis maya y museo de sitio.",
+    location: "San AndrÃ©s, Santa Ana",
+    description: "Sitio arqueolÃ³gico con acrÃ³polis maya y museo de sitio.",
     lat: 13.797,
     lng: -89.629,
-    weather: "25°C · Soleado",
+    weather: "25Â°C Â· Soleado",
     tags: {
       clima: ["adaptable"],
       paisaje: ["pueblo"],
@@ -366,10 +366,10 @@ const AVENTURA_PLACES = [
     categoryLabel: "Pueblo",
     type: "lugar",
     location: "Sonsonate, El Salvador",
-    description: "Pueblo artesanal de calles empedradas y café de altura en la Ruta de las Flores.",
+    description: "Pueblo artesanal de calles empedradas y cafÃ© de altura en la Ruta de las Flores.",
     lat: 13.777,
     lng: -89.737,
-    weather: "22°C · Fresco",
+    weather: "22Â°C Â· Fresco",
     tags: {
       clima: ["fresco"],
       paisaje: ["pueblo"],
@@ -387,10 +387,10 @@ const AVENTURA_PLACES = [
     categoryLabel: "Playa",
     type: "playa",
     location: "La Libertad, El Salvador",
-    description: "Malecón, competencias de surf y vida nocturna en la costa.",
+    description: "MalecÃ³n, competencias de surf y vida nocturna en la costa.",
     lat: 13.488,
     lng: -89.324,
-    weather: "29°C · Soleado",
+    weather: "29Â°C Â· Soleado",
     tags: {
       clima: ["sol"],
       paisaje: ["playa"],
@@ -403,15 +403,15 @@ const AVENTURA_PLACES = [
   },
   {
     id: "cafe-talnamica",
-    name: "Café Talnamica",
+    name: "CafÃ© Talnamica",
     category: "Restaurante",
     categoryLabel: "Restaurante",
     type: "restaurante",
     location: "Nahuizalco, Sonsonate",
-    description: "Café de especialidad y talleres de barismo en zona cafetalera.",
+    description: "CafÃ© de especialidad y talleres de barismo en zona cafetalera.",
     lat: 13.781,
     lng: -89.741,
-    weather: "21°C · Fresco",
+    weather: "21Â°C Â· Fresco",
     tags: {
       clima: ["fresco"],
       paisaje: ["pueblo"],
@@ -425,11 +425,11 @@ const AVENTURA_PLACES = [
 ];
 
 const QUIZ_EXPERIENCIA_MAP = {
-  "Acción y adrenalina": "accion",
-  "Relajación y desconexión": "relajacion",
-  Gastronómica: "gastronomica",
-  Arqueológica: "arqueologica",
-  "Monumentos emblemáticos": "monumentos",
+  "AcciÃ³n y adrenalina": "accion",
+  "RelajaciÃ³n y desconexiÃ³n": "relajacion",
+  "GastronÃ³mica": "gastronomica",
+  "ArqueolÃ³gica": "arqueologica",
+  "Monumentos emblemÃ¡ticos": "monumentos",
   Naturaleza: "naturaleza",
 };
 
@@ -444,20 +444,20 @@ const QUIZ_ESCENARIO_MAP = {
 const QUIZ_ENTORNO_MAP = {
   "Ciudad y ritmo urbano": "ciudad",
   "Costa o cerca del mar": "costa",
-  "Montaña o zona rural": "montana",
+  "MontaÃ±a o zona rural": "montana",
   "Pueblo con historia": "pueblo",
   "Un poco de todo": "mixto",
 };
 
 const QUIZ_INTENSIDAD_MAP = {
   "Intensa: caminar, surfear, explorar sin parar": "intensa",
-  "Suave: pausas, vistas y buen café": "suave",
+  "Suave: pausas, vistas y buen cafÃ©": "suave",
   "Un equilibrio entre ambos": "equilibrio",
 };
 
 const QUIZ_AMBIENTE_MAP = {
-  "Con vida, gente y buena energía": "vida",
-  "Íntimo, silencioso y sin prisa": "intimo",
+  "Con vida, gente y buena energÃ­a": "vida",
+  "Ãntimo, silencioso y sin prisa": "intimo",
   "Un equilibrio entre ambos": "equilibrio",
 };
 
@@ -683,9 +683,10 @@ function renderMapPins(places) {
     const pos = coordsToPercent(place.lat, place.lng);
     const pin = document.createElement("button");
     pin.type = "button";
-    pin.className = `map-pin aventura-map-pin aventura-map-pin--${place.type}`;
+    pin.className = `map-pin map-pin--icon aventura-map-pin aventura-map-pin--${place.type}`;
     pin.style.left = pos.left;
     pin.style.top = pos.top;
+    window.TwinmapCategoryImages?.applyPinIcon?.(pin, place.categoryLabel || place.category, place.type);
     pin.setAttribute("aria-label", `${index + 1}. ${place.name}`);
     pin.dataset.routeOrder = String(index + 1);
 
@@ -694,6 +695,10 @@ function renderMapPins(places) {
     });
 
     mapCanvasEl.appendChild(pin);
+  });
+
+  window.TwinmapCategoryImages?.prepareIconAssets?.().then(() => {
+    window.TwinmapCategoryImages?.refreshPinIcons?.(mapCanvasEl);
   });
 
   window.TwinmapPlacePopup?.bindPins(mapCanvasEl);
@@ -735,7 +740,7 @@ function renderRouteSummary(places, quiz) {
   if (quiz.escenario) prefs.push(quiz.escenario.split(" ")[0].toLowerCase());
 
   routeSummaryEl.textContent = places.length
-    ? `${places.length} paradas · ${prefs.length ? `Basada en: ${prefs.join(", ")}` : "Personalizada según tu quiz"}`
+    ? `${places.length} paradas Â· ${prefs.length ? `Basada en: ${prefs.join(", ")}` : "Personalizada segÃºn tu quiz"}`
     : "";
 }
 
@@ -769,7 +774,7 @@ function regenerateRoute() {
     window.TwinmapAventuraBitacora?.saveRoute(newRoute, getQuizAnswers(), { skipIfDuplicate: true });
   }
 
-  window.TwinmapRoute?.showRouteToast("Ruta de aventura regenerada · guardada en tu bitácora");
+  window.TwinmapRoute?.showRouteToast("Ruta de aventura regenerada Â· guardada en tu bitÃ¡cora");
 }
 
 regenerateBtn?.addEventListener("click", regenerateRoute);
@@ -780,3 +785,4 @@ window.TwinmapAventuraRoute = {
   render: renderAventuraRoute,
   regenerate: regenerateRoute,
 };
+

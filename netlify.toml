@@ -2,18 +2,8 @@
   publish = "."
   command = "node scripts/netlify-config.mjs"
 
-# El mapa real está en la raíz (/), no en frontend/ (mockup UI)
-[[redirects]]
-  from = "/frontend"
-  to = "/"
-  status = 302
-
-[[redirects]]
-  from = "/frontend/*"
-  to = "/"
-  status = 302
-
-# SPA: el mapa vive en index.html en la raíz del repo
+# El mapa real también accesible en /frontend/ (UI modo ruta + iframe)
+# Raíz / sigue siendo el mapa a pantalla completa
 [[redirects]]
   from = "/*"
   to = "/index.html"
