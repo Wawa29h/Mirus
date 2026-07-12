@@ -1,7 +1,4 @@
 server.js
-api/
-routes/
-controllers/
 node_modules/
 .env
 .env.*
