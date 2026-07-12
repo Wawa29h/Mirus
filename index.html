@@ -1027,6 +1027,8 @@
     .assistant-chat .chat-answer { margin-top:8px; font-size:11.5px; line-height:1.4; color:var(--text); max-height: 72px; overflow-y: auto; }
 
     .tool-toggle { width:100%; cursor:pointer; border:0; border-radius:8px; padding:7px 10px; font-size:11px; font-weight:600; background:rgba(255,255,255,.08); color:var(--muted); text-align:left; }
+    .layer-icons-toggle { width:100%; margin-top:10px; cursor:pointer; border:1px solid rgba(255,255,255,.18); border-radius:8px; padding:9px 10px; font-size:11px; font-weight:700; background:rgba(255,255,255,.06); color:var(--text); }
+    .layer-icons-toggle:hover, .layer-icons-toggle:focus-visible { background:rgba(255,255,255,.14); outline:none; }
     .tool-toggle:hover { color:var(--text); background:rgba(255,255,255,.12); }
     .tool-body { display:none; }
     .tool-body.is-open { display:block; }
@@ -1244,6 +1246,10 @@
           <span class="dot" style="background:#c77dff"></span>
           <span><span class="txt">Agenda cultural</span><br><span class="sub">Eventos ref.</span></span>
         </label>
+        </div>
+
+        <button type="button" class="layer-icons-toggle" id="icons-toggle" aria-pressed="false">Ocultar todos los iconos</button>
+
         </div>
 
         <div class="status" id="status">Cargando mapa…</div>
@@ -4322,6 +4328,18 @@
       document.getElementById("lyr-nature").onchange = () => syncAllLayerToggles(map);
       document.getElementById("lyr-mobility").onchange = () => syncAllLayerToggles(map);
       document.getElementById("lyr-events").onchange = () => syncAllLayerToggles(map);
+      const iconsToggle = document.getElementById("icons-toggle");
+      iconsToggle.onclick = () => {
+        const iconLayerIds = ["lyr-pois", "lyr-tourism", "lyr-parking", "lyr-heat", "lyr-hotspots", "lyr-nature", "lyr-mobility", "lyr-events"];
+        const isHiding = iconsToggle.getAttribute("aria-pressed") !== "true";
+        iconLayerIds.forEach((id) => {
+          const input = document.getElementById(id);
+          if (input) input.checked = !isHiding;
+        });
+        iconsToggle.setAttribute("aria-pressed", String(isHiding));
+        iconsToggle.textContent = isHiding ? "Mostrar todos los iconos" : "Ocultar todos los iconos";
+        syncAllLayerToggles(map);
+      };
       document.getElementById("lyr-hotspots").onchange = (e) => {
         syncAllLayerToggles(map);
         if (!e.target.checked && bioPlayTimer) toggleBioPlay(map); // pausar al apagar
