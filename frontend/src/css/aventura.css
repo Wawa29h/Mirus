@@ -1,0 +1,459 @@
+.nav--ruta,
+.nav--aventura {
+  display: contents;
+}
+
+body[data-mode="aventura"] .nav--ruta {
+  display: none;
+}
+
+body:not([data-mode="aventura"]) .nav--aventura {
+  display: none;
+}
+
+.map-view--aventura .map-canvas {
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 39px, #e4ebe4 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, #e4ebe4 40px),
+    #f2f6f2;
+}
+
+.aventura-route-line {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.aventura-route-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.aventura-route-path {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 0.6;
+  stroke-dasharray: 2 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.75;
+}
+
+.aventura-map-pin {
+  z-index: 2;
+}
+
+.aventura-map-pin--restaurante::after {
+  background: #fff3d6;
+}
+
+.aventura-map-pin--playa::after {
+  background: #d6f0ff;
+}
+
+.aventura-map-pin[data-route-order]::before {
+  content: attr(data-route-order);
+  display: grid;
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--surface);
+  font-size: 10px;
+  font-weight: 700;
+  transform: rotate(45deg);
+}
+
+.aventura-route-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.aventura-route-summary {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.aventura-route-stops {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.aventura-route-empty {
+  margin: 0;
+  padding: 20px;
+  border: 1px dashed var(--muted-line);
+  border-radius: 6px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.aventura-logros-view.is-visible {
+  display: grid;
+  gap: 28px;
+}
+
+.aventura-logros-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.aventura-logro-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-soft);
+}
+
+.aventura-logro-card.is-locked {
+  opacity: 0.65;
+}
+
+.aventura-logro-card__badge {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  font-size: 14px;
+}
+
+.aventura-logro-card.is-unlocked .aventura-logro-card__badge {
+  background: var(--text);
+  color: var(--surface);
+}
+
+.aventura-logro-card h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.aventura-logro-card p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.aventura-logro-card small {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.aventura-favoritos-view.is-visible {
+  display: grid;
+  gap: 28px;
+}
+
+.place-popup__planning--aventura {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Bitácora de aventura */
+.aventura-bitacora-view.is-visible {
+  display: grid;
+  gap: 28px;
+}
+
+.aventura-bitacora-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.aventura-bitacora-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(145deg, var(--surface-soft) 0%, var(--surface) 100%);
+}
+
+.aventura-bitacora-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.aventura-bitacora-card__header h3 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.aventura-bitacora-card__date {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.aventura-bitacora-card__rating {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.aventura-bitacora-star {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--muted-line);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.aventura-bitacora-star:hover,
+.aventura-bitacora-star.is-filled {
+  color: #c9a227;
+}
+
+.aventura-bitacora-star:hover {
+  transform: scale(1.15);
+}
+
+.aventura-bitacora-card__summary {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  font-style: italic;
+}
+
+.aventura-bitacora-card__stops {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.aventura-bitacora-card__stops li {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.aventura-bitacora-card__order {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--surface);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.aventura-bitacora-card__stop-name {
+  font-weight: 600;
+}
+
+.aventura-bitacora-card__stop-cat {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.aventura-bitacora-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.aventura-bitacora-tag {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.aventura-bitacora-tag.is-active {
+  background: var(--text);
+  color: var(--surface);
+}
+
+.aventura-bitacora-card__actions {
+  display: flex;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.map-view--aventura .map-actions .primary-action {
+  white-space: nowrap;
+}
+
+/* Impresión / PDF compartible */
+#aventura-print-root {
+  display: none;
+}
+
+#aventura-print-root[data-printing="true"] {
+  display: block;
+}
+
+.aventura-print {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 32px;
+  font-family: Georgia, "Times New Roman", serif;
+  color: #1a1a1a;
+  line-height: 1.5;
+}
+
+.aventura-print__brand {
+  margin: 0 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #666;
+}
+
+.aventura-print__header h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+}
+
+.aventura-print__meta,
+.aventura-print__rating,
+.aventura-print__tags {
+  margin: 4px 0;
+  font-size: 14px;
+  color: #444;
+}
+
+.aventura-print__rating {
+  color: #c9a227;
+  letter-spacing: 2px;
+}
+
+.aventura-print__summary {
+  margin: 20px 0;
+  padding: 14px 16px;
+  border-left: 3px solid #1a1a1a;
+  background: #f7f7f5;
+  font-style: italic;
+}
+
+.aventura-print__itinerary h2,
+.aventura-print__quiz h2 {
+  margin: 24px 0 12px;
+  font-size: 18px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 6px;
+}
+
+.aventura-print__stops {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aventura-print__stops li {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.aventura-print__stop-order {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 50%;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.aventura-print__stops strong {
+  display: block;
+  font-size: 15px;
+}
+
+.aventura-print__stops span {
+  font-size: 12px;
+  color: #666;
+}
+
+.aventura-print__stops p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #555;
+}
+
+.aventura-print__quiz ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.aventura-print__quiz li {
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.aventura-print__footer {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid #ddd;
+  font-size: 12px;
+  color: #888;
+  text-align: center;
+}
+
+@media print {
+  body > *:not(#aventura-print-root) {
+    display: none !important;
+  }
+
+  #aventura-print-root {
+    display: block !important;
+    position: static;
+  }
+
+  #aventura-print-root[data-printing="true"] {
+    display: block !important;
+  }
+
+  .aventura-print {
+    padding: 0;
+  }
+}

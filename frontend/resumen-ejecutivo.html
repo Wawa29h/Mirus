@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Twinmap — Resumen ejecutivo</title>
+    <style>
+      body {
+        font-family: serif;
+        max-width: 800px;
+        margin: 2rem auto;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Resumen ejecutivo — Twinmap</h1>
+    <p><em>Entregable de hackathon · Julio 2026</em></p>
+
+    <h2>1. Nombre del proyecto</h2>
+    <p><strong>Twinmap</strong></p>
+
+    <h2>2. Reto seleccionado</h2>
+    <p>
+      Transformación digital del turismo en El Salvador: diseñar una plataforma que
+      personalice la planificación y exploración de viajes nacionales, conectando
+      destinos reales (playas, volcanes, pueblos, sitios arqueológicos y gastronomía)
+      con preferencias del viajero y contexto local (clima, movilidad y seguridad).
+    </p>
+
+    <h2>3. Problema que resuelve</h2>
+    <p>
+      Planificar un viaje por El Salvador suele implicar información dispersa en
+      múltiples fuentes: mapas genéricos, redes sociales, guías desactualizadas y
+      datos de clima o tráfico en sitios distintos. El visitante —local o
+      internacional— no cuenta con una herramienta unificada que combine
+      recomendaciones personalizadas, itinerarios editables, historial de visitas y
+      alertas contextuales por zona. Twinmap centraliza esa experiencia en una sola
+      aplicación web con dos perfiles de uso: planificación estructurada (modo ruta)
+      y exploración gamificada (modo aventura).
+    </p>
+
+    <h2>4. Usuario o beneficiario principal</h2>
+    <p>
+      Turistas nacionales e internacionales, viajeros de fin de semana y
+      profesionales que visitan El Salvador y desean descubrir destinos acordes a
+      sus gustos (paisaje, clima, biodiversidad, ritmo de viaje). También beneficia
+      a operadores turísticos y emprendedores locales al orientar el tráfico hacia
+      puntos de interés con información clara y enlaces de movilidad.
+    </p>
+
+    <h2>5. Propuesta de valor</h2>
+    <p>
+      <strong>
+        Twinmap convierte tus preferencias en un mapa y una ruta lista para recorrer
+        El Salvador, con itinerario editable, bitácora, favoritos y alertas por zona
+        en un solo lugar.
+      </strong>
+    </p>
+
+    <h2>6. Funcionalidades principales construidas</h2>
+    <ul>
+      <li>
+        <strong>Selección de modo:</strong> modo ruta (planificación) y modo
+        aventura (exploración con desafíos), con navegación independiente por perfil.
+      </li>
+      <li>
+        <strong>Cuestionario de onboarding:</strong> 5 preguntas por modo, solo con
+        opciones, guardadas en localStorage para personalizar recomendaciones.
+      </li>
+      <li>
+        <strong>Modo ruta — Explorar mapa:</strong> mapa interactivo simulado con
+        pines de lugares (Lago de Coatepeque, El Boquerón, Playa El Tunco), popup
+        con detalle, pronóstico de 3 días, enlaces a Waze y Uber, noticias cercanas
+        y acciones para añadir a ruta o guardar en favoritos.
+      </li>
+      <li>
+        <strong>Mapa personalizado con IA (motor de reglas):</strong> catálogo de
+        20 destinos salvadoreños puntuados según respuestas del quiz, filtros por
+        zona (Occidente, Centro, Oriente, Costa) y categoría, resumen textual de
+        recomendaciones y <em>ruta perfecta</em> de 5 paradas ordenadas por
+        proximidad geográfica.
+      </li>
+      <li>
+        <strong>Mi ruta:</strong> itinerario editable con persistencia en
+        localStorage; badge de conteo en la barra de navegación.
+      </li>
+      <li>
+        <strong>Mi bitácora:</strong> historial de 12 visitas de ejemplo con filtros
+        por categoría (restaurantes, playas, arqueológicos, naturaleza, ciudad).
+      </li>
+      <li>
+        <strong>Favoritos:</strong> guardado y consulta de lugares en localStorage,
+        con datos semilla y gestión desde el popup del mapa.
+      </li>
+      <li>
+        <strong>Emergencias y noticias por zona:</strong> 6 contactos reales de
+        El Salvador (911, Cruz Roja 132, Bomberos 913, PNC 194, Protección Civil,
+        Ministerio de Salud) y 24 noticias simuladas filtradas según las zonas de
+        la ruta activa del usuario.
+      </li>
+      <li>
+        <strong>Modo aventura — Mapa de aventura:</strong> generación automática de
+        ruta de 5 paradas a partir del cuestionario, con opción de regenerar.
+      </li>
+      <li>
+        <strong>Rutas locas (bitácora de aventura):</strong> registro de rutas con
+        calificación, etiquetas (loca, épica, chill, gastronómica, etc.) y resumen
+        de vibe; persistencia en localStorage.
+      </li>
+      <li>
+        <strong>Logros de aventura:</strong> sistema de insignias con desbloqueo
+        dinámico según favoritos y progreso.
+      </li>
+      <li>
+        <strong>Compartir ruta (PDF / impresión):</strong> generación de documento
+        imprimible con paradas, perfil del quiz y resumen, mediante
+        <code>window.print()</code>.
+      </li>
+      <li>
+        <strong>Sellos postales visuales:</strong> componente de estampillas en
+        tarjetas de lugares (CSS/SVG en frontend).
+      </li>
+      <li>
+        <strong>Configuración:</strong> repetir cuestionario y cambiar modo de
+        exploración.
+      </li>
+    </ul>
+
+    <h2>7. Tecnologías utilizadas</h2>
+    <ul>
+      <li>HTML5, CSS3 y JavaScript vanilla (sin frameworks frontend).</li>
+      <li>
+        Arquitectura modular por archivos JS (<code>onboarding.js</code>,
+        <code>mapa-personalizado.js</code>, <code>aventura-route.js</code>,
+        <code>emergencia-noticias.js</code>, entre otros).
+      </li>
+      <li>
+        Persistencia local con <code>localStorage</code> (rutas, favoritos,
+        bitácora, respuestas del quiz) y <code>sessionStorage</code> (modo activo).
+      </li>
+      <li>
+        Servidor de desarrollo estático con <code>python -m http.server</code>.
+      </li>
+      <li>
+        Enlaces profundos a servicios externos: Waze, Uber y Google Noticias.
+      </li>
+      <li>
+        Backend en preparación (equipo paralelo): Node.js y OpenAI previstos para
+        servicios de datos y sellos generativos; aún no integrados al frontend.
+      </li>
+    </ul>
+
+    <h2>8. Estado de la solución</h2>
+
+    <h3>Funcional hoy (demostrable en navegador)</h3>
+    <ul>
+      <li>Flujo completo de selección de modo, onboarding y navegación entre vistas.</li>
+      <li>Personalización por cuestionario con impacto real en mapa y rutas.</li>
+      <li>Itinerarios, favoritos y bitácora de aventura con persistencia local.</li>
+      <li>Popup de lugares con pronóstico, acciones de ruta/favoritos y enlaces de movilidad.</li>
+      <li>Emergencias con números oficiales y noticias contextuales por zona de ruta.</li>
+      <li>Compartir e imprimir rutas de aventura.</li>
+      <li>Interfaz responsive y experiencia coherente en ambos modos.</li>
+    </ul>
+
+    <h3>Simulado o con datos mock</h3>
+    <ul>
+      <li>
+        Mapa de planeación: representación visual en HTML/CSS, no integración con
+        Google Maps, Mapbox u otro proveedor cartográfico.
+      </li>
+      <li>
+        Clima: pronóstico de 3 días generado a partir de datos semilla o algoritmo
+        local; sin API meteorológica en tiempo real.
+      </li>
+      <li>
+        Noticias de emergencia: listado curado de 24 ítems simulados, filtrados por
+        zona; no provienen de un agregador de noticias en vivo.
+      </li>
+      <li>
+        Bitácora de modo ruta: 12 visitas precargadas; no se sincroniza con backend.
+      </li>
+      <li>
+        Capas y filtros del mapa de planeación: controles visuales sin lógica
+        completa de filtrado.
+      </li>
+      <li>
+        IA del mapa personalizado: motor de puntuación por reglas y plantillas de
+        texto; no consume un modelo de lenguaje en el frontend.
+      </li>
+      <li>
+        Perfil de usuario: botón presente sin pantalla funcional ni autenticación.
+      </li>
+      <li>
+        Tráfico y eventos en tiempo real: no implementados; inventario de datos
+        requeridos ya documentado para el backend.
+      </li>
+    </ul>
+
+    <h2>9. Evidencia de prueba interna realizada</h2>
+    <ul>
+      <li>
+        Ejecución local del frontend con servidor estático y validación manual en
+        navegador del flujo: elegir modo → completar quiz → explorar mapa → añadir
+        paradas → revisar emergencias filtradas por zona.
+      </li>
+      <li>
+        Verificación de persistencia: recargar la página mantiene modo, rutas,
+        favoritos y respuestas del cuestionario gracias a almacenamiento local.
+      </li>
+      <li>
+        Prueba del motor de personalización: distintas respuestas del quiz producen
+        cambios verificables en el ranking del mapa personalizado y en la ruta
+        perfecta generada.
+      </li>
+      <li>
+        Prueba de modo aventura: generación y regeneración de ruta, guardado en
+        bitácora, calificación con etiquetas e impresión/compartir del itinerario.
+      </li>
+      <li>
+        Validación de enlaces externos: Waze y Uber abren con coordenadas del lugar
+        seleccionado; noticias abren búsqueda en Google Noticias.
+      </li>
+      <li>
+        Revisión de módulos cruzados: cambios en la ruta disparan actualización del
+        badge de conteo y del panel de noticias en emergencias.
+      </li>
+    </ul>
+
+    <h2>10. Colaboración con otro equipo</h2>
+    <p>
+      El proyecto se desarrolló en dos frentes complementarios:
+    </p>
+    <ul>
+      <li>
+        <strong>Frontend (listo para demo):</strong> aplicación web completa con
+        ambos modos, 16 módulos JavaScript, catálogo de 20 lugares con coordenadas,
+        zonas geográficas, etiquetas de preferencia y flujos de usuario terminados.
+      </li>
+      <li>
+        <strong>Backend (pendiente de integración):</strong> se definió el inventario
+        de datos necesarios (lugares por categoría, clima actual y pronóstico,
+        tráfico, hoteles, restaurantes, eventos, biodiversidad/aves, etc.) con
+        esquema de campos por registro. Existe estructura inicial para servicios con
+        Node.js y OpenAI (caché de sellos generados), pero el frontend aún opera de
+        forma autónoma con datos embebidos y sin llamadas a API.
+      </li>
+    </ul>
+    <p>
+      La división permite que el jurado evalúe hoy la experiencia de usuario y la
+      lógica de personalización, mientras el backend concentra la carga de datos
+      reales y servicios externos en una fase posterior.
+    </p>
+
+    <h2>11. Próximos pasos recomendados</h2>
+    <ul>
+      <li>
+        Conectar el frontend al backend REST para lugares, clima, noticias y
+        tráfico, reemplazando mocks por datos en tiempo real o actualizados.
+      </li>
+      <li>
+        Integrar un proveedor de mapas (Google Maps, Mapbox o Leaflet + OpenStreetMap)
+        con los 20+ destinos ya catalogados y ampliar cobertura nacional.
+      </li>
+      <li>
+        Implementar autenticación de usuario y sincronización de bitácora, favoritos
+        e itinerarios en la nube.
+      </li>
+      <li>
+        Sustituir el motor de reglas del mapa personalizado por recomendaciones con
+        modelo de IA del backend, manteniendo explicabilidad de las sugerencias.
+      </li>
+      <li>
+        Completar capas del mapa de planeación (hoteles, restaurantes, eventos,
+        volcanes, cascadas) con filtrado funcional.
+      </li>
+      <li>
+        Añadir integración con inDrive u otros servicios de movilidad locales,
+        además de Uber y Waze.
+      </li>
+      <li>
+        Desplegar en hosting estático o contenedor para demo pública post-hackathon
+        y definir pruebas automatizadas de los flujos críticos.
+      </li>
+    </ul>
+
+    <hr />
+    <p>
+      <strong>Contacto del equipo:</strong> Twinmap · Hackathon 2026<br />
+      <strong>Repositorio:</strong> twinmap/frontend (aplicación principal demostrable)
+    </p>
+  </body>
+</html>

@@ -1,0 +1,195 @@
+.personalizado-ai-panel {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-soft);
+}
+
+.personalizado-ai-panel__label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.personalizado-ai-panel p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.personalizado-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.personalizado-detail-list__item {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.personalizado-detail-list__item strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.personalizado-detail-list__item span {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.personalizado-detail-empty {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.personalizado-map-pin {
+  cursor: pointer;
+  z-index: 2;
+}
+
+.personalizado-map-pin--visited::after {
+  background: #d4e4f7;
+}
+
+.personalizado-map-pin--favorite {
+  border-color: #1a5f8a;
+}
+
+.personalizado-badge {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.personalizado-badge--visited {
+  background: #eef4fb;
+  color: #1a5f8a;
+}
+
+.personalizado-place-card {
+  cursor: pointer;
+}
+
+.filter-chips button.is-active {
+  background: var(--text);
+  color: var(--surface);
+}
+
+.ai-panel .lines {
+  display: none;
+}
+
+.ai-panel p {
+  line-height: 1.55;
+}
+
+.personalizado-route-line {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.personalizado-route-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.personalizado-route-path {
+  fill: none;
+  stroke: #1a5f8a;
+  stroke-width: 0.6;
+  stroke-dasharray: 2 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.7;
+}
+
+.personalizado-map-pin--route[data-route-order]::before {
+  content: attr(data-route-order);
+  display: grid;
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #1a5f8a;
+  color: var(--surface);
+  font-size: 10px;
+  font-weight: 700;
+  transform: rotate(45deg);
+}
+
+.personalizado-perfect-route__intro {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.personalizado-perfect-route__empty {
+  margin: 0;
+  padding: 20px;
+  border: 1px dashed var(--muted-line);
+  border-radius: 6px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.personalizado-perfect-route__list {
+  position: relative;
+  gap: 0;
+  padding-left: 18px;
+  border-left: 2px solid var(--line);
+}
+
+.personalizado-perfect-route__stop {
+  position: relative;
+  margin-left: -20px;
+  padding: 10px 0 10px 20px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.personalizado-perfect-route__stop:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  bottom: 0;
+  width: 2px;
+  height: 10px;
+  background: var(--line);
+}
+
+.personalizado-perfect-route__stop .route-itinerary__order {
+  background: #1a5f8a;
+  color: var(--surface);
+  border-color: #1a5f8a;
+}
+
+.personalizado-perfect-route__meta {
+  color: var(--muted);
+  font-size: 0.82rem;
+}

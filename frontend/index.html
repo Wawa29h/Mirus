@@ -1,28 +1,53 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Digital Map - Mockup</title>
+    <title>Twinmap</title>
     <link rel="stylesheet" href="src/css/styles.css" />
+    <link rel="stylesheet" href="src/css/ink-postmarks.css" />
+    <link rel="stylesheet" href="src/css/onboarding.css" />
+    <link rel="stylesheet" href="src/css/map-popup.css" />
+    <link rel="stylesheet" href="src/css/aventura.css" />
+    <link rel="stylesheet" href="src/css/mapa-personalizado.css" />
+    <link rel="stylesheet" href="src/css/emergencia.css" />
   </head>
   <body>
     <header class="topbar">
-      <a class="brand" href="#inicio" data-view="landing" aria-label="Ir al inicio">
-        <span class="brand-logo">Logo</span>
+      <a class="brand" href="#inicio" data-view="mode-select" aria-label="Volver al inicio">
+        <span class="brand-logo">TM</span>
         <span>
-          <strong>Nombre</strong>
-          <small>Lorem ipsum</small>
+          <strong>Twinmap</strong>
+          <small class="brand-mode">Modo ruta</small>
         </span>
       </a>
 
-      <nav class="nav" aria-label="Navegación principal">
-        <button class="nav-link" type="button" data-view="inicio-app">Inicio</button>
-        <button class="nav-link" type="button" data-view="mapa">Explorar mapa</button>
-        <button class="nav-link" type="button" data-view="bitacora">Mi bitácora</button>
-        <button class="nav-link" type="button" data-view="guardados">Guardados</button>
-        <button class="nav-link" type="button" data-view="emergencia">Números de emergencia</button>
-        <button class="nav-link" type="button" data-view="configuracion">Configuración</button>
+      <nav class="nav" aria-label="NavegaciÃ³n principal">
+        <div class="nav--ruta">
+          <button class="nav-link" type="button" data-view="inicio-app">Inicio</button>
+          <button class="nav-link nav-link--stacked" type="button" data-view="mapa">
+            <span class="nav-link__label">Explorar mapa</span>
+            <small class="nav-link__hint">PlaneaciÃ³n</small>
+          </button>
+          <button class="nav-link" type="button" data-view="mapa-personalizado">Mapa personalizado</button>
+          <button class="nav-link nav-link--route" type="button" data-view="mi-ruta">
+            Mi ruta
+            <span class="nav-link__badge" id="route-count-badge" hidden>0</span>
+          </button>
+          <button class="nav-link" type="button" data-view="bitacora">Mi bitÃ¡cora</button>
+          <button class="nav-link" type="button" data-view="favoritos">Favoritos</button>
+          <button class="nav-link" type="button" data-view="emergencia">NÃºmeros de emergencia</button>
+          <button class="nav-link" type="button" data-view="configuracion">ConfiguraciÃ³n</button>
+        </div>
+        <div class="nav--aventura">
+          <button class="nav-link nav-link--stacked" type="button" data-view="aventura-mapa">
+            <span class="nav-link__label">Mapa de aventura</span>
+            <small class="nav-link__hint">Tu ruta</small>
+          </button>
+          <button class="nav-link" type="button" data-view="aventura-bitacora">Rutas locas</button>
+          <button class="nav-link" type="button" data-view="aventura-favoritos">Favoritos</button>
+          <button class="nav-link" type="button" data-view="aventura-logros">Logros</button>
+        </div>
       </nav>
 
       <button class="profile-button" type="button">Perfil</button>
@@ -43,7 +68,7 @@
               y organizar experiencias desde un mapa simple y accesible.
             </p>
             <div class="hero-actions">
-              <button class="primary-action" type="button" data-view="inicio-app">Comenzar</button>
+              <button class="primary-action" type="button" data-view="mode-select">Comenzar</button>
               <button class="secondary-action" type="button" data-view="acerca">Acerca de</button>
             </div>
           </div>
@@ -129,13 +154,82 @@
         </section>
       </section>
 
-      <section class="view dashboard-view" data-panel="inicio-app">
+      <section class="view mode-select-view" data-panel="mode-select">
+        <div class="mode-select">
+          <p class="eyebrow">Bienvenido a Twinmap</p>
+          <h1>¿Cómo quieres explorar El Salvador?</h1>
+          <p class="mode-select__lead">
+            Elige un perfil para empezar. Ambos modos incluyen un cuestionario corto para
+            personalizar tu experiencia.
+          </p>
+
+          <div class="mode-grid">
+            <button class="mode-card" type="button" data-mode="ruta">
+              <span class="mode-card__badge mode-card__badge--active">Modo ruta</span>
+              <span class="mode-card__icon" aria-hidden="true">◎</span>
+              <h2>Planifica tu recorrido</h2>
+              <p>
+                Mapa, lugares, recomendaciones, bitácora y rutas personalizadas para tu viaje.
+              </p>
+              <span class="mode-card__cta">Elegir modo ruta</span>
+            </button>
+
+            <button class="mode-card mode-card--aventura" type="button" data-mode="aventura">
+              <span class="mode-card__badge mode-card__badge--active">Modo aventura</span>
+              <span class="mode-card__icon" aria-hidden="true">✦</span>
+              <h2>Explora con desafíos</h2>
+              <p>
+                Misiones, descubrimiento libre y experiencias distintas. El contenido completo
+                llegará pronto.
+              </p>
+              <span class="mode-card__cta">Elegir modo aventura</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="view onboarding-view" data-panel="onboarding" aria-live="polite">
+        <div class="onboarding">
+          <div class="onboarding__welcome" id="onboarding-welcome">
+            <p class="eyebrow" id="onboarding-mode-label">Twinmap</p>
+            <h1 id="onboarding-title">Bienvenido</h1>
+            <p class="onboarding__message" id="onboarding-message">
+              Queremos que tu viaje sea el mejor. Este cuestionario aplica para ambos modos.
+              Responde unas preguntas muy cortas â€” todo con opciones, sin escribir nada.
+            </p>
+            <button class="primary-action" type="button" id="onboarding-start">Comenzar</button>
+          </div>
+
+          <div class="onboarding__quiz" id="onboarding-quiz" hidden>
+            <div class="quiz-header">
+              <div class="quiz-intro-card">
+                <p class="quiz-intro__eyebrow" id="quiz-intro-mode">Modo ruta</p>
+                <h2 class="quiz-intro__title" id="quiz-intro-title">Queremos conocerte</h2>
+                <p class="quiz-intro__text" id="quiz-intro"></p>
+                <ul class="quiz-intro__perks" aria-label="Beneficios del cuestionario">
+                  <li>Solo opciones, sin escribir</li>
+                  <li>Menos de un minuto</li>
+                  <li>Recomendaciones a tu medida</li>
+                </ul>
+              </div>
+              <span class="quiz-progress" id="quiz-progress">Pregunta 1 de 5</span>
+              <div class="quiz-progress-bar" aria-hidden="true">
+                <span class="quiz-progress-bar__fill" id="quiz-progress-fill"></span>
+              </div>
+            </div>
+            <h2 class="quiz-question" id="quiz-question"></h2>
+            <p class="quiz-hint" id="quiz-hint" hidden></p>
+            <div class="quiz-options" id="quiz-options" role="listbox"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view dashboard-view" data-panel="inicio-app" data-mode="ruta">
         <div class="dashboard-header">
           <div>
-            <p class="eyebrow">Inicio</p>
+            <p class="eyebrow">Modo ruta Â· Inicio</p>
             <h1>Buenas noches, Rebeca</h1>
           </div>
-          <button class="outline-button" type="button">Ver perfil</button>
         </div>
 
         <section class="content-section">
@@ -143,66 +237,27 @@
             <h2>Recomendaciones para ti</h2>
             <button class="text-button" type="button">Ver todo</button>
           </div>
-          <div class="recommendation-grid">
-            <article class="place-card">
-              <div class="image-placeholder"></div>
-              <span class="tag">Categoría</span>
-              <h3 class="stamp-label">Nombre lugar</h3>
-              <p>Descripción breve del lugar recomendado.</p>
-              <small>Lugar · Distancia de ti</small>
-            </article>
-            <article class="place-card">
-              <div class="image-placeholder"></div>
-              <span class="tag">Categoría</span>
-              <h3 class="stamp-label">Nombre lugar</h3>
-              <p>Descripción breve del lugar recomendado.</p>
-              <small>Lugar · Distancia de ti</small>
-            </article>
-            <article class="place-card">
-              <div class="image-placeholder"></div>
-              <span class="tag">Categoría</span>
-              <h3 class="stamp-label">Nombre lugar</h3>
-              <p>Descripción breve del lugar recomendado.</p>
-              <small>Lugar · Distancia de ti</small>
-            </article>
-          </div>
+          <div class="recommendation-grid" id="dashboard-recommendations"></div>
         </section>
 
         <div class="dashboard-grid">
           <section class="content-section achievements">
             <div class="section-heading">
               <h2>Tus logros</h2>
-              <button class="text-button" type="button">Ver todo</button>
+              <button class="text-button" type="button" id="dashboard-logros-ver-todo">Ver todo</button>
             </div>
-            <div class="stats-row">
-              <div>
-                <strong>00</strong>
-                <span>Lugares visitados</span>
-              </div>
-              <div>
-                <strong>00</strong>
-                <span>Departamentos explorados</span>
-              </div>
-              <div>
-                <strong>00</strong>
-                <span>Fotos tomadas</span>
-              </div>
-              <div>
-                <strong>00</strong>
-                <span>Rutas completadas</span>
-              </div>
-            </div>
+            <div class="stats-row" id="dashboard-logros-stats" aria-live="polite"></div>
           </section>
 
           <section class="content-section ai-panel">
-            <h2>La IA aprendió de tus gustos</h2>
-            <p>Resumen mockup con líneas de contenido personalizado según intereses.</p>
-            <div class="lines">
+            <h2>La IA aprendiÃ³ de tus gustos</h2>
+            <p id="dashboard-ai-text">Analizando tu quiz y bitÃ¡cora para personalizar recomendacionesâ€¦</p>
+            <div class="lines" aria-hidden="true">
               <span></span>
               <span></span>
               <span></span>
             </div>
-            <button class="outline-button" type="button">Visualizarlo en el mapa</button>
+            <button class="outline-button" type="button" id="dashboard-go-personalizado">Visualizarlo en el mapa</button>
           </section>
         </div>
 
@@ -214,29 +269,44 @@
           <div class="news-list">
             <article>
               <div class="thumb"></div>
-              <p>Mensaje, descripción, hace cuanto.</p>
+              <p>Mensaje, descripciÃ³n, hace cuanto.</p>
             </article>
             <article>
               <div class="thumb"></div>
-              <p>Mensaje, descripción, hace cuanto.</p>
+              <p>Mensaje, descripciÃ³n, hace cuanto.</p>
             </article>
             <article>
               <div class="thumb"></div>
-              <p>Mensaje, descripción, hace cuanto.</p>
+              <p>Mensaje, descripciÃ³n, hace cuanto.</p>
             </article>
           </div>
         </aside>
       </section>
 
-      <section class="view map-view" data-panel="mapa">
+      <section class="view map-view" data-panel="mapa" data-mode="ruta">
         <div class="map-toolbar">
           <div>
-            <p class="eyebrow">Explorar mapa</p>
+            <p class="eyebrow">PlaneaciÃ³n Â· Explorar mapa</p>
             <h1>Mapa interactivo</h1>
           </div>
+          <form class="map-search" role="search" aria-label="Buscar lugares en el mapa">
+            <input
+              class="map-search__input"
+              type="search"
+              name="q"
+              placeholder="Buscar lugares..."
+              autocomplete="off"
+            />
+            <button class="map-search__submit" type="submit" aria-label="Buscar">
+              <svg class="map-search__icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+                <path d="M20 20l-4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
+          </form>
           <div class="map-actions">
             <button class="outline-button" type="button">Filtros</button>
-            <button class="outline-button" type="button">Mi ubicación</button>
+            <button class="outline-button" type="button">Mi ubicaciÃ³n</button>
           </div>
         </div>
 
@@ -246,14 +316,8 @@
             <button type="button">Hoteles</button>
             <button type="button">Restaurantes</button>
             <button type="button">Eventos tendencias</button>
-            <button type="button">Volcanes</button>
-            <button type="button">Surf</button>
-            <button type="button">Parques</button>
-            <button type="button">Montañas</button>
-            <button type="button">Playas</button>
-            <button type="button">Cascadas</button>
-            <button type="button">Pueblos mágicos</button>
-            <button type="button">Sitios históricos</button>
+            <button type="button">Clima</button>
+            <button type="button">TrÃ¡fico</button>
           </aside>
 
           <section class="map-canvas" aria-label="Mockup de mapa">
@@ -263,16 +327,61 @@
             <div class="map-zone zone-one">Bosque</div>
             <div class="map-zone zone-two">Mirador</div>
             <div class="map-zone zone-three">Centro</div>
-            <div class="map-pin pin-one">1</div>
-            <div class="map-pin pin-two">2</div>
-            <div class="map-pin pin-three">3</div>
+            <button
+              type="button"
+              class="map-pin pin-one"
+              aria-label="Lago de Coatepeque"
+              data-place-name="Lago de Coatepeque"
+              data-place-category="Naturaleza"
+              data-place-location="Santa Ana, El Salvador"
+              data-place-description="CrÃ¡ter volcÃ¡nico con aguas turquesas ideal para kayak, miradores y gastronomÃ­a en la orilla."
+              data-place-lat="13.819"
+              data-place-lng="-89.559"
+              data-place-weather="24Â°C Â· Parcialmente nublado"
+              data-place-weather-hoy="24Â°C Â· Parcialmente nublado"
+              data-place-weather-manana="25Â°C Â· Soleado"
+              data-place-weather-pasadomanana="23Â°C Â· Lluvia ligera"
+              data-place-news="https://news.google.com/search?q=Lago+de+Coatepeque+El+Salvador"
+            ></button>
+            <button
+              type="button"
+              class="map-pin pin-two"
+              aria-label="El BoquerÃ³n"
+              data-place-name="El BoquerÃ³n"
+              data-place-category="VolcÃ¡n"
+              data-place-location="San Salvador, El Salvador"
+              data-place-description="VolcÃ¡n activo con senderos, miradores y clima fresco sobre la capital."
+              data-place-lat="13.734"
+              data-place-lng="-89.287"
+              data-place-weather="19Â°C Â· Brisa fresca"
+              data-place-weather-hoy="19Â°C Â· Brisa fresca"
+              data-place-weather-manana="18Â°C Â· Neblina matutina"
+              data-place-weather-pasadomanana="20Â°C Â· Despejado"
+              data-place-news="https://news.google.com/search?q=El+Boqueron+San+Salvador"
+            ></button>
+            <button
+              type="button"
+              class="map-pin pin-three"
+              aria-label="Playa El Tunco"
+              data-place-name="Playa El Tunco"
+              data-place-category="Playa"
+              data-place-location="La Libertad, El Salvador"
+              data-place-description="Destino de surf, atardeceres y ambiente relajado en la costa del PacÃ­fico."
+              data-place-lat="13.493"
+              data-place-lng="-89.385"
+              data-place-weather="29Â°C Â· Soleado"
+              data-place-weather-hoy="29Â°C Â· Soleado"
+              data-place-weather-manana="30Â°C Â· Calor intenso"
+              data-place-weather-pasadomanana="28Â°C Â· Bruma costera"
+              data-place-news="https://news.google.com/search?q=Playa+El+Tunco+La+Libertad"
+            ></button>
           </section>
 
           <aside class="map-detail-panel">
             <h2>Lugar seleccionado</h2>
             <div class="image-placeholder"></div>
             <h3>Nombre lugar</h3>
-            <p>Descripción breve, categoría, distancia y acciones del mapa.</p>
+            <p>DescripciÃ³n breve, categorÃ­a, distancia y acciones del mapa.</p>
             <button class="primary-action" type="button">Guardar</button>
           </aside>
         </div>
@@ -281,7 +390,7 @@
           <div class="map-filter-strip">
             <h2>Filtros</h2>
             <div class="filter-chips">
-              <button type="button">Cerca de mí</button>
+              <button type="button">Cerca de mÃ­</button>
               <button type="button">Mejor valorados</button>
               <button type="button">Abierto ahora</button>
               <button type="button">Para visitar hoy</button>
@@ -296,55 +405,498 @@
           <div class="recommendation-grid">
             <article class="place-card">
               <div class="image-placeholder"></div>
-              <span class="tag">Capa</span>
-              <h3 class="stamp-label">Nombre lugar</h3>
-              <p>Descripción breve del lugar recomendado en el mapa.</p>
-              <small>Lugar · Distancia de ti</small>
+              <span class="tag">Ruta</span>
+              <h3 class="place-name">
+                <span class="visually-hidden">Ruta de las Flores</span>
+                <span
+                  class="place-stamp"
+                  data-postmark="classic"
+                  data-title="Ruta de las Flores"
+                  data-location="Sonsonate"
+                ></span>
+              </h3>
+              <p>DescripciÃ³n breve del lugar recomendado en el mapa.</p>
+              <small>Lugar Â· Distancia de ti</small>
             </article>
             <article class="place-card">
               <div class="image-placeholder"></div>
-              <span class="tag">Capa</span>
-              <h3 class="stamp-label">Nombre lugar</h3>
-              <p>Descripción breve del lugar recomendado en el mapa.</p>
-              <small>Lugar · Distancia de ti</small>
+              <span class="tag">Historia</span>
+              <h3 class="place-name">
+                <span class="visually-hidden">Joya de CerÃ©n</span>
+                <span
+                  class="place-stamp"
+                  data-postmark="portrait"
+                  data-title="Joya de CerÃ©n"
+                  data-location="La Libertad"
+                ></span>
+              </h3>
+              <p>DescripciÃ³n breve del lugar recomendado en el mapa.</p>
+              <small>Lugar Â· Distancia de ti</small>
             </article>
             <article class="place-card">
               <div class="image-placeholder"></div>
-              <span class="tag">Capa</span>
-              <h3 class="stamp-label">Nombre lugar</h3>
-              <p>Descripción breve del lugar recomendado en el mapa.</p>
-              <small>Lugar · Distancia de ti</small>
+              <span class="tag">Pueblo</span>
+              <h3 class="place-name">
+                <span class="visually-hidden">Suchitoto</span>
+                <span
+                  class="place-stamp"
+                  data-postmark="classic"
+                  data-title="Suchitoto"
+                  data-location="CuscatlÃ¡n"
+                ></span>
+              </h3>
+              <p>DescripciÃ³n breve del lugar recomendado en el mapa.</p>
+              <small>Lugar Â· Distancia de ti</small>
             </article>
           </div>
         </section>
       </section>
 
-      <section class="view simple-view" data-panel="bitacora">
-        <h1>Mi bitácora</h1>
-        <p>Mockup de entradas, recorridos y notas personales.</p>
+      <section class="view map-view map-view--personalized" data-panel="mapa-personalizado" data-mode="ruta">
+        <div class="map-toolbar">
+          <div>
+            <p class="eyebrow">Mapa personalizado</p>
+            <h1>Tu mapa por zonas</h1>
+          </div>
+          <form class="map-search" role="search" aria-label="Buscar en tu zona personalizada">
+            <input
+              class="map-search__input"
+              type="search"
+              name="q"
+              placeholder="Buscar en tu zona..."
+              autocomplete="off"
+            />
+            <button class="map-search__submit" type="submit" aria-label="Buscar">
+              <svg class="map-search__icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+                <path d="M20 20l-4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
+          </form>
+          <div class="map-actions">
+            <button class="outline-button" type="button">Mis intereses</button>
+            <button class="outline-button" type="button">Mi ubicaciÃ³n</button>
+          </div>
+        </div>
+
+        <div class="map-layout">
+          <aside class="map-filter-panel map-zone-panel">
+            <h2>Zonas</h2>
+            <button type="button" class="is-active" data-filter-zone="Occidente">Occidente</button>
+            <button type="button" data-filter-zone="Centro">Centro</button>
+            <button type="button" data-filter-zone="Oriente">Oriente</button>
+            <button type="button" data-filter-zone="Costa">Costa</button>
+            <button type="button" data-filter-zone="Ruta de las Flores">Ruta de las Flores</button>
+            <button type="button" data-filter-zone="Parque Nacional">Parque Nacional</button>
+
+            <h2 class="map-panel-divider">CategorÃ­as</h2>
+            <button type="button" data-filter-category="Volcanes">Volcanes</button>
+            <button type="button" data-filter-category="Surf">Surf</button>
+            <button type="button" data-filter-category="Parques">Parques</button>
+            <button type="button" data-filter-category="MontaÃ±as">MontaÃ±as</button>
+            <button type="button" data-filter-category="Playas">Playas</button>
+            <button type="button" data-filter-category="Cascadas">Cascadas</button>
+            <button type="button" data-filter-category="Pueblos mÃ¡gicos">Pueblos mÃ¡gicos</button>
+            <button type="button" data-filter-category="Sitios histÃ³ricos">Sitios histÃ³ricos</button>
+          </aside>
+
+          <section class="map-canvas map-canvas--zones" id="personalizado-map-canvas" aria-label="Mapa personalizado por zonas">
+            <div class="personalizado-route-line" id="personalizado-route-line" aria-hidden="true"></div>
+            <div class="map-road road-one"></div>
+            <div class="map-road road-two"></div>
+            <div class="map-zone zone-west">Occidente</div>
+            <div class="map-zone zone-center">Centro</div>
+            <div class="map-zone zone-east">Oriente</div>
+            <div class="map-zone zone-coast">Costa</div>
+          </section>
+
+          <aside class="map-detail-panel">
+            <h2>RecomendaciÃ³n IA</h2>
+            <div class="personalizado-ai-panel">
+              <span class="personalizado-ai-panel__label">Resumen personalizado</span>
+              <p id="personalizado-ai-summary">Analizando tu quiz y bitÃ¡coraâ€¦</p>
+            </div>
+            <h2 class="map-panel-divider">Zona seleccionada</h2>
+            <div class="image-placeholder"></div>
+            <h3 id="personalizado-detail-title">Occidente</h3>
+            <p id="personalizado-detail-text">Lugares sugeridos segÃºn tus gustos del cuestionario en esta zona.</p>
+            <div id="personalizado-detail-list"></div>
+            <button class="primary-action" type="button" data-view="mapa">Explorar en mapa general</button>
+          </aside>
+        </div>
+
+        <section class="map-recommendations">
+          <div class="map-filter-strip">
+            <h2>Filtros por zona</h2>
+            <div class="filter-chips" id="personalizado-filter-chips">
+              <button type="button" data-quiz-filter="true">SegÃºn mi quiz</button>
+              <button type="button">Cerca de mÃ­</button>
+              <button type="button">Para hoy</button>
+              <button type="button">Menos gente</button>
+            </div>
+          </div>
+
+          <div class="section-heading">
+            <h2>Tu ruta perfecta</h2>
+          </div>
+
+          <div class="personalizado-perfect-route" id="personalizado-perfect-route" aria-live="polite"></div>
+        </section>
       </section>
 
-      <section class="view simple-view" data-panel="guardados">
-        <h1>Guardados</h1>
-        <p>Mockup de lugares favoritos y rutas guardadas.</p>
+      <section class="view simple-view route-view" data-panel="mi-ruta" data-mode="ruta">
+        <div class="route-view__header">
+          <p class="eyebrow">Modo ruta Â· Itinerario</p>
+          <h1>Mi ruta</h1>
+          <p class="route-view__lead">
+            Tus paradas en orden de visita. AÃ±ade lugares desde el mapa con el botÃ³n
+            Â«AÃ±adir a mi rutaÂ».
+          </p>
+        </div>
+        <div class="route-itinerary" id="route-itinerary-list" aria-live="polite"></div>
       </section>
 
-      <section class="view simple-view" data-panel="emergencia">
-        <h1>Números de emergencia</h1>
-        <p>Mockup de contactos importantes y botones rápidos.</p>
+      <section class="view simple-view bitacora-view" data-panel="bitacora" data-mode="ruta">
+        <header class="bitacora-header">
+          <p class="eyebrow">Modo ruta Â· Registro de viaje</p>
+          <h1>Mi bitÃ¡cora</h1>
+          <p class="bitacora-lead">
+            Tu historial de lugares, fotos y recorridos completados en El Salvador.
+          </p>
+        </header>
+
+        <section
+          class="bitacora-section bitacora-logros"
+          id="bitacora-logros"
+          aria-label="Logros del viaje"
+        >
+          <div class="section-heading">
+            <h2>Logros</h2>
+            <span class="bitacora-stats-note">Tus mÃ©tricas y desafÃ­os del viaje</span>
+          </div>
+          <div class="stats-row bitacora-stats-row" id="bitacora-stats" aria-live="polite"></div>
+          <div class="bitacora-logros-grid" id="bitacora-logros-list"></div>
+        </section>
+
+        <section class="bitacora-section bitacora-places" aria-label="Lugares visitados">
+          <div class="section-heading">
+            <h2>Lugares visitados</h2>
+            <span class="bitacora-places-count" id="bitacora-places-count"></span>
+          </div>
+          <div
+            class="bitacora-filters filter-chips"
+            id="bitacora-filters"
+            role="group"
+            aria-label="Filtrar por categorÃ­a"
+          ></div>
+          <div class="bitacora-places-grid" id="bitacora-places-list"></div>
+        </section>
+
+        <section class="bitacora-section bitacora-gallery" aria-label="Fotos del viaje">
+          <div class="section-heading">
+            <h2>Fotos del viaje</h2>
+            <span class="bitacora-gallery-count" id="bitacora-gallery-count"></span>
+          </div>
+          <div class="bitacora-gallery-grid" id="bitacora-gallery"></div>
+        </section>
       </section>
 
-      <section class="view simple-view" data-panel="configuracion">
-        <h1>Configuración</h1>
-        <p>Mockup de preferencias de cuenta, privacidad y notificaciones.</p>
+      <section class="view simple-view favoritos-view" data-panel="favoritos" data-mode="ruta">
+        <header class="favoritos-header">
+          <p class="eyebrow">Modo ruta Â· Lugares guardados</p>
+          <h1>Favoritos</h1>
+          <p class="favoritos-lead">
+            Restaurantes, sitios arqueolÃ³gicos, playas y mÃ¡s que marcaste desde el mapa.
+          </p>
+        </header>
+
+        <section class="favoritos-section" aria-label="Lugares favoritos">
+          <div class="section-heading">
+            <h2>Tus lugares</h2>
+            <span class="favoritos-count" id="favoritos-count"></span>
+          </div>
+          <div
+            class="favoritos-filters filter-chips"
+            id="favoritos-filters"
+            role="group"
+            aria-label="Filtrar por categorÃ­a"
+          ></div>
+          <div class="favoritos-grid" id="favoritos-list"></div>
+        </section>
+      </section>
+
+      <section class="view simple-view emergencia-view" data-panel="emergencia" data-mode="ruta">
+        <header class="emergencia-header">
+          <p class="eyebrow">Modo ruta Â· Seguridad</p>
+          <h1>NÃºmeros de emergencia</h1>
+          <p class="emergencia-lead">
+            Contactos oficiales de El Salvador y noticias en tiempo real filtradas por las zonas de tu ruta.
+          </p>
+        </header>
+
+        <section class="emergencia-section" aria-label="NÃºmeros de emergencia">
+          <div class="section-heading">
+            <h2>Contactos de emergencia</h2>
+          </div>
+          <div class="emergencia-numbers" id="emergencia-numbers" aria-live="polite"></div>
+        </section>
+
+        <section class="emergencia-section emergencia-noticias-section" aria-label="Noticias en tu ruta">
+          <div class="section-heading">
+            <h2>Noticias en tu ruta</h2>
+            <span class="emergencia-zones-summary" id="emergencia-zones-summary"></span>
+          </div>
+          <form
+            class="emergencia-noticias-search map-search"
+            id="emergencia-noticias-search-form"
+            role="search"
+            aria-label="Buscar noticias por lugar"
+          >
+            <input
+              class="map-search__input"
+              type="search"
+              id="emergencia-noticias-search-input"
+              name="q"
+              list="emergencia-places-suggestions"
+              placeholder="Buscar noticias por lugar..."
+              autocomplete="off"
+            />
+            <datalist id="emergencia-places-suggestions"></datalist>
+            <button class="map-search__submit" type="submit" aria-label="Buscar noticias">
+              <svg class="map-search__icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C8.01 14 6 11.99 6 9.5S8.01 5 10.5 5 15 7.01 15 9.5 12.99 14 10.5 14z"
+                />
+              </svg>
+            </button>
+          </form>
+          <div
+            class="emergencia-zones-chips filter-chips"
+            id="emergencia-zones-chips"
+            role="list"
+            aria-label="Filtros rÃ¡pidos de tu ruta"
+          ></div>
+          <div class="emergencia-noticias" id="emergencia-noticias" aria-live="polite"></div>
+        </section>
+      </section>
+
+      <section class="view simple-view" data-panel="configuracion" data-mode="ruta">
+        <h1>ConfiguraciÃ³n</h1>
+        <p>Preferencias de cuenta, privacidad y notificaciones.</p>
+        <div class="config-actions">
+          <button class="outline-button" type="button" id="retake-quiz">Repetir cuestionario</button>
+          <button class="outline-button" type="button" data-view="mode-select">Cambiar modo de exploraciÃ³n</button>
+        </div>
+      </section>
+
+      <section class="view map-view map-view--aventura" data-panel="aventura-mapa" data-mode="aventura">
+        <div class="map-toolbar">
+          <div>
+            <p class="eyebrow">Modo aventura Â· Tu ruta</p>
+            <h1>Mapa de aventura</h1>
+          </div>
+          <div class="map-actions">
+            <button class="primary-action" type="button" id="aventura-share-route">Comparte con tus amigos</button>
+            <button class="outline-button" type="button" id="aventura-regenerate-route">Regenerar ruta</button>
+            <button class="outline-button" type="button" id="retake-quiz-aventura">Repetir cuestionario</button>
+            <button class="outline-button" type="button" data-view="mode-select">Cambiar modo</button>
+          </div>
+        </div>
+
+        <div class="map-layout">
+          <aside class="map-filter-panel">
+            <h2>Tu perfil</h2>
+            <p class="aventura-route-summary" id="aventura-route-summary">
+              Ruta generada segÃºn tu cuestionario.
+            </p>
+            <h2 class="map-panel-divider">Capas</h2>
+            <button type="button" class="is-active">Lugares</button>
+            <button type="button" class="is-active">Restaurantes</button>
+            <button type="button" class="is-active">Playas</button>
+            <button type="button">Ruta activa</button>
+          </aside>
+
+          <section class="map-canvas" id="aventura-map-canvas" aria-label="Mapa de aventura con ruta">
+            <div class="map-road road-one"></div>
+            <div class="map-road road-two"></div>
+            <div class="map-zone zone-one">Occidente</div>
+            <div class="map-zone zone-two">Centro</div>
+            <div class="map-zone zone-three">Costa</div>
+            <div class="aventura-route-line" id="aventura-route-line" aria-hidden="true"></div>
+          </section>
+
+          <aside class="map-detail-panel aventura-route-panel">
+            <h2>Tu ruta de aventura</h2>
+            <p class="aventura-route-summary">Paradas en orden de visita segÃºn tus preferencias.</p>
+            <div id="aventura-route-list" aria-live="polite"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view simple-view bitacora-view aventura-bitacora-view" data-panel="aventura-bitacora" data-mode="aventura">
+        <header class="bitacora-header">
+          <p class="eyebrow">Modo aventura Â· Rutas locas</p>
+          <h1>Mi bitÃ¡cora de aventura</h1>
+          <p class="bitacora-lead">
+            Tus rutas mÃ¡s locas, calificadas y listas para presumir. Cada regeneraciÃ³n guarda un
+            recuerdo de tu expediciÃ³n.
+          </p>
+        </header>
+
+        <section class="bitacora-section bitacora-stats" aria-label="Resumen de rutas locas">
+          <div class="section-heading">
+            <h2>Resumen</h2>
+            <span class="bitacora-stats-note">Tus aventuras en nÃºmeros</span>
+          </div>
+          <div class="stats-row bitacora-stats-row" id="aventura-bitacora-stats" aria-live="polite"></div>
+        </section>
+
+        <section class="bitacora-section" aria-label="Rutas guardadas">
+          <div class="section-heading">
+            <h2>Rutas locas</h2>
+            <span class="bitacora-places-count" id="aventura-bitacora-count"></span>
+          </div>
+          <div
+            class="bitacora-filters filter-chips aventura-bitacora-filters"
+            id="aventura-bitacora-filters"
+            role="group"
+            aria-label="Filtrar por vibe"
+          ></div>
+          <div class="aventura-bitacora-grid" id="aventura-bitacora-list"></div>
+        </section>
+      </section>
+
+      <section class="view simple-view favoritos-view aventura-favoritos-view" data-panel="aventura-favoritos" data-mode="aventura">
+        <header class="favoritos-header">
+          <p class="eyebrow">Modo aventura Â· Lugares guardados</p>
+          <h1>Favoritos</h1>
+          <p class="favoritos-lead">
+            Lugares, restaurantes y playas que guardaste durante tu aventura.
+          </p>
+        </header>
+
+        <section class="favoritos-section" aria-label="Lugares favoritos de aventura">
+          <div class="section-heading">
+            <h2>Tus lugares</h2>
+            <span class="favoritos-count" id="aventura-favoritos-count"></span>
+          </div>
+          <div
+            class="favoritos-filters filter-chips"
+            id="aventura-favoritos-filters"
+            role="group"
+            aria-label="Filtrar por categorÃ­a"
+          ></div>
+          <div class="favoritos-grid" id="aventura-favoritos-list"></div>
+        </section>
+      </section>
+
+      <section class="view simple-view aventura-logros-view" data-panel="aventura-logros" data-mode="aventura">
+        <header class="bitacora-header">
+          <p class="eyebrow">Modo aventura Â· Progreso</p>
+          <h1>Logros</h1>
+          <p class="bitacora-lead">
+            DesafÃ­os y metas de tu recorrido. Las mÃ©tricas se actualizan con tu ruta y favoritos.
+          </p>
+        </header>
+
+        <section class="bitacora-section bitacora-stats" aria-label="Resumen de aventura">
+          <div class="section-heading">
+            <h2>Resumen</h2>
+          </div>
+          <div class="stats-row bitacora-stats-row" id="aventura-logros-stats" aria-live="polite"></div>
+        </section>
+
+        <section class="bitacora-section" aria-label="Logros desbloqueados">
+          <div class="section-heading">
+            <h2>Tus logros</h2>
+          </div>
+          <div class="aventura-logros-grid" id="aventura-logros-list"></div>
+        </section>
       </section>
 
       <section class="view simple-view" data-panel="acerca">
         <h1>Acerca de</h1>
-        <p>Mockup de información general sobre la plataforma.</p>
+        <p>Mockup de informaciÃ³n general sobre la plataforma.</p>
       </section>
     </main>
 
+    <div class="place-popup" id="place-popup" hidden>
+      <div class="place-popup__backdrop" data-close-popup></div>
+      <div class="place-popup__dialog" role="dialog" aria-modal="true" aria-labelledby="popup-title">
+        <button class="place-popup__close" type="button" data-close-popup aria-label="Cerrar">Ã—</button>
+
+        <div class="place-popup__header">
+          <div class="image-placeholder" aria-hidden="true"></div>
+          <div>
+            <p class="eyebrow" id="popup-category">CategorÃ­a</p>
+            <h2 id="popup-title">Nombre del lugar</h2>
+            <p class="place-popup__location" id="popup-location">UbicaciÃ³n</p>
+            <p class="place-popup__planning">Parte de tu planeaciÃ³n del viaje</p>
+          </div>
+        </div>
+
+        <p class="place-popup__description" id="popup-description">
+          DescripciÃ³n del lugar seleccionado.
+        </p>
+
+        <div class="place-popup__weather" id="popup-weather" aria-label="PronÃ³stico del tiempo">
+          <div class="place-popup__forecast" id="popup-forecast">
+            <div class="place-popup__forecast-day">
+              <p class="place-popup__forecast-label">Hoy</p>
+              <strong class="place-popup__forecast-temp">26Â°C</strong>
+              <span class="place-popup__forecast-condition">Despejado</span>
+            </div>
+            <div class="place-popup__forecast-day">
+              <p class="place-popup__forecast-label">MaÃ±ana</p>
+              <strong class="place-popup__forecast-temp">27Â°C</strong>
+              <span class="place-popup__forecast-condition">Soleado</span>
+            </div>
+            <div class="place-popup__forecast-day">
+              <p class="place-popup__forecast-label">En dos dÃ­as</p>
+              <strong class="place-popup__forecast-temp">25Â°C</strong>
+              <span class="place-popup__forecast-condition">Nublado</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="place-popup__details" id="popup-details" aria-label="Detalles adicionales"></div>
+
+        <div class="place-popup__links">
+          <a class="popup-link" id="popup-waze" href="#" target="_blank" rel="noopener noreferrer">Ir con Waze</a>
+          <a class="popup-link" id="popup-news" href="#" target="_blank" rel="noopener noreferrer">Noticias cercanas</a>
+          <a
+            class="popup-link"
+            id="popup-drive"
+            href="https://m.uber.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Solicitar viaje a este lugar con Uber"
+          >Viaje con Uber</a>
+        </div>
+
+        <div class="place-popup__actions">
+          <button class="primary-action" type="button" id="popup-add-route">AÃ±adir a mi ruta</button>
+          <button class="outline-button" type="button" id="popup-save-favorite">Guardar lugar</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="src/js/ink-postmarks.js"></script>
+    <script src="src/js/onboarding.js"></script>
+    <script src="src/js/route-itinerary.js"></script>
+    <script src="src/js/map-place-popup.js"></script>
+    <script src="src/js/bitacora.js"></script>
+    <script src="src/js/favoritos.js"></script>
+    <script src="src/js/aventura-favoritos.js"></script>
+    <script src="src/js/aventura-route.js"></script>
+    <script src="src/js/aventura-bitacora.js"></script>
+    <script src="src/js/aventura-share.js"></script>
+    <script src="src/js/aventura-logros.js"></script>
+    <script src="src/js/mapa-personalizado.js"></script>
+    <script src="src/js/emergencia-noticias.js"></script>
     <script src="src/js/script.js"></script>
   </body>
 </html>
+
+
