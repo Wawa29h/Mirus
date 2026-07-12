@@ -1,4 +1,4 @@
-# TwinMap · Digital Twin Turístico
+# Mirus · Gemelo digital turístico
 
 Mapa base (core) del gemelo digital turístico de **Barra de Santiago, El Salvador**.
 Mapbox GL JS + capas activables: edificios/terreno 3D, POIs en vivo (OpenStreetMap),
@@ -21,9 +21,37 @@ Abre http://localhost:3000 (o el puerto que indique).
 
 ## 3. Desplegar (elige uno)
 
-- **Vercel** (recomendado, 2 min): `npm i -g vercel` → `vercel` en esta carpeta. Sitio estático, deploy instantáneo.
-- **Netlify**: arrastra la carpeta a https://app.netlify.com/drop
-- **GitHub Pages**: sube el repo → Settings → Pages → deploy desde `main` / raíz.
+### Vercel (frontend estático — recomendado)
+
+Este repo tiene **frontend estático** (`frontend/`, `index.html`) y **API Express** (`server.js`) en la misma raíz. En Vercel solo se despliega el sitio estático; el backend va aparte (Railway, Render, etc.).
+
+**Panel de Vercel → Project Settings → Build & Development:**
+
+| Campo | Valor |
+|-------|-------|
+| Framework Preset | **Other** (no Express) |
+| Build Command | `node scripts/netlify-config.mjs` |
+| Output Directory | `.` |
+| Install Command | *(vacío)* |
+
+`vercel.json` ya fuerza `"framework": null` para evitar que Vercel detecte Express por `server.js` / `"start": "node server.js"`.
+
+**Variables de entorno** (Settings → Environment Variables):
+
+- `MAPBOX_TOKEN` o `MAPBOX_ACCESS_TOKEN` — token público `pk...`
+- `API_BASE` — URL del backend Express desplegado aparte (ej. `https://mirus-api.onrender.com`)
+
+```bash
+git push origin main
+# En Vercel: Deployments → Redeploy (o espera el deploy automático del push)
+```
+
+Raíz `/` sirve `frontend/index.html` (app Mirus). Mapa standalone: `/index.html` o rewrite `/map`.
+
+### Otras opciones
+
+- **Netlify**: arrastra la carpeta a https://app.netlify.com/drop (usa `netlify.toml`)
+- **GitHub Pages**: sube el repo → Settings → Pages → deploy desde `main` / raíz
 
 > Nota de seguridad: el token público de Mapbox queda visible en el frontend (es normal).
 > En producción, restríngelo por **URL (referrer)** desde el dashboard de Mapbox para que

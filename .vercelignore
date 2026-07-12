@@ -1,0 +1,6 @@
+server.js
+routes/
+controllers/
+node_modules/
+.env
+.env.*

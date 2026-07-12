@@ -1,9 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "",
   "buildCommand": "node scripts/netlify-config.mjs",
   "outputDirectory": ".",
   "rewrites": [
-    { "source": "/frontend", "destination": "/" },
-    { "source": "/frontend/:path*", "destination": "/" }
+    { "source": "/", "destination": "/frontend/index.html" },
+    { "source": "/frontend", "destination": "/frontend/index.html" },
+    { "source": "/frontend/", "destination": "/frontend/index.html" },
+    { "source": "/map", "destination": "/index.html" }
   ]
 }
