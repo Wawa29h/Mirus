@@ -2,3 +2,6 @@
 .env
 .env.*
 backend/
+
+# Local Netlify folder
+.netlify
