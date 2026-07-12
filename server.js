@@ -37,6 +37,14 @@ app.get("/health", (_req, res) => {
   });
 });
 
+app.get("/api/config", (_req, res) => {
+  const token = process.env.MAPBOX_ACCESS_TOKEN || "";
+  res.json({
+    mapboxToken: token.startsWith("pk.") ? token : "",
+    apiBaseUrl: `http://localhost:${port}`,
+  });
+});
+
 app.listen(port, () => {
   console.log(`TwinMap API escuchando en http://localhost:${port}`);
 });

@@ -441,10 +441,11 @@ function updateAddRouteButton() {
 
 function openPlacePopup(pin) {
   currentPlace = getPlaceFromPin(pin);
-
   document.querySelectorAll(".map-pin").forEach((node) => {
     node.classList.toggle("is-active", node === pin);
   });
+  showPlacePopup(currentPlace);
+}
 
   popupCategory.textContent = currentPlace.category;
   popupTitle.textContent = currentPlace.name;
@@ -643,6 +644,7 @@ initDebugLocationsPanel();
 window.TwinmapPlacePopup = {
   bindPins: bindMapPins,
   openFromPin: openPlacePopup,
+  openFromPlace,
 };
 
 popupCloseButtons.forEach((button) => {

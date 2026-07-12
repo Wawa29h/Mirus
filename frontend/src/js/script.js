@@ -187,7 +187,7 @@ function startMode(mode) {
 function returnToModeSelect() {
   setActiveMode(null);
   document.body.classList.remove("is-onboarding");
-  showView("landing");
+  showView("mode-select");
 }
 
 function updateProfileUI() {
