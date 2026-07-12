@@ -46,13 +46,13 @@
     .brand h1 { margin: 0; font-size: 18px; letter-spacing: .3px; }
     .brand h1 span { color: var(--accent); }
     .brand p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
-    #island-btn {
-      margin-top: 10px; width: 100%; cursor: pointer;
+    #island-btn, #flat-btn {
+      margin-top: 8px; width: 100%; cursor: pointer;
       background: var(--accent); color: #062b28; border: none; border-radius: 9px;
       padding: 9px 12px; font-size: 13px; font-weight: 600; transition: background .15s, transform .1s;
     }
-    #island-btn:hover { transform: translateY(-1px); }
-    #island-btn.active { background: var(--accent2); color: #3a2600; }
+    #island-btn:hover, #flat-btn:hover { transform: translateY(-1px); }
+    #island-btn.active, #flat-btn.active { background: var(--accent2); color: #3a2600; }
 
     /* ---- Panel de capas ---- */
     .panel {
@@ -153,6 +153,7 @@
     <h1>Twin<span>Map</span></h1>
     <p>Digital Twin Turístico · Barra de Santiago 🇸🇻</p>
     <button id="island-btn" type="button">🏝️ Modo isla</button>
+    <button id="flat-btn" type="button">🗺️ Vista plana (2D)</button>
   </div>
 
   <div class="panel" id="panel" style="display:none">
@@ -176,6 +177,12 @@
       <span><span class="txt">Puntos de interés</span><br><span class="sub">OpenStreetMap · El Salvador</span></span>
     </label>
 
+    <label class="layer">
+      <input type="checkbox" id="lyr-parking" />
+      <span class="dot" style="background:#7bdff2"></span>
+      <span><span class="txt">Parqueos</span><br><span class="sub" id="parking-sub">OpenStreetMap ? capacidad no en vivo</span></span>
+    </label>
+
     <div class="legend" id="legend">
       <span><i style="background:#ffbf69"></i>Comida</span>
       <span><i style="background:#8ecae6"></i>Hospedaje</span>
@@ -188,7 +195,7 @@
     <label class="layer">
       <input type="checkbox" id="lyr-heat" />
       <span class="dot" style="background:#ff6b6b"></span>
-      <span><span class="txt">Afluencia estimada</span><br><span class="sub" id="crowds-sub">SerpAPI · 14 departamentos</span></span>
+      <span><span class="txt">Flujo y capacidad</span><br><span class="sub" id="crowds-sub">SerpAPI · saturación por zona</span></span>
     </label>
 
     <label class="layer">
@@ -285,13 +292,17 @@
       mapboxgl.accessToken = CFG.MAPBOX_TOKEN;
       document.getElementById("panel").style.display = "block";
 
+      // Modo plano: mapa vectorial de colores planos, SIN satélite, relieve ni 3D
+      const flatMode = new URLSearchParams(location.search).get("flat") === "1";
+      window._flatMode = flatMode;
+
       const map = new mapboxgl.Map({
         container: "map",
-        style: "mapbox://styles/mapbox/satellite-streets-v12",
+        style: flatMode ? "mapbox://styles/mapbox/streets-v12" : "mapbox://styles/mapbox/satellite-streets-v12",
         center: CFG.CENTER || [-90.05, 13.74],
         zoom: CFG.ZOOM || 13,
-        pitch: 60,
-        bearing: -20,
+        pitch: flatMode ? 0 : 60,
+        bearing: flatMode ? 0 : -20,
         antialias: true,
       });
 
@@ -312,32 +323,35 @@
       window._geocoder = geocoder; // para depurar en consola
 
       map.on("style.load", () => {
-        // ---- Terreno 3D + cielo ----
-        map.addSource("dem", {
-          type: "raster-dem",
-          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-          tileSize: 512, maxzoom: 14,
-        });
-        map.setTerrain({ source: "dem", exaggeration: 1.4 });
+        // En modo plano NO se agrega relieve, niebla ni edificios 3D (colores planos, sin elevación)
+        if (!flatMode) {
+          // ---- Terreno 3D + cielo ----
+          map.addSource("dem", {
+            type: "raster-dem",
+            url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+            tileSize: 512, maxzoom: 14,
+          });
+          map.setTerrain({ source: "dem", exaggeration: 1.4 });
 
-        // Cielo atmosférico
-        map.setFog({ "horizon-blend": 0.2, color: "#cfe8f0", "high-color": "#245", "space-color": "#0d1b2a" });
+          // Cielo atmosférico
+          map.setFog({ "horizon-blend": 0.2, color: "#cfe8f0", "high-color": "#245", "space-color": "#0d1b2a" });
 
-        // ---- Edificios 3D (fill-extrusion desde tiles vectoriales) ----
-        map.addLayer({
-          id: "3d-buildings",
-          source: "composite",
-          "source-layer": "building",
-          filter: ["==", "extrude", "true"],
-          type: "fill-extrusion",
-          minzoom: 14,
-          paint: {
-            "fill-extrusion-color": "#8ecae6",
-            "fill-extrusion-height": ["get", "height"],
-            "fill-extrusion-base": ["get", "min_height"],
-            "fill-extrusion-opacity": 0.85,
-          },
-        });
+          // ---- Edificios 3D (fill-extrusion desde tiles vectoriales) ----
+          map.addLayer({
+            id: "3d-buildings",
+            source: "composite",
+            "source-layer": "building",
+            filter: ["==", "extrude", "true"],
+            type: "fill-extrusion",
+            minzoom: 14,
+            paint: {
+              "fill-extrusion-color": "#8ecae6",
+              "fill-extrusion-height": ["get", "height"],
+              "fill-extrusion-base": ["get", "min_height"],
+              "fill-extrusion-opacity": 0.85,
+            },
+          });
+        }
 
         // Punto de referencia principal
         new mapboxgl.Marker({ color: "#2ec4b6" })
@@ -350,6 +364,7 @@
         addDepartments(map);
         addIslandMask(map);
         loadPOIs(map);
+        addParking(map);
         addCrowds(map);
         addTraffic(map);
         addBiodiversity(map);
@@ -376,6 +391,7 @@
       historico: "#e07a5f", turismo: "#06d6a0", parque: "#90be6d", otro: "#adb5bd",
     };
     const POI_LAYERS = ["clusters", "cluster-count", "pois-layer"];
+    const PARKING_LAYERS = ["parking-clusters", "parking-cluster-count", "parking-points"];
 
     const DEPT_LAYERS = ["dept-fill", "dept-line", "dept-label"];
     const TRAFFIC_LAYERS = ["traffic-live"];
@@ -458,11 +474,37 @@
       });
     }
 
+
+    function placeDetailsHtml(p) {
+      const fields = [
+        p.opening_hours ? "Horario: " + p.opening_hours : "",
+        p.cuisine ? "Comida: " + p.cuisine.replaceAll(";", ", ") : "",
+        p.stars ? "Estrellas: " + p.stars : "",
+        p.rooms ? "Habitaciones: " + p.rooms : "",
+        p.internet_access ? "Internet: " + p.internet_access : "",
+        p.wheelchair ? "Accesibilidad: " + p.wheelchair : "",
+        p.outdoor_seating ? "Mesas exteriores: " + p.outdoor_seating : "",
+        p.takeaway ? "Para llevar: " + p.takeaway : "",
+        p.delivery ? "Delivery: " + p.delivery : ""
+      ].filter(Boolean);
+      const rows = fields.map((value) => "<br><small>" + escapeHtml(value) + "</small>").join("");
+      return rows + (p.availability ? "<br><small>Disponibilidad: " + escapeHtml(p.availability) + "</small>" : "");
+    }
+
     // ============ CAPA: POIs desde cache local (data/pois.geojson) con clustering ============
     async function loadPOIs(map) {
       try {
         const res = await fetch("data/pois.geojson");
         const geojson = await res.json();
+        try {
+          const detailsResponse = await fetch("data/place-details.geojson");
+          if (detailsResponse.ok) {
+            const details = await detailsResponse.json();
+            const keyOf = (feature) => (feature.properties.name || "").trim().toLowerCase() + "|" + feature.geometry.coordinates.map((n) => Number(n).toFixed(5)).join(",");
+            const index = new Map((details.features || []).map((feature) => [keyOf(feature), feature.properties]));
+            geojson.features.forEach((feature) => { const rich = index.get(keyOf(feature)); if (rich) Object.assign(feature.properties, rich); });
+          }
+        } catch (error) { console.warn("Place details cache error", error); }
         const total = geojson.features.length;
 
         map.addSource("pois", {
@@ -512,7 +554,7 @@
           const web = p.website ? `<br><a href="${p.website}" target="_blank">web</a>` : "";
           const tel = p.phone ? `<br>📞 ${p.phone}` : "";
           new mapboxgl.Popup().setLngLat(e.lngLat)
-            .setHTML(`<b>${p.name}</b><br><small>${p.cat} · ${p.kind}</small>${tel}${web}`).addTo(map);
+            .setHTML(`<b>${p.name}</b><br><small>${p.cat} · ${p.kind}</small>${tel}${web}${placeDetailsHtml(p)}`).addTo(map);
         });
         ["clusters", "pois-layer"].forEach((id) => {
           map.on("mouseenter", id, () => map.getCanvas().style.cursor = "pointer");
@@ -526,21 +568,59 @@
       }
     }
 
+
+    // ============ CAPA: Parqueos publicos de OpenStreetMap ============
+    async function addParking(map) {
+      const empty = { type: "FeatureCollection", features: [] };
+      map.addSource("parking", { type: "geojson", data: empty, cluster: true, clusterMaxZoom: 13, clusterRadius: 46 });
+      map.addLayer({ id: "parking-clusters", type: "circle", source: "parking", filter: ["has", "point_count"], layout: { visibility: "none" }, paint: { "circle-radius": ["step", ["get", "point_count"], 14, 20, 18, 80, 24], "circle-color": "#7bdff2", "circle-opacity": 0.88, "circle-stroke-width": 2, "circle-stroke-color": "#0d1b2a" } });
+      map.addLayer({ id: "parking-cluster-count", type: "symbol", source: "parking", filter: ["has", "point_count"], layout: { visibility: "none", "text-field": ["get", "point_count_abbreviated"], "text-size": 11 }, paint: { "text-color": "#0d1b2a" } });
+      map.addLayer({ id: "parking-points", type: "circle", source: "parking", filter: ["!", ["has", "point_count"]], layout: { visibility: "none" }, paint: { "circle-radius": 6, "circle-color": "#7bdff2", "circle-stroke-width": 1.5, "circle-stroke-color": "#0d1b2a" } });
+      map.on("click", "parking-clusters", (event) => { const feature = map.queryRenderedFeatures(event.point, { layers: ["parking-clusters"] })[0]; map.getSource("parking").getClusterExpansionZoom(feature.properties.cluster_id, (error, zoom) => { if (!error) map.easeTo({ center: feature.geometry.coordinates, zoom }); }); });
+      map.on("click", "parking-points", (event) => { const p=event.features[0].properties; const details=[p.type?"Tipo: "+p.type:"",p.capacity?"Capacidad: "+p.capacity:"",p.fee?"Cobro: "+p.fee:"",p.opening_hours?"Horario: "+p.opening_hours:"",p.covered?"Cubierto: "+p.covered:"",p.wheelchair?"Accesibilidad: "+p.wheelchair:""].filter(Boolean).map(escapeHtml).join("<br>"); new mapboxgl.Popup().setLngLat(event.lngLat).setHTML("<b>P " + escapeHtml(p.name) + "</b><br>" + details + "<br><small>OpenStreetMap. No muestra espacios libres en tiempo real.</small>").addTo(map); });
+      ["parking-clusters", "parking-points"].forEach((id) => { map.on("mouseenter", id, () => map.getCanvas().style.cursor = "pointer"); map.on("mouseleave", id, () => map.getCanvas().style.cursor = ""); });
+      try { const response=await fetch("data/parking.geojson"); if(!response.ok) throw new Error("No parking cache"); const data=await response.json(); map.getSource("parking").setData(data); const sub=document.getElementById("parking-sub"); if(sub) sub.textContent=(data.features?.length||0)+" parqueos ? no disponibilidad en vivo"; } catch(error) { console.warn("Parking cache error",error); }
+    }
+
     // ============ CAPA: Afluencia desde SerpAPI (Google Popular Times) ============
+    // Semáforo de CAPACIDAD DE CARGA (#2): óptimo <50 · moderado 50-75 · saturado >=75
+    const CAP_COLOR = ["step", ["coalesce", ["get", "busyness"], 0], "#2ec4b6", 50, "#ffbf69", 75, "#ff6b6b"];
+    function capStatus(b) {
+      if (b >= 75) return { emoji: "🔴", txt: "Saturado", rec: "Sobre su capacidad óptima. Visita más temprano o elige otra zona." };
+      if (b >= 50) return { emoji: "🟠", txt: "Moderado", rec: "Acercándose al límite. Aún se disfruta, pero llenándose." };
+      return { emoji: "🟢", txt: "Óptimo", rec: "Por debajo de su capacidad. Buen momento para visitar." };
+    }
+
     async function addCrowds(map) {
       const empty = { type: "FeatureCollection", features: [] };
       map.addSource("crowds", { type: "geojson", data: empty });
+
+      // Halo pulsante SOLO en lugares saturados (llama la atención sobre la sobrecarga)
+      map.addLayer({
+        id: "crowds-pulse", type: "circle", source: "crowds",
+        layout: { visibility: "none" }, filter: [">=", ["coalesce", ["get", "busyness"], 0], 75],
+        paint: { "circle-radius": 18, "circle-color": "#ff6b6b", "circle-opacity": 0.35, "circle-stroke-width": 0 },
+      });
       map.addLayer({
         id: "crowds-heat", type: "heatmap", source: "crowds", layout: { visibility: "none" },
         paint: { "heatmap-weight": ["coalesce", ["get", "busyness"], 0], "heatmap-intensity": 1.2, "heatmap-radius": 45, "heatmap-opacity": 0.8, "heatmap-color": ["interpolate", ["linear"], ["heatmap-density"], 0, "rgba(0,0,0,0)", 0.35, "#2ec4b6", 0.65, "#ffbf69", 1, "#ff6b6b"] },
       });
       map.addLayer({
         id: "crowds-points", type: "circle", source: "crowds", layout: { visibility: "none" }, filter: [">=", ["get", "busyness"], 0],
-        paint: { "circle-radius": ["interpolate", ["linear"], ["get", "busyness"], 0, 8, 50, 15, 100, 23], "circle-color": ["interpolate", ["linear"], ["get", "busyness"], 0, "#2ec4b6", 45, "#ffbf69", 75, "#ff6b6b"], "circle-opacity": 0.88, "circle-stroke-width": 2, "circle-stroke-color": "#0d1b2a" },
+        paint: {
+          "circle-radius": ["interpolate", ["linear"], ["coalesce", ["get", "busyness"], 0], 0, 9, 100, 22],
+          "circle-color": CAP_COLOR,
+          "circle-opacity": 0.92, "circle-stroke-width": 2, "circle-stroke-color": "#0d1b2a",
+        },
       });
       map.on("click", "crowds-points", (event) => {
         const p = event.features[0].properties;
-        new mapboxgl.Popup().setLngLat(event.lngLat).setHTML(`<b>${p.name}</b><br>Intensidad estimada: <b>${Math.round(p.busyness)}%</b><br><small>${p.info || ""}</small>`).addTo(map);
+        const b = Math.round(p.busyness);
+        const s = capStatus(b);
+        const pico = p.peak_hour ? `<br>⏰ Hora pico: <b>${p.peak_hour}</b>` : "";
+        new mapboxgl.Popup().setLngLat(event.lngLat).setHTML(
+          `<b>${p.name}</b><br>Ocupación: <b>${b}%</b> ${s.emoji} <b>${s.txt}</b>${p.is_live ? " · en vivo" : ""}${pico}<br><small>${s.rec}</small>`
+        ).addTo(map);
       });
       map.on("mouseenter", "crowds-points", () => map.getCanvas().style.cursor = "pointer");
       map.on("mouseleave", "crowds-points", () => map.getCanvas().style.cursor = "");
@@ -550,15 +630,32 @@
         if (!response.ok || !payload.success) throw new Error(payload.error || "No se pudo consultar SerpAPI.");
         const crowds = payload.data || empty;
         map.getSource("crowds").setData(crowds);
-        const valid = crowds.features.filter((feature) => Number.isFinite(feature.properties?.busyness)).length;
+        const conDato = crowds.features.filter((f) => Number.isFinite(f.properties?.busyness));
+        const saturados = conDato.filter((f) => f.properties.busyness >= 75).length;
         const sub = document.getElementById("crowds-sub");
-        if (sub) sub.textContent = valid ? `SerpAPI · ${valid} lugares con intensidad` : "SerpAPI · sin intensidad para esta zona";
-        if (valid) setStatus(`Afluencia lista · <b>${valid}</b> lugares medidos por SerpAPI`);
+        if (sub) sub.textContent = conDato.length ? `${conDato.length} lugares · ${saturados} saturados` : "SerpAPI · sin dato para esta zona";
+        if (conDato.length) setStatus(`Flujo y capacidad · <b>${conDato.length}</b> lugares · <b>${saturados}</b> saturados`);
+        startCrowdPulse(map);
       } catch (error) {
         const sub = document.getElementById("crowds-sub");
         if (sub) sub.textContent = "SerpAPI no disponible · usa el caché";
         console.warn("Crowds API error", error);
       }
+    }
+
+    // Animación del halo pulsante (solo repinta cuando la capa está visible)
+    let crowdPulseRAF = null;
+    function startCrowdPulse(map) {
+      if (crowdPulseRAF) return;
+      const step = (t) => {
+        if (map.getLayer("crowds-pulse") && map.getLayoutProperty("crowds-points", "visibility") === "visible") {
+          const phase = (Math.sin(t / 500) + 1) / 2; // 0..1
+          map.setPaintProperty("crowds-pulse", "circle-radius", 16 + phase * 18);
+          map.setPaintProperty("crowds-pulse", "circle-opacity", 0.45 - phase * 0.35);
+        }
+        crowdPulseRAF = requestAnimationFrame(step);
+      };
+      crowdPulseRAF = requestAnimationFrame(step);
     }
     // ============ CAPA: Trafico en tiempo real (Mapbox Traffic) ============
     function addTraffic(map) {
@@ -1009,13 +1106,23 @@
       input.onkeydown = (event) => { if (event.key === "Enter") send(); };
     }
 
+    // ============ Estilo plano (colores planos, sin relieve) / satélite 3D ============
+    // Alterna recargando con ?flat=1 para re-armar limpio todas las capas.
+    function toggleFlat() {
+      const params = new URLSearchParams(location.search);
+      if (params.get("flat") === "1") params.delete("flat");
+      else params.set("flat", "1");
+      location.search = params.toString();
+    }
+
     // ============ Toggles del panel ============
     function wireToggles(map) {
       const setVis = (id, on) => { if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none"); };
       document.getElementById("lyr-3d").onchange = (e) => toggle3D(map, e.target.checked);
       document.getElementById("lyr-dept").onchange = (e) => DEPT_LAYERS.forEach((id) => setVis(id, e.target.checked));
       document.getElementById("lyr-pois").onchange = (e) => POI_LAYERS.forEach((id) => setVis(id, e.target.checked));
-      document.getElementById("lyr-heat").onchange = (e) => ["crowds-heat", "crowds-points"].forEach((id) => setVis(id, e.target.checked));
+      document.getElementById("lyr-parking").onchange = (e) => PARKING_LAYERS.forEach((id) => setVis(id, e.target.checked));
+      document.getElementById("lyr-heat").onchange = (e) => ["crowds-heat", "crowds-points", "crowds-pulse"].forEach((id) => setVis(id, e.target.checked));
       document.getElementById("lyr-traffic").onchange = (e) => TRAFFIC_LAYERS.forEach((id) => setVis(id, e.target.checked));
       document.getElementById("lyr-nature").onchange = (e) => NATURE_LAYERS.forEach((id) => setVis(id, e.target.checked));
       document.getElementById("lyr-mobility").onchange = (e) => MOBILITY_LAYERS.forEach((id) => setVis(id, e.target.checked));
@@ -1026,6 +1133,10 @@
         if (!e.target.checked && bioPlayTimer) toggleBioPlay(map); // pausar al apagar
       };
       document.getElementById("island-btn").onclick = () => toggleIsland(map);
+      const flatBtn = document.getElementById("flat-btn");
+      flatBtn.textContent = window._flatMode ? "🛰️ Satélite 3D" : "🗺️ Colores planos";
+      flatBtn.classList.toggle("active", window._flatMode);
+      flatBtn.onclick = () => toggleFlat();
 
       // Slider de línea de tiempo de aves
       document.getElementById("bio-time").oninput = (e) => applyBioTime(map, Number(e.target.value));
