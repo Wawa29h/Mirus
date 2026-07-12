@@ -6,6 +6,8 @@ import routeRouter from "./routes/route.js";
 import crowdsRouter from "./routes/crowds.js";
 import birdsRouter from "./routes/birds.js";
 import assistantRouter from "./routes/assistant.js";
+import trafficRouter from "./routes/traffic.js";
+import configRouter from "./routes/config.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -25,8 +27,15 @@ app.use("/api/routes", routeRouter);
 app.use("/api/crowds", crowdsRouter);
 app.use("/api/birds", birdsRouter);
 app.use("/api/assistant", assistantRouter);
+app.use("/api/traffic", trafficRouter);
+app.use("/api/config", configRouter);
 
-app.get("/health", (_req, res) => res.json({ ok: true }));
+app.get("/health", (_req, res) => {
+  res.json({
+    ok: true,
+    tomtom: Boolean(process.env.TOMTOM_API_KEY || process.env.TOMTOM_KEY),
+  });
+});
 
 app.get("/api/config", (_req, res) => {
   const token = process.env.MAPBOX_ACCESS_TOKEN || "";

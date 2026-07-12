@@ -1,18 +1,20 @@
 // Comprobador de TomTom: verifica tu key con Traffic Flow (proxy de actividad),
 // Routing (ruta A→B con tráfico) y Search (POIs). No modifica nada.
 //
-// Uso:
-//   TOMTOM_KEY=tu_key node scripts/test-tomtom.mjs
-//   TOMTOM_KEY=tu_key node scripts/test-tomtom.mjs --lat 13.70 --lng -89.21
+// Uso (lee .env automáticamente):
+//   node scripts/test-tomtom.mjs
+//   node scripts/test-tomtom.mjs --lat 13.70 --lng -89.21
+
+import "dotenv/config";
 
 const arg = (name, fallback) => {
   const i = process.argv.indexOf(`--${name}`);
   return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
 };
 
-const KEY = process.env.TOMTOM_KEY;
+const KEY = process.env.TOMTOM_API_KEY || process.env.TOMTOM_KEY;
 if (!KEY) {
-  console.error("✗ Falta la key.  Corre:  TOMTOM_KEY=tu_key node scripts/test-tomtom.mjs");
+  console.error("✗ Falta TOMTOM_API_KEY en .env (o TOMTOM_KEY en el entorno).");
   process.exit(1);
 }
 
