@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="src/css/map-popup.css?v=20260712-debug" />
     <link rel="stylesheet" href="src/css/aventura.css" />
     <link rel="stylesheet" href="src/css/mapa-personalizado.css" />
-    <link rel="stylesheet" href="src/css/emergencia.css" />
+    <link rel="stylesheet" href="src/css/emergencia.css?v=20260712-emergencias" />
   </head>
   <body>
     <header class="topbar">
@@ -152,6 +152,33 @@
             </ul>
           </article>
         </section>
+      </section>
+
+      <section class="view login-view" data-panel="login" aria-live="polite">
+        <div class="login-card">
+          <p class="eyebrow">Perfil de viaje</p>
+          <h1>Inicia sesion para guardar tu experiencia</h1>
+          <p>
+            Tu quiz, bitacora y mapa personalizado se guardaran separados por perfil
+            en esta version mock.
+          </p>
+
+          <form class="login-form" id="login-form">
+            <label for="login-name">Nombre del perfil</label>
+            <div class="login-form__row">
+              <input
+                id="login-name"
+                name="name"
+                type="text"
+                placeholder="Ej. Rebeca"
+                autocomplete="name"
+                required
+              />
+              <button class="primary-action" type="submit">Entrar</button>
+            </div>
+            <small id="login-active-profile"></small>
+          </form>
+        </div>
       </section>
 
       <section class="view mode-select-view" data-panel="mode-select">
@@ -515,6 +542,7 @@
             <div class="personalizado-ai-panel">
               <span class="personalizado-ai-panel__label">Resumen personalizado</span>
               <p id="personalizado-ai-summary">Analizando tu quiz y bitÃ¡coraâ€¦</p>
+              <div class="personalizado-learning-profile" id="personalizado-learning-profile" aria-live="polite"></div>
             </div>
             <h2 class="map-panel-divider">Zona seleccionada</h2>
             <div class="image-placeholder"></div>
@@ -637,6 +665,13 @@
         <section class="emergencia-section" aria-label="NÃºmeros de emergencia">
           <div class="section-heading">
             <h2>Contactos de emergencia</h2>
+          </div>
+          <div class="emergencia-alert-card" role="note">
+            <span class="emergencia-alert-card__icon" aria-hidden="true">911</span>
+            <div>
+              <strong>En caso de una emergencia grave, llama inmediatamente al 911.</strong>
+              <p>Atencion prioritaria para situaciones de riesgo, violencia, accidentes o peligro inmediato.</p>
+            </div>
           </div>
           <div class="emergencia-numbers" id="emergencia-numbers" aria-live="polite"></div>
         </section>
@@ -882,8 +917,10 @@
       </div>
     </div>
 
+    <script src="src/js/auth.js"></script>
     <script src="src/js/ink-postmarks.js"></script>
     <script src="src/js/onboarding.js"></script>
+    <script src="src/js/database.js"></script>
     <script src="src/js/route-itinerary.js"></script>
     <script src="src/js/map-place-popup.js?v=20260712-summary"></script>
     <script src="src/js/bitacora.js"></script>
@@ -894,10 +931,13 @@
     <script src="src/js/aventura-share.js"></script>
     <script src="src/js/aventura-logros.js?v=20260712-newsdata"></script>
     <script src="src/js/mapa-personalizado.js?v=20260712-newsdata"></script>
-    <script src="src/js/emergencia-noticias.js?v=20260712-newsdata"></script>
+    <script src="src/js/emergencia-noticias.js?v=20260712-emergencias"></script>
     <script src="src/js/script.js?v=20260712-newsdata"></script>
   </body>
 </html>
+
+
+
 
 
 

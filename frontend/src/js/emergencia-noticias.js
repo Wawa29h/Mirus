@@ -70,46 +70,53 @@ const newsState = {
 
 const EMERGENCY_NUMBERS = [
   {
-    id: "911",
-    label: "Emergencias unificadas",
+    id: "pnc",
+    label: "Policia Nacional Civil",
     number: "911",
-    description: "PolicÃ­a, bomberos y ambulancia Â· atenciÃ³n 24 h",
-    icon: "ðŸ†˜",
+    description: "Atencion inmediata ante delitos, violencia, amenazas o riesgo para la seguridad.",
+    icon: "PNC",
   },
   {
-    id: "cruz-roja",
-    label: "Cruz Roja SalvadoreÃ±a",
+    id: "sem",
+    label: "Sistema de Emergencias Medicas",
     number: "132",
-    description: "Ambulancias y rescate en carretera",
-    icon: "âž•",
+    description: "Asistencia prehospitalaria y coordinacion de ambulancias para emergencias medicas.",
+    icon: "SEM",
   },
   {
     id: "bomberos",
     label: "Cuerpo de Bomberos",
     number: "913",
-    description: "Incendios, rescates y emergencias estructurales",
-    icon: "ðŸš’",
-  },
-  {
-    id: "pnc",
-    label: "PolicÃ­a Nacional Civil",
-    number: "194",
-    description: "Denuncias y apoyo policial Â· tambiÃ©n vÃ­a 911",
-    icon: "ðŸš”",
+    description: "Incendios, rescates, fugas, accidentes estructurales y emergencias con riesgo fisico.",
+    icon: "913",
   },
   {
     id: "proteccion-civil",
-    label: "ProtecciÃ³n Civil",
-    number: "2281-0888",
-    description: "Desastres naturales, evacuaciones y alertas",
-    icon: "âš ï¸",
+    label: "Proteccion Civil",
+    number: "2201-2424",
+    description: "Alertas, evacuaciones, gestion de riesgos y apoyo ante desastres naturales.",
+    icon: "PC",
   },
   {
-    id: "salud",
-    label: "Ministerio de Salud",
-    number: "2221-8200",
-    description: "OrientaciÃ³n sanitaria y emergencias de salud pÃºblica",
-    icon: "ðŸ¥",
+    id: "comandos",
+    label: "Comandos de Salvamento",
+    number: "2133-0000",
+    description: "Rescate, primeros auxilios, ambulancias y apoyo en accidentes de transito.",
+    icon: "CS",
+  },
+  {
+    id: "cruz-roja",
+    label: "Cruz Roja Salvadorena",
+    number: "2239-4930",
+    description: "Servicios humanitarios, ambulancias, rescate y atencion de emergencias.",
+    icon: "CR",
+  },
+  {
+    id: "cruz-verde",
+    label: "Cruz Verde Salvadorena",
+    number: "2284-5792",
+    description: "Atencion prehospitalaria, traslados, primeros auxilios y rescate comunitario.",
+    icon: "CV",
   },
 ];
 
@@ -1010,5 +1017,6 @@ window.TwinmapEmergencia = {
 };
 
 refreshEmergenciaPanel();
+
 
 

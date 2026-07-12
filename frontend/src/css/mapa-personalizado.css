@@ -21,6 +21,55 @@
   line-height: 1.5;
 }
 
+.personalizado-learning-profile {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.personalizado-learning-profile > span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.personalizado-learning-profile p {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.personalizado-learning-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.personalizado-learning-tags strong {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 0.82rem;
+}
+
+.personalizado-learning-tags small {
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--surface);
+  font-size: 0.68rem;
+}
+
 .personalizado-detail-list {
   display: flex;
   flex-direction: column;

@@ -1,5 +1,9 @@
 ﻿const FAVORITOS_STORAGE_KEY = "twinmap-favoritos";
 
+function getFavoritosStorageKey() {
+  return window.TwinmapAuth?.getProfileStorageKey?.("favoritos") || FAVORITOS_STORAGE_KEY;
+}
+
 const FAVORITOS_CATEGORIES = [
   { id: "todos", label: "Todos" },
   { id: "restaurante", label: "Restaurantes" },
@@ -63,7 +67,7 @@ let favoritos = loadFavoritos();
 
 function loadFavoritos() {
   try {
-    const stored = localStorage.getItem(FAVORITOS_STORAGE_KEY);
+    const stored = localStorage.getItem(getFavoritosStorageKey());
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) return parsed;
@@ -76,7 +80,7 @@ function loadFavoritos() {
 }
 
 function saveFavoritos() {
-  localStorage.setItem(FAVORITOS_STORAGE_KEY, JSON.stringify(favoritos));
+  localStorage.setItem(getFavoritosStorageKey(), JSON.stringify(favoritos));
 }
 
 function getFilteredFavoritos() {
@@ -178,4 +182,21 @@ function initFavoritos() {
 }
 
 initFavoritos();
+
+window.addEventListener("twinmap-auth-change", () => {
+  favoritos = loadFavoritos();
+  activeCategory = "todos";
+  initFavoritos();
+});
+
+window.TwinmapFavoritos = {
+  getAll: () => favoritos.map((place) => ({ ...place })),
+  refresh() {
+    favoritos = loadFavoritos();
+    renderFilters();
+    renderFavoritos();
+  },
+};
+
+
 

@@ -1,3 +1,6 @@
+const BITACORA_COLLECTION = "bitacora";
+const BITACORA_LEGACY_STORAGE_KEY = "twinmap-bitacora";
+
 const BITACORA_CATEGORIES = [
   { id: "todos", label: "Todos" },
   { id: "restaurante", label: "Restaurantes" },
@@ -133,20 +136,146 @@ const galleryEl = document.getElementById("bitacora-gallery");
 const galleryCountEl = document.getElementById("bitacora-gallery-count");
 
 let activeCategory = "todos";
+let bitacoraPlaces = loadBitacoraPlaces();
+
+function normalizeText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function makeBitacoraId(place) {
+  return (
+    place.id ||
+    `${normalizeText(place.name)}-${normalizeText(place.location)}`
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+  );
+}
+
+function getDepartment(location) {
+  const parts = String(location || "").split(",");
+  return (parts[parts.length - 1] || parts[0] || "El Salvador").trim();
+}
+
+function formatVisitedDate(date = new Date()) {
+  return new Intl.DateTimeFormat("es-SV", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function loadBitacoraPlaces() {
+  const seed = BITACORA_PLACES.map((place) => ({
+    id: makeBitacoraId(place),
+    ...place,
+  }));
+
+  if (window.TwinmapDatabase) {
+    try {
+      const legacy = localStorage.getItem(BITACORA_LEGACY_STORAGE_KEY);
+      if (legacy && !window.TwinmapDatabase.hasCollection(BITACORA_COLLECTION)) {
+        const parsed = JSON.parse(legacy);
+        if (Array.isArray(parsed)) {
+          return window.TwinmapDatabase.saveAll(BITACORA_COLLECTION, parsed);
+        }
+      }
+    } catch {
+      /* usar seed */
+    }
+
+    return window.TwinmapDatabase.seed(BITACORA_COLLECTION, seed);
+  }
+
+  try {
+    const stored = localStorage.getItem(BITACORA_LEGACY_STORAGE_KEY);
+    const parsed = stored ? JSON.parse(stored) : null;
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+  } catch {
+    /* usar mock */
+  }
+
+  return seed;
+}
+
+function saveBitacoraPlaces() {
+  if (window.TwinmapDatabase) {
+    window.TwinmapDatabase.saveAll(BITACORA_COLLECTION, bitacoraPlaces);
+    return;
+  }
+
+  localStorage.setItem(BITACORA_LEGACY_STORAGE_KEY, JSON.stringify(bitacoraPlaces));
+}
+
+function getBitacoraPlaces() {
+  return bitacoraPlaces.map((place) => ({ ...place }));
+}
+
+function isPlaceInBitacora(place) {
+  const id = makeBitacoraId(place);
+  const name = normalizeText(place.name);
+
+  return bitacoraPlaces.some(
+    (item) => item.id === id || normalizeText(item.name) === name,
+  );
+}
+
+function notifyBitacoraChange() {
+  window.dispatchEvent(
+    new CustomEvent("twinmap-bitacora-change", {
+      detail: { places: getBitacoraPlaces() },
+    }),
+  );
+}
+
+function addPlaceToBitacora(place) {
+  if (!place?.name) return { added: false };
+
+  if (isPlaceInBitacora(place)) {
+    return { added: false, alreadyExists: true };
+  }
+
+  const category = normalizeText(place.category || "lugar");
+  const item = {
+    id: makeBitacoraId(place),
+    name: place.name,
+    category: category || "lugar",
+    categoryLabel: place.category || "Lugar",
+    location: place.location || "El Salvador",
+    department: getDepartment(place.location),
+    visitedAt: formatVisitedDate(),
+    lat: place.lat,
+    lng: place.lng,
+  };
+
+  bitacoraPlaces = [item, ...bitacoraPlaces];
+  saveBitacoraPlaces();
+  refreshBitacora();
+  renderFilters();
+  renderPlaces();
+  notifyBitacoraChange();
+
+  return { added: true, place: item };
+}
 
 function padStat(value) {
   return String(value).padStart(2, "0");
 }
 
 function countPlacesByCategory(category) {
-  return BITACORA_PLACES.filter((place) => place.category === category).length;
+  return bitacoraPlaces.filter((place) => place.category === category).length;
 }
 
 function getBitacoraStats() {
-  const departments = new Set(BITACORA_PLACES.map((place) => place.department));
+  const departments = new Set(bitacoraPlaces.map((place) => place.department));
 
   return {
-    lugares: BITACORA_PLACES.length,
+    lugares: bitacoraPlaces.length,
     departamentos: departments.size,
     fotos: BITACORA_PHOTOS.length,
     rutas: ROUTES_COMPLETED,
@@ -254,10 +383,24 @@ function renderLogros() {
     .join("");
 }
 
+function getBitacoraCategories() {
+  const categoryMap = new Map(BITACORA_CATEGORIES.map((category) => [category.id, category]));
+
+  bitacoraPlaces.forEach((place) => {
+    if (!place.category || categoryMap.has(place.category)) return;
+    categoryMap.set(place.category, {
+      id: place.category,
+      label: place.categoryLabel || place.category,
+    });
+  });
+
+  return [...categoryMap.values()];
+}
+
 function renderFilters() {
   if (!filtersEl) return;
 
-  filtersEl.innerHTML = BITACORA_CATEGORIES.map(
+  filtersEl.innerHTML = getBitacoraCategories().map(
     (category) => `
       <button
         type="button"
@@ -281,10 +424,10 @@ function renderFilters() {
 
 function getFilteredPlaces() {
   if (activeCategory === "todos") {
-    return BITACORA_PLACES;
+    return bitacoraPlaces;
   }
 
-  return BITACORA_PLACES.filter((place) => place.category === activeCategory);
+  return bitacoraPlaces.filter((place) => place.category === activeCategory);
 }
 
 function renderPlaces() {
@@ -293,7 +436,7 @@ function renderPlaces() {
   const places = getFilteredPlaces();
 
   if (placesCountEl) {
-    placesCountEl.textContent = `${BITACORA_PLACES.length} en total`;
+    placesCountEl.textContent = `${bitacoraPlaces.length} en total`;
   }
 
   if (places.length === 0) {
@@ -343,9 +486,11 @@ function bindDashboardLink() {
 }
 
 function refreshBitacora() {
+  bitacoraPlaces = loadBitacoraPlaces();
   renderStats();
   renderLogros();
   renderDashboardStats();
+  renderPlaces();
 }
 
 function initBitacora() {
@@ -360,7 +505,16 @@ function initBitacora() {
 
 initBitacora();
 
+window.addEventListener("twinmap-auth-change", () => {
+  bitacoraPlaces = loadBitacoraPlaces();
+  activeCategory = "todos";
+  initBitacora();
+});
+
 window.TwinmapBitacora = {
   getStats: getBitacoraStats,
+  getPlaces: getBitacoraPlaces,
+  addPlace: addPlaceToBitacora,
+  hasPlace: isPlaceInBitacora,
   refresh: refreshBitacora,
 };
