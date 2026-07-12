@@ -107,6 +107,31 @@
     #route-summary .metric { color: var(--accent); font-weight: 600; }
     #route-summary ol { margin: 6px 0 0; padding-left: 20px; }
     #route-summary li { margin: 2px 0; }
+
+    /* ---- Línea de tiempo de aves ---- */
+    .timeline {
+      position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+      z-index: 6; width: min(560px, 80vw); display: flex; align-items: center; gap: 12px;
+      background: var(--panel); color: var(--text);
+      border: 1px solid var(--panel-border); border-radius: 14px;
+      padding: 10px 16px; backdrop-filter: blur(10px); box-shadow: 0 8px 30px rgba(0,0,0,.35);
+    }
+    .timeline button { flex: none; cursor: pointer; width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--accent); color: #062b28; font-size: 14px; }
+    .timeline input[type=range] { flex: 1; accent-color: var(--accent); cursor: pointer; }
+    .timeline .tl-label { flex: none; font-size: 12px; color: var(--accent); font-weight: 600; min-width: 120px; text-align: right; }
+    .timeline .tl-hint { flex: none; font-size: 10.5px; color: var(--muted); }
+
+    /* ---- Predicci?n migratoria: eBird + clima + OpenRouter ---- */
+    .forecast-card {
+      position: absolute; right: 24px; bottom: 24px; z-index: 6; width: min(340px, calc(100vw - 48px));
+      display: none; background: var(--panel); color: var(--text); border: 1px solid var(--panel-border);
+      border-radius: 14px; padding: 13px 15px; backdrop-filter: blur(10px); box-shadow: 0 8px 30px rgba(0,0,0,.35);
+      font-size: 12px; line-height: 1.42;
+    }
+    .forecast-card h3 { margin: 0 0 5px; font-size: 13px; color: var(--accent); }
+    .forecast-card p { margin: 5px 0; }
+    .forecast-card .fc-meta { color: var(--muted); font-size: 10.5px; }
+    .forecast-card button { margin-top: 8px; border: 0; border-radius: 8px; padding: 7px 9px; cursor: pointer; background: var(--accent); color: #062b28; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -157,9 +182,15 @@
     </label>
 
     <label class="layer">
+      <input type="checkbox" id="lyr-traffic" checked />
+      <span class="dot" style="background:linear-gradient(90deg,#2ec4b6,#ffbf69,#ff6b6b)"></span>
+      <span><span class="txt">Trafico y congestion</span><br><span class="sub" id="traffic-sub">Mapbox Traffic | segun cobertura</span></span>
+    </label>
+
+    <label class="layer">
       <input type="checkbox" id="lyr-hotspots" />
       <span class="dot" style="background:#06d6a0"></span>
-      <span><span class="txt">Biodiversidad</span><br><span class="sub">Zonas de avistamiento</span></span>
+      <span><span class="txt">Biodiversidad</span><br><span class="sub">eBird · prob. de reavistamiento</span></span>
     </label>
 
     <div class="status" id="status">Cargando mapa…</div>
@@ -184,6 +215,15 @@
     </div>
     <div id="route-summary"></div>
   </div>
+
+  <div class="timeline" id="bio-timeline" style="display:none">
+    <button id="bio-play" type="button">▶</button>
+    <input type="range" id="bio-time" min="0" max="1" value="1" disabled />
+    <span class="tl-label" id="bio-time-label">—</span>
+    <span class="tl-hint">🐦 aves por fecha (eBird)</span>
+  </div>
+
+  <div class="forecast-card" id="forecast-card" aria-live="polite"></div>
 
   <div id="token-warn">
     <div class="card">
@@ -275,7 +315,9 @@
         addIslandMask(map);
         loadPOIs(map);
         addCrowds(map);
+        addTraffic(map);
         addBiodiversity(map);
+        addMigrationForecast(map);
         wireToggles(map);
         wireRoute(map);
         setStatus("Mapa listo · <b>Barra de Santiago</b>");
@@ -297,6 +339,7 @@
     const POI_LAYERS = ["clusters", "cluster-count", "pois-layer"];
 
     const DEPT_LAYERS = ["dept-fill", "dept-line", "dept-label"];
+    const TRAFFIC_LAYERS = ["traffic-live"];
 
     // ============ MODO ISLA: máscara que oculta todo menos El Salvador ============
     let islandOn = false;
@@ -475,6 +518,29 @@
         console.warn("Crowds API error", error);
       }
     }
+    // ============ CAPA: Trafico en tiempo real (Mapbox Traffic) ============
+    function addTraffic(map) {
+      const sub = document.getElementById("traffic-sub");
+      try {
+        map.addSource("traffic", { type: "vector", url: "mapbox://mapbox.mapbox-traffic-v1" });
+        map.addLayer({
+          id: "traffic-live", type: "line", source: "traffic", "source-layer": "traffic",
+          minzoom: 7, layout: { visibility: "visible", "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": ["match", ["get", "congestion"], "low", "#2ec4b6", "moderate", "#ffbf69", "heavy", "#ff8c42", "severe", "#ff4d4d", "#8a9aa5"],
+            "line-width": ["interpolate", ["linear"], ["zoom"], 7, 2, 12, 5],
+            "line-opacity": 0.88
+          }
+        });
+        map.on("error", (event) => {
+          if (event?.sourceId === "traffic" && sub) sub.textContent = "Trafico no disponible para esta cobertura";
+        });
+      } catch (error) {
+        if (sub) sub.textContent = "Trafico no disponible";
+        console.warn("Traffic layer error", error);
+      }
+    }
+
     // ============ CAPA: Biodiversidad (zonas de avistamiento) ============
     async function addBiodiversity(map) {
       const empty = { type: "FeatureCollection", features: [] };
@@ -489,30 +555,148 @@
       });
       map.on("click", "bio-layer", (event) => {
         const p = event.features[0].properties;
-        const quantity = p.quantity ? " ? " + p.quantity + " individuos" : "";
-        new mapboxgl.Popup().setLngLat(event.lngLat).setHTML("?? <b>" + p.name + "</b><br><i>" + p.scientific_name + "</i><br>Avistado: " + p.observed_at + quantity + "<br><b>Probabilidad de reavistamiento: " + p.prediction_score + "%</b><br><small>eBird ? " + p.location + "</small>").addTo(map);
+        const quantity = p.quantity ? " · " + p.quantity + " individuos" : "";
+        new mapboxgl.Popup().setLngLat(event.lngLat).setHTML("🐦 <b>" + p.name + "</b><br><i>" + p.scientific_name + "</i><br>Avistado: " + p.observed_at + quantity + "<br><b>Probabilidad de reavistamiento: " + p.prediction_score + "%</b><br><small>eBird · " + p.location + "</small>").addTo(map);
       });
       map.on("mouseenter", "bio-layer", () => map.getCanvas().style.cursor = "pointer");
       map.on("mouseleave", "bio-layer", () => map.getCanvas().style.cursor = "");
+      let birds = null;
       try {
         const response = await fetch("http://localhost:3001/api/birds");
         const payload = await response.json();
         if (!response.ok || !payload.success) throw new Error(payload.error || "No se pudo consultar eBird.");
-        const birds = payload.data || empty;
-        map.getSource("bio").setData(birds);
-        const count = birds.features.length;
-        if (count) setStatus("Aves recientes ? <b>" + count.toLocaleString() + "</b> avistamientos de eBird");
+        birds = payload.data;
+        setStatus("Aves recientes · <b>" + birds.features.length.toLocaleString() + "</b> avistamientos de eBird");
       } catch (error) {
         try {
           const cache = await fetch("data/birds.geojson");
           if (!cache.ok) throw error;
-          const birds = await cache.json();
-          map.getSource("bio").setData(birds);
-          if (birds.features?.length) setStatus("Aves recientes (cache) <b>" + birds.features.length.toLocaleString() + "</b> avistamientos de eBird");
-        } catch {
-          console.warn("eBird error", error);
-        }
+          birds = await cache.json();
+          setStatus("Aves recientes (cache) · <b>" + (birds.features?.length || 0).toLocaleString() + "</b> avistamientos de eBird");
+        } catch { console.warn("eBird error", error); }
       }
+      if (birds && birds.features?.length) setupBirdsTimeline(map, birds);
+      else map.getSource("bio").setData(empty);
+    }
+
+    // ============ LÍNEA DE TIEMPO de aves (slider sobre avistamientos reales por fecha) ============
+    // ============ PRONOSTICO MIGRATORIO: eBird + Open-Meteo + OpenRouter ============
+    const FORECAST_CENTERS = {
+      "Ahuachap\u00e1n": [-89.85, 13.92], "Caba\u00f1as": [-88.63, 13.87], "Chalatenango": [-88.94, 14.07],
+      "Cuscatl\u00e1n": [-88.94, 13.72], "La Libertad": [-89.29, 13.68], "La Paz": [-88.95, 13.48],
+      "La Uni\u00f3n": [-87.84, 13.34], "Moraz\u00e1n": [-88.10, 13.70], "San Miguel": [-88.18, 13.48],
+      "San Salvador": [-89.22, 13.69], "San Vicente": [-88.78, 13.64], "Santa Ana": [-89.56, 13.99],
+      "Sonsonate": [-89.72, 13.72], "Usulut\u00e1n": [-88.44, 13.35]
+    };
+    function escapeHtml(value) {
+      return String(value || "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
+    }
+    async function addMigrationForecast(map) {
+      let forecast = null;
+      for (const url of ["http://localhost:3001/api/birds/forecast", "data/forecast.json"]) {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) continue;
+          const payload = await response.json();
+          forecast = payload.data || payload;
+          if (forecast?.pronostico?.zonas?.length) break;
+        } catch { /* intenta cache */ }
+      }
+      if (!forecast?.pronostico?.zonas?.length) return;
+
+      const weatherDepartments = forecast.clima?.departamentos || [];
+      const fallbackDates = weatherDepartments[0]?.dias?.map((day, index) => ({ dia: index + 1, fecha: day.fecha, zonas: forecast.pronostico.zonas })) || [];
+      const daily = Array.isArray(forecast.pronostico.dias) && forecast.pronostico.dias.length ? forecast.pronostico.dias : fallbackDates;
+      if (!daily.length) daily.push({ dia: 1, fecha: "Hoy", zonas: forecast.pronostico.zonas });
+
+      const toFeatures = (zones) => (zones || []).filter((zone) => FORECAST_CENTERS[zone.department]).map((zone) => ({ type: "Feature", geometry: { type: "Point", coordinates: FORECAST_CENTERS[zone.department] }, properties: zone }));
+      const sourceData = { type: "FeatureCollection", features: toFeatures(daily[0].zonas) };
+      map.addSource("migration-forecast", { type: "geojson", data: sourceData });
+      map.addLayer({ id: "migration-forecast-halo", type: "circle", source: "migration-forecast", paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 22, 10, 40], "circle-color": ["match", ["get", "nivel"], "alta", "#ffbf69", "media", "#06d6a0", "#48cae4"], "circle-opacity": 0.18 } });
+      map.addLayer({ id: "migration-forecast-points", type: "circle", source: "migration-forecast", paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 7, 10, 13], "circle-color": ["match", ["get", "nivel"], "alta", "#ffbf69", "media", "#06d6a0", "#48cae4"], "circle-stroke-width": 2, "circle-stroke-color": "#0d1b2a", "circle-opacity": 0.94 } });
+      map.on("click", "migration-forecast-points", (event) => {
+        const z = event.features[0].properties;
+        const species = Array.isArray(z.especies_migratorias) ? z.especies_migratorias.join(", ") : z.especies_migratorias;
+        new mapboxgl.Popup().setLngLat(event.lngLat).setHTML("<b>Prediccion: " + escapeHtml(z.department) + "</b><br>Nivel: <b>" + escapeHtml(z.nivel) + "</b><br>Especies: " + escapeHtml(species || "Sin evidencia suficiente") + "<br><small>" + escapeHtml(z.razon) + "</small>").addTo(map);
+      });
+      map.on("mouseenter", "migration-forecast-points", () => map.getCanvas().style.cursor = "pointer");
+      map.on("mouseleave", "migration-forecast-points", () => map.getCanvas().style.cursor = "");
+
+      const card = document.getElementById("forecast-card");
+      const weatherFor = (department, index) => {
+        const place = weatherDepartments.find((entry) => entry.department === department) || weatherDepartments[0];
+        return place?.dias?.[Math.min(index, Math.max(0, (place?.dias?.length || 1) - 1))] || null;
+      };
+      const renderDay = (index) => {
+        const current = daily[index] || daily[0];
+        const features = toFeatures(current.zonas);
+        map.getSource("migration-forecast").setData({ type: "FeatureCollection", features });
+        const lead = features[0]?.properties?.department;
+        const weather = weatherFor(lead, index);
+        const weatherText = weather ? (lead + ": " + weather.temp_min_c + "-" + weather.temp_max_c + " C | lluvia " + weather.prob_lluvia_pct + "% | viento " + weather.viento_kmh + " km/h") : "Clima Open-Meteo incluido en el analisis.";
+        const dateText = current.fecha || ("Dia " + (index + 1));
+        card.innerHTML = `<h3>Pronostico migratorio</h3><p>${escapeHtml(forecast.pronostico.resumen)}</p><p><b>Dia ${index + 1}: ${escapeHtml(dateText)}</b> | confianza: ${escapeHtml(forecast.pronostico.confianza || "baja")}</p><input id="forecast-day" type="range" min="0" max="${daily.length - 1}" value="${index}" aria-label="Dia del pronostico"><p class="fc-meta">${escapeHtml(weatherText)}</p><p class="fc-meta">${features.length} zonas probables. eBird + Open-Meteo + OpenRouter; proyeccion, no rastreo GPS.</p><button type="button" id="forecast-focus">Ver zonas del dia</button><button type="button" id="forecast-refresh">Actualizar IA (1 consulta)</button>`;
+        const slider = document.getElementById("forecast-day");
+        slider.oninput = (event) => renderDay(Number(event.target.value));
+        document.getElementById("forecast-focus").onclick = () => {
+          if (!features.length) return;
+          const first = features[0].geometry.coordinates;
+          const bounds = features.reduce((bounds, feature) => bounds.extend(feature.geometry.coordinates), new mapboxgl.LngLatBounds(first, first));
+          map.fitBounds(bounds, { padding: 80, maxZoom: 8.5, duration: 900 });
+        };
+        document.getElementById("forecast-refresh").onclick = async (event) => {
+          const button = event.currentTarget;
+          button.disabled = true; button.textContent = "Actualizando IA...";
+          try {
+            const response = await fetch("http://localhost:3001/api/birds/forecast?refresh=1");
+            const payload = await response.json();
+            if (!response.ok || !payload.success) throw new Error(payload.error || "No se pudo actualizar");
+            window.location.reload();
+          } catch (error) {
+            button.textContent = "No se pudo actualizar";
+            console.warn("Forecast refresh error", error);
+          }
+        };
+      };
+      card.style.display = "block";
+      renderDay(0);
+    }
+
+    let bioMinT = 0, bioMaxDay = 1, bioPlayTimer = null;
+    const BIO_WINDOW = 7; // ventana móvil de 7 días para ver el desplazamiento
+
+    function setupBirdsTimeline(map, birds) {
+      const feats = birds.features.filter((f) => f.properties.observed_at && !isNaN(Date.parse(f.properties.observed_at)));
+      if (!feats.length) { map.getSource("bio").setData(birds); return; }
+      const times = feats.map((f) => Date.parse(f.properties.observed_at));
+      bioMinT = Math.min(...times);
+      bioMaxDay = Math.max(1, Math.round((Math.max(...times) - bioMinT) / 86400000));
+      feats.forEach((f) => { f.properties.dayidx = Math.round((Date.parse(f.properties.observed_at) - bioMinT) / 86400000); });
+      map.getSource("bio").setData({ type: "FeatureCollection", features: feats });
+
+      const sl = document.getElementById("bio-time");
+      sl.min = 0; sl.max = bioMaxDay; sl.value = bioMaxDay; sl.disabled = false;
+      applyBioTime(map, bioMaxDay);
+    }
+
+    function applyBioTime(map, dayIdx) {
+      const filt = ["all", ["<=", ["get", "dayidx"], dayIdx], [">=", ["get", "dayidx"], Math.max(0, dayIdx - BIO_WINDOW)]];
+      ["bio-layer", "bio-heat"].forEach((id) => { if (map.getLayer(id)) map.setFilter(id, filt); });
+      const d = new Date(bioMinT + dayIdx * 86400000);
+      const from = new Date(bioMinT + Math.max(0, dayIdx - BIO_WINDOW) * 86400000);
+      const fmt = (x) => x.toLocaleDateString("es", { day: "numeric", month: "short" });
+      document.getElementById("bio-time-label").textContent = fmt(from) + " → " + fmt(d);
+    }
+
+    function toggleBioPlay(map) {
+      const sl = document.getElementById("bio-time"), btn = document.getElementById("bio-play");
+      if (bioPlayTimer) { clearInterval(bioPlayTimer); bioPlayTimer = null; btn.textContent = "▶"; return; }
+      btn.textContent = "⏸";
+      bioPlayTimer = setInterval(() => {
+        let v = Number(sl.value) + 1;
+        if (v > Number(sl.max)) v = 0;
+        sl.value = v; applyBioTime(map, v);
+      }, 650);
     }
 
     // ============ RUTA A→B con paradas ============
@@ -663,8 +847,17 @@
       document.getElementById("lyr-dept").onchange = (e) => DEPT_LAYERS.forEach((id) => setVis(id, e.target.checked));
       document.getElementById("lyr-pois").onchange = (e) => POI_LAYERS.forEach((id) => setVis(id, e.target.checked));
       document.getElementById("lyr-heat").onchange = (e) => ["crowds-heat", "crowds-points"].forEach((id) => setVis(id, e.target.checked));
-      document.getElementById("lyr-hotspots").onchange = (e) => ["bio-heat", "bio-layer"].forEach((id) => setVis(id, e.target.checked));
+      document.getElementById("lyr-traffic").onchange = (e) => TRAFFIC_LAYERS.forEach((id) => setVis(id, e.target.checked));
+      document.getElementById("lyr-hotspots").onchange = (e) => {
+        ["bio-heat", "bio-layer"].forEach((id) => setVis(id, e.target.checked));
+        document.getElementById("bio-timeline").style.display = e.target.checked ? "flex" : "none";
+        if (!e.target.checked && bioPlayTimer) toggleBioPlay(map); // pausar al apagar
+      };
       document.getElementById("island-btn").onclick = () => toggleIsland(map);
+
+      // Slider de línea de tiempo de aves
+      document.getElementById("bio-time").oninput = (e) => applyBioTime(map, Number(e.target.value));
+      document.getElementById("bio-play").onclick = () => toggleBioPlay(map);
     }
   </script>
 </body>
