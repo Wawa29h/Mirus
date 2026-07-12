@@ -10,7 +10,9 @@
     <link rel="stylesheet" href="src/css/map-popup.css" />
     <link rel="stylesheet" href="src/css/aventura.css" />
     <link rel="stylesheet" href="src/css/mapa-personalizado.css" />
-    <link rel="stylesheet" href="src/css/emergencia.css" />
+    <link rel="stylesheet" href="src/css/mapa-explorar.css" />
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.css" rel="stylesheet" />
+    <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.css" rel="stylesheet" />
   </head>
   <body>
     <header class="topbar">
@@ -186,169 +188,102 @@
       <section class="view map-view" data-panel="mapa" data-mode="ruta">
         <div class="map-toolbar">
           <div>
-            <p class="eyebrow">PlaneaciÃ³n Â· Explorar mapa</p>
+            <p class="eyebrow">Planeación · Explorar mapa</p>
             <h1>Mapa interactivo</h1>
           </div>
-          <form class="map-search" role="search" aria-label="Buscar lugares en el mapa">
-            <input
-              class="map-search__input"
-              type="search"
-              name="q"
-              placeholder="Buscar lugares..."
-              autocomplete="off"
-            />
-            <button class="map-search__submit" type="submit" aria-label="Buscar">
-              <svg class="map-search__icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
-                <path d="M20 20l-4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-              </svg>
-            </button>
-          </form>
+          <div class="map-search map-search--geocoder" id="explorar-geocoder" role="search" aria-label="Buscar lugares en el mapa"></div>
           <div class="map-actions">
-            <button class="outline-button" type="button">Filtros</button>
-            <button class="outline-button" type="button">Mi ubicaciÃ³n</button>
+            <button class="outline-button" type="button" id="explorar-my-location">Mi ubicación</button>
           </div>
         </div>
 
         <div class="map-layout">
-          <aside class="map-filter-panel">
+          <aside class="map-filter-panel map-filter-panel--layers" aria-label="Capas del mapa">
             <h2>Capas</h2>
-            <button type="button">Hoteles</button>
-            <button type="button">Restaurantes</button>
-            <button type="button">Eventos tendencias</button>
-            <button type="button">Clima</button>
-            <button type="button">TrÃ¡fico</button>
+            <label class="is-active">
+              <input type="checkbox" data-layer="lyr-pois" checked />
+              <span>
+                <span class="layer-label">Puntos de interés</span>
+                <span class="layer-sub">OpenStreetMap · El Salvador</span>
+              </span>
+            </label>
+            <label class="is-active">
+              <input type="checkbox" data-layer="lyr-dept" checked />
+              <span>
+                <span class="layer-label">Departamentos</span>
+                <span class="layer-sub">14 divisiones al alejar</span>
+              </span>
+            </label>
+            <label>
+              <input type="checkbox" data-layer="lyr-crowds" />
+              <span>
+                <span class="layer-label">Multitudes</span>
+                <span class="layer-sub" data-layer-sub="crowds">Afluencia estimada (API)</span>
+              </span>
+            </label>
+            <label>
+              <input type="checkbox" data-layer="lyr-birds" />
+              <span>
+                <span class="layer-label">Aves</span>
+                <span class="layer-sub" data-layer-sub="birds">eBird · avistamientos</span>
+              </span>
+            </label>
+            <label class="is-active">
+              <input type="checkbox" data-layer="lyr-traffic" checked />
+              <span>
+                <span class="layer-label">Tráfico</span>
+                <span class="layer-sub" data-layer-sub="traffic">Mapbox Traffic</span>
+              </span>
+            </label>
+            <label class="is-active">
+              <input type="checkbox" data-layer="lyr-nature" checked />
+              <span>
+                <span class="layer-label">Naturaleza</span>
+                <span class="layer-sub" data-layer-sub="nature">Catálogo de referencia</span>
+              </span>
+            </label>
+            <label class="is-active">
+              <input type="checkbox" data-layer="lyr-3d" checked />
+              <span>
+                <span class="layer-label">Edificios 3D</span>
+                <span class="layer-sub">Extrusión al acercar</span>
+              </span>
+            </label>
           </aside>
 
-          <section class="map-canvas" aria-label="Mockup de mapa">
-            <div class="map-road road-one"></div>
-            <div class="map-road road-two"></div>
-            <div class="map-road road-three"></div>
-            <div class="map-zone zone-one">Bosque</div>
-            <div class="map-zone zone-two">Mirador</div>
-            <div class="map-zone zone-three">Centro</div>
-            <button
-              type="button"
-              class="map-pin pin-one"
-              aria-label="Lago de Coatepeque"
-              data-place-name="Lago de Coatepeque"
-              data-place-category="Naturaleza"
-              data-place-location="Santa Ana, El Salvador"
-              data-place-description="CrÃ¡ter volcÃ¡nico con aguas turquesas ideal para kayak, miradores y gastronomÃ­a en la orilla."
-              data-place-lat="13.819"
-              data-place-lng="-89.559"
-              data-place-weather="24Â°C Â· Parcialmente nublado"
-              data-place-weather-hoy="24Â°C Â· Parcialmente nublado"
-              data-place-weather-manana="25Â°C Â· Soleado"
-              data-place-weather-pasadomanana="23Â°C Â· Lluvia ligera"
-              data-place-news="https://news.google.com/search?q=Lago+de+Coatepeque+El+Salvador"
-            ></button>
-            <button
-              type="button"
-              class="map-pin pin-two"
-              aria-label="El BoquerÃ³n"
-              data-place-name="El BoquerÃ³n"
-              data-place-category="VolcÃ¡n"
-              data-place-location="San Salvador, El Salvador"
-              data-place-description="VolcÃ¡n activo con senderos, miradores y clima fresco sobre la capital."
-              data-place-lat="13.734"
-              data-place-lng="-89.287"
-              data-place-weather="19Â°C Â· Brisa fresca"
-              data-place-weather-hoy="19Â°C Â· Brisa fresca"
-              data-place-weather-manana="18Â°C Â· Neblina matutina"
-              data-place-weather-pasadomanana="20Â°C Â· Despejado"
-              data-place-news="https://news.google.com/search?q=El+Boqueron+San+Salvador"
-            ></button>
-            <button
-              type="button"
-              class="map-pin pin-three"
-              aria-label="Playa El Tunco"
-              data-place-name="Playa El Tunco"
-              data-place-category="Playa"
-              data-place-location="La Libertad, El Salvador"
-              data-place-description="Destino de surf, atardeceres y ambiente relajado en la costa del PacÃ­fico."
-              data-place-lat="13.493"
-              data-place-lng="-89.385"
-              data-place-weather="29Â°C Â· Soleado"
-              data-place-weather-hoy="29Â°C Â· Soleado"
-              data-place-weather-manana="30Â°C Â· Calor intenso"
-              data-place-weather-pasadomanana="28Â°C Â· Bruma costera"
-              data-place-news="https://news.google.com/search?q=Playa+El+Tunco+La+Libertad"
-            ></button>
+          <section class="map-canvas map-canvas--mapbox" id="explorar-map-canvas" aria-label="Mapa interactivo Mapbox">
+            <div id="explorar-map-container" class="explorar-map-container"></div>
+            <div id="explorar-map-status" class="explorar-map-status" role="status">Cargando mapa…</div>
+            <div id="explorar-map-token-warn" class="explorar-map-token-warn" hidden>
+              <div>
+                <h2>Falta tu token de Mapbox</h2>
+                <p>Copia <code>src/js/config.example.js</code> como <code>src/js/config.js</code> y pega tu token público (<code>pk.</code>…).</p>
+              </div>
+            </div>
           </section>
 
           <aside class="map-detail-panel">
             <h2>Lugar seleccionado</h2>
-            <div class="image-placeholder"></div>
-            <h3>Nombre lugar</h3>
-            <p>DescripciÃ³n breve, categorÃ­a, distancia y acciones del mapa.</p>
-            <button class="primary-action" type="button">Guardar</button>
+            <h3 id="explorar-detail-title">Explora El Salvador</h3>
+            <p id="explorar-detail-text">Toca un punto de interés en el mapa para ver detalles, clima y añadirlo a tu ruta.</p>
+            <div class="map-detail-panel__legend" aria-hidden="true">
+              <span><i style="background:#ffbf69"></i>Comida</span>
+              <span><i style="background:#8ecae6"></i>Hospedaje</span>
+              <span><i style="background:#06d6a0"></i>Turismo</span>
+              <span><i style="background:#e07a5f"></i>Histórico</span>
+              <span><i style="background:#48cae4"></i>Playa</span>
+            </div>
+            <p class="map-detail-panel__status" id="explorar-detail-status">Conectando con API en localhost:3001…</p>
           </aside>
         </div>
 
         <section class="map-recommendations">
-          <div class="map-filter-strip">
-            <h2>Filtros</h2>
-            <div class="filter-chips">
-              <button type="button">Cerca de mÃ­</button>
-              <button type="button">Mejor valorados</button>
-              <button type="button">Abierto ahora</button>
-              <button type="button">Para visitar hoy</button>
-            </div>
-          </div>
-
           <div class="section-heading">
-            <h2>Recomendaciones para ti</h2>
-            <button class="text-button" type="button">Ver todo</button>
+            <h2>Lugares destacados</h2>
+            <button class="text-button" type="button" data-view="mapa-personalizado">Ver mapa personalizado</button>
           </div>
 
-          <div class="recommendation-grid">
-            <article class="place-card">
-              <div class="image-placeholder"></div>
-              <span class="tag">Ruta</span>
-              <h3 class="place-name">
-                <span class="visually-hidden">Ruta de las Flores</span>
-                <span
-                  class="place-stamp"
-                  data-postmark="classic"
-                  data-title="Ruta de las Flores"
-                  data-location="Sonsonate"
-                ></span>
-              </h3>
-              <p>DescripciÃ³n breve del lugar recomendado en el mapa.</p>
-              <small>Lugar Â· Distancia de ti</small>
-            </article>
-            <article class="place-card">
-              <div class="image-placeholder"></div>
-              <span class="tag">Historia</span>
-              <h3 class="place-name">
-                <span class="visually-hidden">Joya de CerÃ©n</span>
-                <span
-                  class="place-stamp"
-                  data-postmark="portrait"
-                  data-title="Joya de CerÃ©n"
-                  data-location="La Libertad"
-                ></span>
-              </h3>
-              <p>DescripciÃ³n breve del lugar recomendado en el mapa.</p>
-              <small>Lugar Â· Distancia de ti</small>
-            </article>
-            <article class="place-card">
-              <div class="image-placeholder"></div>
-              <span class="tag">Pueblo</span>
-              <h3 class="place-name">
-                <span class="visually-hidden">Suchitoto</span>
-                <span
-                  class="place-stamp"
-                  data-postmark="classic"
-                  data-title="Suchitoto"
-                  data-location="CuscatlÃ¡n"
-                ></span>
-              </h3>
-              <p>DescripciÃ³n breve del lugar recomendado en el mapa.</p>
-              <small>Lugar Â· Distancia de ti</small>
-            </article>
-          </div>
+          <div class="recommendation-grid" id="explorar-recommendations"></div>
         </section>
       </section>
 
@@ -782,6 +717,8 @@
       </div>
     </div>
 
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.js"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.min.js"></script>
     <script src="src/js/config.js" defer onerror="this.remove()"></script>
     <script src="src/js/api.js"></script>
     <script src="src/js/ink-postmarks.js"></script>
@@ -795,6 +732,7 @@
     <script src="src/js/aventura-bitacora.js"></script>
     <script src="src/js/aventura-share.js"></script>
     <script src="src/js/aventura-logros.js"></script>
+    <script src="src/js/mapa-explorar.js"></script>
     <script src="src/js/mapa-personalizado.js"></script>
     <script src="src/js/emergencia-noticias.js"></script>
     <script src="src/js/script.js"></script>

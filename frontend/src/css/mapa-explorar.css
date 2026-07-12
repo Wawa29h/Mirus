@@ -1,0 +1,116 @@
+.map-canvas--mapbox {
+  padding: 0;
+  background: #0d1b2a;
+}
+
+.explorar-map-container {
+  position: absolute;
+  inset: 0;
+}
+
+.explorar-map-status {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 2;
+  max-width: calc(100% - 24px);
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.explorar-map-token-warn {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--surface-soft);
+  text-align: center;
+}
+
+.explorar-map-token-warn code {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--surface);
+  font-size: 0.9em;
+}
+
+.map-filter-panel--layers label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.map-filter-panel--layers label.is-active {
+  border-color: var(--text);
+}
+
+.map-filter-panel--layers input {
+  margin-top: 3px;
+  accent-color: var(--text);
+}
+
+.map-filter-panel--layers .layer-label {
+  display: block;
+  font-size: 14px;
+}
+
+.map-filter-panel--layers .layer-sub {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.map-view .map-search--geocoder {
+  max-width: 360px;
+}
+
+.map-view .map-search--geocoder .mapboxgl-ctrl-geocoder {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  box-shadow: none;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.map-detail-panel__status {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.map-detail-panel__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: 10px;
+}
+
+.map-detail-panel__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.map-detail-panel__legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}

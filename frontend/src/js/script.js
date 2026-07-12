@@ -95,6 +95,10 @@ function showView(viewName, options = {}) {
     window.TwinmapAventuraLogros?.refresh();
   }
 
+  if (target === "mapa") {
+    window.TwinmapExplorar?.ensureMap();
+  }
+
   if (target === "mapa-personalizado") {
     window.TwinmapPersonalizado?.render();
   }

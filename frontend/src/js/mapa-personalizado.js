@@ -743,6 +743,7 @@ function renderPersonalizadoMap() {
   renderRouteLine(perfectRoute);
   renderDetailPanel(quiz, context, ranked);
   renderPerfectRoute(perfectRouteEl, perfectRoute);
+}
 
 function renderDashboardFeed() {
   const quiz = getQuizAnswers();
@@ -762,6 +763,7 @@ function renderDashboardFeed() {
   }
 
   renderRecommendations(dashboardRecommendationsEl, topPlaces);
+}
 
 function initPersonalizadoMap() {
   if (!panelEl && !dashboardAiEl) return;

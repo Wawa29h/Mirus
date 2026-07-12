@@ -236,19 +236,48 @@ function updateAddRouteButton() {
 
 function openPlacePopup(pin) {
   currentPlace = getPlaceFromPin(pin);
-
   document.querySelectorAll(".map-pin").forEach((node) => {
     node.classList.toggle("is-active", node === pin);
   });
+  showPlacePopup(currentPlace);
+}
 
-  popupCategory.textContent = currentPlace.category;
-  popupTitle.textContent = currentPlace.name;
-  popupLocation.textContent = currentPlace.location;
-  popupDescription.textContent = currentPlace.description;
-  renderForecast(currentPlace.forecast);
-  popupWaze.href = currentPlace.wazeUrl;
-  popupNews.href = currentPlace.newsUrl;
-  popupDrive.href = currentPlace.uberUrl;
+function openFromPlace(place) {
+  if (!place) return;
+  currentPlace = {
+    id: place.id,
+    name: place.name,
+    category: place.category || "Lugar",
+    location: place.location || "El Salvador",
+    description: place.description || "Punto de interés en El Salvador.",
+    weather: place.weather || "26°C · Despejado",
+    forecast: place.forecast || generateMockForecast(place.weather, place.name),
+    newsUrl:
+      place.newsUrl ||
+      `https://news.google.com/search?q=${encodeURIComponent(`${place.name} El Salvador`)}`,
+    uberUrl:
+      place.uberUrl ||
+      buildUberUniversalUrl(place.lat, place.lng, place.name),
+    wazeUrl: place.wazeUrl || `https://waze.com/ul?ll=${place.lat},${place.lng}&navigate=yes`,
+    lat: place.lat,
+    lng: place.lng,
+  };
+  showPlacePopup(currentPlace);
+}
+
+function showPlacePopup(place) {
+  document.querySelectorAll(".map-pin").forEach((node) => {
+    node.classList.remove("is-active");
+  });
+
+  popupCategory.textContent = place.category;
+  popupTitle.textContent = place.name;
+  popupLocation.textContent = place.location;
+  popupDescription.textContent = place.description;
+  renderForecast(place.forecast);
+  popupWaze.href = place.wazeUrl;
+  popupNews.href = place.newsUrl;
+  popupDrive.href = place.uberUrl;
 
   updatePopupModeUI();
   updateAddRouteButton();
@@ -341,6 +370,7 @@ bindMapPins();
 window.TwinmapPlacePopup = {
   bindPins: bindMapPins,
   openFromPin: openPlacePopup,
+  openFromPlace,
 };
 
 popupCloseButtons.forEach((button) => {
