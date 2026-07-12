@@ -1,4 +1,4 @@
-const ROUTE_STORAGE_KEY = "twinmap-route-itinerary";
+﻿const ROUTE_STORAGE_KEY = "twinmap-route-itinerary";
 
 const routeListEl = document.getElementById("route-itinerary-list");
 const routeBadgeEl = document.getElementById("route-count-badge");
@@ -80,7 +80,7 @@ function renderItineraryList() {
   if (items.length === 0) {
     routeListEl.innerHTML = `
       <div class="route-itinerary__empty">
-        <p>Aún no has añadido lugares. Explora el mapa y añádelos a tu ruta.</p>
+        <p>AÃºn no has aÃ±adido lugares. Explora el mapa y aÃ±Ã¡delos a tu ruta.</p>
         <button class="outline-button" type="button" data-view="mapa">Explorar mapa</button>
       </div>
     `;
@@ -121,6 +121,33 @@ function renderItineraryList() {
       removePlaceFromRoute(button.dataset.removeRoute);
     });
   });
+
+  attachDrivingRouteHint(items);
+}
+
+async function attachDrivingRouteHint(items) {
+  const hintId = "route-driving-hint";
+  document.getElementById(hintId)?.remove();
+  if (items.length < 2 || !window.TwinmapApi?.calculateRoute) return;
+
+  const first = items.find((item) => Number.isFinite(item.lat) && Number.isFinite(item.lng));
+  const last = [...items].reverse().find((item) => Number.isFinite(item.lat) && Number.isFinite(item.lng));
+  if (!first || !last || first.id === last.id) return;
+
+  const hint = document.createElement("p");
+  hint.id = hintId;
+  hint.className = "route-itinerary__hint";
+  hint.textContent = "Calculando ruta en carretera…";
+  routeListEl.appendChild(hint);
+
+  const result = await window.TwinmapApi.calculateRoute({
+    origin: { lat: first.lat, lng: first.lng },
+    destination: { lat: last.lat, lng: last.lng },
+    departureTime: new Date().toISOString(),
+  });
+
+  const summary = result?.ok ? window.TwinmapApi.formatRouteSummary(result.payload?.data || result.payload) : null;
+  hint.textContent = summary || "Ruta en carretera no disponible (se usa itinerario local).";
 }
 
 let toastTimer;
@@ -162,3 +189,4 @@ window.TwinmapRoute = {
 };
 
 refreshRouteUI();
+

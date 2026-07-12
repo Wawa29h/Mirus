@@ -1,4 +1,4 @@
-const placePopup = document.getElementById("place-popup");
+﻿const placePopup = document.getElementById("place-popup");
 const popupCategory = document.getElementById("popup-category");
 const popupTitle = document.getElementById("popup-title");
 const popupLocation = document.getElementById("popup-location");
@@ -14,7 +14,7 @@ const popupPlanningEl = document.querySelector(".place-popup__planning");
 
 let currentPlace = null;
 
-const FORECAST_LABELS = ["Hoy", "Mañana", "En dos días"];
+const FORECAST_LABELS = ["Hoy", "MaÃ±ana", "En dos dÃ­as"];
 
 const UBER = {
   scheme: "uber",
@@ -83,14 +83,14 @@ const MOCK_CONDITIONS = [
 
 function parseWeatherString(weather) {
   if (!weather) {
-    return { temp: "26°C", condition: "Despejado" };
+    return { temp: "26Â°C", condition: "Despejado" };
   }
 
-  const parts = weather.split("·");
+  const parts = weather.split("Â·");
 
   return {
     temp: parts[0]?.trim() || weather,
-    condition: parts.slice(1).join("·").trim() || "Clima local",
+    condition: parts.slice(1).join("Â·").trim() || "Clima local",
   };
 }
 
@@ -109,7 +109,7 @@ function adjustTemp(temp, delta) {
 
   if (!match) return temp;
 
-  return `${Number(match[0]) + delta}°C`;
+  return `${Number(match[0]) + delta}Â°C`;
 }
 
 function generateMockForecast(baseWeather, placeName) {
@@ -137,13 +137,13 @@ function getForecastFromPin(pin) {
   ];
 
   if (explicit.some(Boolean)) {
-    const fallback = pin.dataset.placeWeather || "26°C · Despejado";
+    const fallback = pin.dataset.placeWeather || "26Â°C Â· Despejado";
 
     return explicit.map((weather) => parseWeatherString(weather || fallback));
   }
 
   return generateMockForecast(
-    pin.dataset.placeWeather || "26°C · Despejado",
+    pin.dataset.placeWeather || "26Â°C Â· Despejado",
     pin.dataset.placeName
   );
 }
@@ -176,8 +176,8 @@ function getPlaceFromPin(pin) {
     location: pin.dataset.placeLocation || "El Salvador",
     description:
       pin.dataset.placeDescription ||
-      "Información general del lugar seleccionado en el mapa.",
-    weather: pin.dataset.placeWeather || "26°C · Despejado",
+      "InformaciÃ³n general del lugar seleccionado en el mapa.",
+    weather: pin.dataset.placeWeather || "26Â°C Â· Despejado",
     forecast: getForecastFromPin(pin),
     newsUrl:
       pin.dataset.placeNews ||
@@ -203,7 +203,7 @@ function updatePopupModeUI() {
   if (popupPlanningEl) {
     popupPlanningEl.textContent = adventure
       ? "Parada sugerida en tu ruta de aventura"
-      : "Parte de tu planeación del viaje";
+      : "Parte de tu planeaciÃ³n del viaje";
     popupPlanningEl.classList.toggle("place-popup__planning--aventura", adventure);
   }
 
@@ -230,7 +230,7 @@ function updateAddRouteButton() {
   const inRoute = window.TwinmapRoute?.isPlaceInRoute(currentPlace);
 
   popupAddRouteBtn.disabled = inRoute;
-  popupAddRouteBtn.textContent = inRoute ? "Añadido a mi ruta" : "Añadir a mi ruta";
+  popupAddRouteBtn.textContent = inRoute ? "AÃ±adido a mi ruta" : "AÃ±adir a mi ruta";
   popupAddRouteBtn.classList.toggle("is-added", inRoute);
 }
 
@@ -253,6 +253,10 @@ function openPlacePopup(pin) {
   updatePopupModeUI();
   updateAddRouteButton();
 
+  window.TwinmapApi?.getPlaceForecast?.().then((live) => {
+    if (live?.length && currentPlace) renderForecast(live);
+  });
+
   placePopup.hidden = false;
   document.body.classList.add("has-place-popup");
   popupCloseButtons[0]?.focus();
@@ -273,13 +277,13 @@ popupAddRouteBtn?.addEventListener("click", () => {
   const result = window.TwinmapRoute.addPlaceToRoute(currentPlace);
 
   if (result.added) {
-    window.TwinmapRoute.showRouteToast(`${currentPlace.name} añadido a tu ruta`);
+    window.TwinmapRoute.showRouteToast(`${currentPlace.name} aÃ±adido a tu ruta`);
     updateAddRouteButton();
     return;
   }
 
   if (result.alreadyExists) {
-    window.TwinmapRoute.showRouteToast("Este lugar ya está en tu ruta");
+    window.TwinmapRoute.showRouteToast("Este lugar ya estÃ¡ en tu ruta");
     updateAddRouteButton();
   }
 });
@@ -319,7 +323,7 @@ popupSaveFavoriteBtn?.addEventListener("click", () => {
   }
 
   if (result?.alreadyExists) {
-    window.TwinmapRoute?.showRouteToast("Este lugar ya está en favoritos");
+    window.TwinmapRoute?.showRouteToast("Este lugar ya estÃ¡ en favoritos");
     updateSaveFavoriteButton();
   }
 });
@@ -350,3 +354,4 @@ document.addEventListener("keydown", (event) => {
     closePlacePopup();
   }
 });
+

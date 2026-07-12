@@ -1,4 +1,4 @@
-const PERSONALIZADO_TOP_COUNT = 8;
+﻿const PERSONALIZADO_TOP_COUNT = 8;
 const PERSONALIZADO_ROUTE_COUNT = 5;
 const PERSONALIZADO_PIN_MIN_SCORE = 4;
 
@@ -9,74 +9,74 @@ const QUIZ_CLIMATE_MAP = {
 };
 
 const QUIZ_LANDSCAPE_MAP = {
-  "Cascadas, ríos y senderos verdes": "cascada",
+  "Cascadas, rÃ­os y senderos verdes": "cascada",
   "Playas, olas y atardeceres": "playa",
-  "Pueblos, café y calles con historia": "pueblo",
+  "Pueblos, cafÃ© y calles con historia": "pueblo",
   "Volcanes, miradores y cielo abierto": "volcan",
   "Me gusta mezclar de todo": "mezcla",
 };
 
 const QUIZ_BIO_MAP = {
-  "¡Sí! Fauna como aves y tortugas": "fauna",
+  "Â¡SÃ­! Fauna como aves y tortugas": "fauna",
   "Bosques, plantas y ecosistemas": "bosques",
   "Solo si es tranquilo y respetuoso": "tranquilo",
   "Prefiero otras experiencias": "otras",
 };
 
 const QUIZ_CROWD_MAP = {
-  "Con vida, gente y buena energía": "vida",
-  "Íntimo, silencioso y sin prisa": "intimo",
+  "Con vida, gente y buena energÃ­a": "vida",
+  "Ãntimo, silencioso y sin prisa": "intimo",
   "Un equilibrio entre ambos": "equilibrio",
 };
 
 const PLACE_META = {
   "lago-coatepeque": { zones: ["Occidente"], filters: ["Volcanes", "Parques"] },
-  "el-boqueron": { zones: ["Centro", "Parque Nacional"], filters: ["Volcanes", "Parques", "Montañas"] },
+  "el-boqueron": { zones: ["Centro", "Parque Nacional"], filters: ["Volcanes", "Parques", "MontaÃ±as"] },
   "playa-el-tunco": { zones: ["Costa"], filters: ["Surf", "Playas"] },
   "playa-el-zonte": { zones: ["Costa"], filters: ["Surf", "Playas"] },
-  "ruta-flores": { zones: ["Occidente", "Ruta de las Flores"], filters: ["Pueblos mágicos"] },
-  juayua: { zones: ["Occidente", "Ruta de las Flores"], filters: ["Pueblos mágicos", "Cascadas"] },
-  "joya-ceren": { zones: ["Occidente", "Centro"], filters: ["Sitios históricos"] },
-  suchitoto: { zones: ["Oriente", "Centro"], filters: ["Pueblos mágicos", "Sitios históricos"] },
-  tazumal: { zones: ["Occidente"], filters: ["Sitios históricos"] },
-  "cascada-tercios": { zones: ["Occidente", "Ruta de las Flores"], filters: ["Cascadas", "Montañas"] },
-  "parque-imposible": { zones: ["Occidente", "Parque Nacional"], filters: ["Parques", "Montañas"] },
+  "ruta-flores": { zones: ["Occidente", "Ruta de las Flores"], filters: ["Pueblos mÃ¡gicos"] },
+  juayua: { zones: ["Occidente", "Ruta de las Flores"], filters: ["Pueblos mÃ¡gicos", "Cascadas"] },
+  "joya-ceren": { zones: ["Occidente", "Centro"], filters: ["Sitios histÃ³ricos"] },
+  suchitoto: { zones: ["Oriente", "Centro"], filters: ["Pueblos mÃ¡gicos", "Sitios histÃ³ricos"] },
+  tazumal: { zones: ["Occidente"], filters: ["Sitios histÃ³ricos"] },
+  "cascada-tercios": { zones: ["Occidente", "Ruta de las Flores"], filters: ["Cascadas", "MontaÃ±as"] },
+  "parque-imposible": { zones: ["Occidente", "Parque Nacional"], filters: ["Parques", "MontaÃ±as"] },
   "restaurante-chorros": { zones: ["Centro"], filters: ["Cascadas"] },
-  "pupuseria-ceiba": { zones: ["Centro"], filters: ["Pueblos mágicos"] },
-  "cerro-verde": { zones: ["Occidente", "Parque Nacional"], filters: ["Volcanes", "Parques", "Montañas"] },
+  "pupuseria-ceiba": { zones: ["Centro"], filters: ["Pueblos mÃ¡gicos"] },
+  "cerro-verde": { zones: ["Occidente", "Parque Nacional"], filters: ["Volcanes", "Parques", "MontaÃ±as"] },
   "playa-costa-sol": { zones: ["Costa"], filters: ["Playas"] },
   "lago-ilopango": { zones: ["Centro", "Oriente"], filters: ["Volcanes", "Parques"] },
-  "san-andres": { zones: ["Occidente"], filters: ["Sitios históricos"] },
-  nahuizalco: { zones: ["Occidente", "Ruta de las Flores"], filters: ["Pueblos mágicos"] },
+  "san-andres": { zones: ["Occidente"], filters: ["Sitios histÃ³ricos"] },
+  nahuizalco: { zones: ["Occidente", "Ruta de las Flores"], filters: ["Pueblos mÃ¡gicos"] },
   "surf-city": { zones: ["Costa"], filters: ["Surf", "Playas"] },
-  "cafe-talnamica": { zones: ["Occidente", "Ruta de las Flores"], filters: ["Pueblos mágicos"] },
+  "cafe-talnamica": { zones: ["Occidente", "Ruta de las Flores"], filters: ["Pueblos mÃ¡gicos"] },
 };
 
 const BITACORA_VISITED = [
-  "Pupusería La Ceiba",
+  "PupuserÃ­a La Ceiba",
   "Tazumal",
   "Playa El Tunco",
-  "Joya de Cerén",
+  "Joya de CerÃ©n",
   "Lago de Coatepeque",
-  "San Andrés",
+  "San AndrÃ©s",
   "Playa El Zonte",
-  "El Boquerón",
-  "Café Talnamica",
-  "Centro histórico de Suchitoto",
+  "El BoquerÃ³n",
+  "CafÃ© Talnamica",
+  "Centro histÃ³rico de Suchitoto",
   "Cascada Los Tercios",
 ];
 
 const NAME_TO_ID = {
-  "pupusería la ceiba": "pupuseria-ceiba",
+  "pupuserÃ­a la ceiba": "pupuseria-ceiba",
   tazumal: "tazumal",
   "playa el tunco": "playa-el-tunco",
-  "joya de cerén": "joya-ceren",
+  "joya de cerÃ©n": "joya-ceren",
   "lago de coatepeque": "lago-coatepeque",
-  "san andrés": "san-andres",
+  "san andrÃ©s": "san-andres",
   "playa el zonte": "playa-el-zonte",
-  "el boquerón": "el-boqueron",
-  "café talnamica": "cafe-talnamica",
-  "centro histórico de suchitoto": "suchitoto",
+  "el boquerÃ³n": "el-boqueron",
+  "cafÃ© talnamica": "cafe-talnamica",
+  "centro histÃ³rico de suchitoto": "suchitoto",
   "cascada los tercios": "cascada-tercios",
 };
 
@@ -155,8 +155,21 @@ function getQuizAnswers() {
   return window.TwinmapOnboarding?.getAnswers("ruta") || {};
 }
 
+let supplementaryPlaces = [];
+
+async function hydratePlacesFromApi() {
+  if (!window.TwinmapApi?.loadSupplementaryPlaces) return;
+  try {
+    supplementaryPlaces = await window.TwinmapApi.loadSupplementaryPlaces(40);
+  } catch {
+    supplementaryPlaces = [];
+  }
+}
+
 function getPlacesPool() {
-  const base = window.TwinmapAventuraRoute?.getPlaces() || [];
+  const raw = window.TwinmapAventuraRoute?.getPlaces() || [];
+  const seen = new Set(raw.map((place) => place.id));
+  const base = [...raw, ...supplementaryPlaces.filter((place) => !seen.has(place.id))];
 
   return base.map((place) => {
     const meta = PLACE_META[place.id] || { zones: ["Centro"], filters: [] };
@@ -366,11 +379,11 @@ function getPinsForMap(visiblePins, perfectRoute) {
 
 function landscapePhrase(quiz) {
   const map = {
-    "Cascadas, ríos y senderos verdes": "senderos verdes y cascadas",
+    "Cascadas, rÃ­os y senderos verdes": "senderos verdes y cascadas",
     "Playas, olas y atardeceres": "playas y atardeceres en la costa",
-    "Pueblos, café y calles con historia": "pueblos con historia y café de altura",
+    "Pueblos, cafÃ© y calles con historia": "pueblos con historia y cafÃ© de altura",
     "Volcanes, miradores y cielo abierto": "miradores y volcanes",
-    "Me gusta mezclar de todo": "experiencias variadas por todo el país",
+    "Me gusta mezclar de todo": "experiencias variadas por todo el paÃ­s",
   };
 
   return map[quiz.paisaje] || "lugares que encajan con tu estilo";
@@ -378,12 +391,12 @@ function landscapePhrase(quiz) {
 
 function crowdPhrase(quiz) {
   const map = {
-    "Con vida, gente y buena energía": "ambiente con vida y buena energía",
-    "Íntimo, silencioso y sin prisa": "rincones íntimos y tranquilos",
+    "Con vida, gente y buena energÃ­a": "ambiente con vida y buena energÃ­a",
+    "Ãntimo, silencioso y sin prisa": "rincones Ã­ntimos y tranquilos",
     "Un equilibrio entre ambos": "un equilibrio entre calma y vida local",
   };
 
-  return map[quiz.multitudes] || "experiencias auténticas";
+  return map[quiz.multitudes] || "experiencias autÃ©nticas";
 }
 
 function generateAISummary(quiz, topPlaces, context) {
@@ -391,27 +404,27 @@ function generateAISummary(quiz, topPlaces, context) {
   const names = topPlaces.slice(0, 3).map((entry) => entry.place.name);
 
   if (!hasQuiz) {
-    return "Completa el cuestionario del modo ruta para que la IA personalice tus recomendaciones según tus gustos y tu bitácora.";
+    return "Completa el cuestionario del modo ruta para que la IA personalice tus recomendaciones segÃºn tus gustos y tu bitÃ¡cora.";
   }
 
-  let summary = `Basado en tu quiz y tu bitácora (${context.visitedCount} lugares visitados, ${context.favoritosCount} favoritos), `;
+  let summary = `Basado en tu quiz y tu bitÃ¡cora (${context.visitedCount} lugares visitados, ${context.favoritosCount} favoritos), `;
   summary += `tu perfil apunta a ${landscapePhrase(quiz)} con ${crowdPhrase(quiz)}. `;
 
   if (names.length) {
     summary += `Destacamos ${names.join(", ")}`;
     if (topPlaces.length > 3) {
-      summary += ` y ${topPlaces.length - 3} opciones más`;
+      summary += ` y ${topPlaces.length - 3} opciones mÃ¡s`;
     }
     summary += " en tu mapa.";
   }
 
   const novelties = topPlaces.filter((entry) => !entry.visited).slice(0, 2);
   if (context.visitedCount > 0 && novelties.length) {
-    summary += ` Priorizamos novedades como ${novelties.map((entry) => entry.place.name).join(" y ")} porque ya conoces varios clásicos de tu historial.`;
+    summary += ` Priorizamos novedades como ${novelties.map((entry) => entry.place.name).join(" y ")} porque ya conoces varios clÃ¡sicos de tu historial.`;
   }
 
   if (context.favoritosCount > 0) {
-    summary += " También reforzamos categorías que guardas en favoritos.";
+    summary += " TambiÃ©n reforzamos categorÃ­as que guardas en favoritos.";
   }
 
   return summary;
@@ -511,9 +524,9 @@ function renderDetailForPlace(place, context) {
   detailTitleEl.textContent = place.name;
 
   let status = "";
-  if (visited) status = "Ya conocido · ";
-  if (favorite) status += "En tus favoritos · ";
-  status += `${place.zoneLabel} · ${place.categoryLabel}`;
+  if (visited) status = "Ya conocido Â· ";
+  if (favorite) status += "En tus favoritos Â· ";
+  status += `${place.zoneLabel} Â· ${place.categoryLabel}`;
 
   detailTextEl.textContent = `${status}. ${place.description}`;
 }
@@ -528,7 +541,7 @@ function renderDetailPanel(quiz, context, topPlaces) {
     }
   } else {
     detailTitleEl.textContent = activeZone;
-    detailTextEl.textContent = `Lugares sugeridos según tu quiz${activeCategory ? ` y la categoría ${activeCategory}` : ""} en esta zona.`;
+    detailTextEl.textContent = `Lugares sugeridos segÃºn tu quiz${activeCategory ? ` y la categorÃ­a ${activeCategory}` : ""} en esta zona.`;
   }
 
   const zoneTop = topPlaces
@@ -544,7 +557,7 @@ function renderDetailPanel(quiz, context, topPlaces) {
           <li>
             <button type="button" class="personalizado-detail-list__item" data-place-id="${entry.place.id}">
               <strong>${entry.place.name}</strong>
-              <span>${entry.visited ? "Ya conocido" : "Nuevo para ti"} · ${entry.place.categoryLabel}</span>
+              <span>${entry.visited ? "Ya conocido" : "Nuevo para ti"} Â· ${entry.place.categoryLabel}</span>
             </button>
           </li>
         `,
@@ -583,7 +596,7 @@ function renderRecommendationCard(entry) {
         ></span>
       </h3>
       <p>${place.description}</p>
-      <small>${place.categoryLabel} · ${visited ? "En tu bitácora" : "Recomendado para ti"}</small>
+      <small>${place.categoryLabel} Â· ${visited ? "En tu bitÃ¡cora" : "Recomendado para ti"}</small>
     </article>
   `;
 }
@@ -609,14 +622,14 @@ function renderPerfectRoute(container, perfectRoute) {
 
   if (!perfectRoute.length) {
     container.innerHTML = `
-      <p class="personalizado-perfect-route__intro">Tu ruta perfecta según tus gustos y tu bitácora</p>
+      <p class="personalizado-perfect-route__intro">Tu ruta perfecta segÃºn tus gustos y tu bitÃ¡cora</p>
       <p class="personalizado-perfect-route__empty">No hay paradas suficientes con los filtros actuales. Prueba otra zona o completa el quiz.</p>
     `;
     return;
   }
 
   container.innerHTML = `
-    <p class="personalizado-perfect-route__intro">Tu ruta perfecta según tus gustos y tu bitácora</p>
+    <p class="personalizado-perfect-route__intro">Tu ruta perfecta segÃºn tus gustos y tu bitÃ¡cora</p>
     <ol class="route-itinerary__list personalizado-perfect-route__list">
       ${perfectRoute
         .map(
@@ -629,8 +642,8 @@ function renderPerfectRoute(container, perfectRoute) {
             <span class="route-itinerary__location">${entry.place.location}</span>
             <small class="personalizado-perfect-route__meta">
               ${entry.place.zoneLabel}
-              ${entry.visited ? " · Ya conocido" : " · Nuevo para ti"}
-              ${entry.favorite ? " · Favorito" : ""}
+              ${entry.visited ? " Â· Ya conocido" : " Â· Nuevo para ti"}
+              ${entry.favorite ? " Â· Favorito" : ""}
             </small>
           </div>
         </li>
@@ -714,14 +727,22 @@ function renderPersonalizadoMap() {
   const visiblePins = getVisiblePins(quiz, context);
   const pinsToShow = getPinsForMap(visiblePins, perfectRoute);
   const summary = generateAISummary(quiz, topPlaces, context);
+  renderAISummaries(summary);
+  const anchor = topPlaces[0]?.place || getPlacesPool()[0];
+  if (window.TwinmapApi?.planAssistantRoute && Object.keys(quiz).length && anchor?.lat != null) {
+    window.TwinmapApi.planAssistantRoute({
+      message: `Recomienda lugares en El Salvador segun este perfil: ${JSON.stringify(quiz)}`,
+      location: { lat: anchor.lat, lng: anchor.lng },
+    }).then((result) => {
+      if (result?.ok && result.payload?.data?.reply) renderAISummaries(result.payload.data.reply);
+    });
+  }
 
   syncFilterButtons();
   renderMapPins(pinsToShow, context, perfectRoute);
   renderRouteLine(perfectRoute);
   renderDetailPanel(quiz, context, ranked);
   renderPerfectRoute(perfectRouteEl, perfectRoute);
-  renderAISummaries(summary);
-}
 
 function renderDashboardFeed() {
   const quiz = getQuizAnswers();
@@ -729,17 +750,27 @@ function renderDashboardFeed() {
   const perfectRoute = buildPerfectRoute(quiz, context, { respectFilters: false });
   const topPlaces = perfectRoute.length ? perfectRoute.slice(0, 3) : getTopRecommendations(quiz, context, 3);
   const summary = generateAISummary(quiz, topPlaces, context);
+  renderAISummaries(summary);
+  const dashAnchor = topPlaces[0]?.place || getPlacesPool()[0];
+  if (window.TwinmapApi?.planAssistantRoute && Object.keys(quiz).length && dashAnchor?.lat != null) {
+    window.TwinmapApi.planAssistantRoute({
+      message: `Recomienda lugares en El Salvador segun este perfil: ${JSON.stringify(quiz)}`,
+      location: { lat: dashAnchor.lat, lng: dashAnchor.lng },
+    }).then((result) => {
+      if (result?.ok && result.payload?.data?.reply) renderAISummaries(result.payload.data.reply);
+    });
+  }
 
   renderRecommendations(dashboardRecommendationsEl, topPlaces);
-  renderAISummaries(summary);
-}
 
 function initPersonalizadoMap() {
   if (!panelEl && !dashboardAiEl) return;
 
   bindFilters();
-  renderPersonalizadoMap();
-  renderDashboardFeed();
+  hydratePlacesFromApi().finally(() => {
+    renderPersonalizadoMap();
+    renderDashboardFeed();
+  });
 }
 
 initPersonalizadoMap();
@@ -758,3 +789,4 @@ window.TwinmapPersonalizado = {
     return buildPerfectRoute(quiz, context, options);
   },
 };
+

@@ -1,14 +1,16 @@
-import "dotenv/config";
+﻿import "dotenv/config";
 import express from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import routeRouter from "./routes/route.js";
 import crowdsRouter from "./routes/crowds.js";
 import birdsRouter from "./routes/birds.js";
 import assistantRouter from "./routes/assistant.js";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const port = process.env.PORT || 3001;
 
-// CORS simple para que el frontend (localhost:3000) pueda consumir la API
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Content-Type");
@@ -18,6 +20,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({ limit: "100kb" }));
+app.use("/data", express.static(path.join(__dirname, "data")));
 app.use("/api/routes", routeRouter);
 app.use("/api/crowds", crowdsRouter);
 app.use("/api/birds", birdsRouter);

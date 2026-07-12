@@ -130,3 +130,7 @@ Auth/perfiles; catálogo POI; recomendaciones; persistencia de rutas y bitácora
 
 - `frontend/resumen-ejecutivo.html`
 - Módulos JS en `frontend/src/js/`
+
+## Backend y datos reales
+
+El backend Express (`server.js`) vive en la raíz del repo (rama `feature/mapa-datos-integrados`, ya mergeada en `main`). El frontend consume la API vía `frontend/src/js/api.js`. Ver `documentacion/API.md`.
