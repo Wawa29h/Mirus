@@ -9,7 +9,7 @@
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.css" rel="stylesheet" />
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.min.js"></script>
-  <script src="config.js"></script>
+  <script src="config.js" onerror="window.__TWINMAP_CONFIG_MISSING__=true"></script>
   <meta name="mapbox-token" content="" id="mapbox-token-meta" />
 
   <style>
@@ -452,7 +452,8 @@
     <div class="card">
       <h2>Configura Mapbox para ver el mapa</h2>
       <p>En local: copia <code>config.example.js</code> → <code>config.js</code> y pega tu token <code>pk.</code></p>
-      <p>En Netlify: variable de entorno <code>MAPBOX_TOKEN</code> (Site settings → Environment variables).</p>
+      <p>O define <code>MAPBOX_ACCESS_TOKEN</code> en <code>.env</code> del backend (<code>:3001</code>) y abre <code>http://localhost:3000/</code> (no <code>/frontend/</code>).</p>
+      <p>En Netlify: variable <code>MAPBOX_TOKEN</code> en Site settings → Environment variables, y publish directory = <code>.</code> (raíz).</p>
       <p>Token gratis en <a href="https://account.mapbox.com" target="_blank" rel="noopener">account.mapbox.com</a></p>
     </div>
   </div>
@@ -460,18 +461,47 @@
   <script>
     const CFG = window.TWINMAP_CONFIG || {};
     const API = (CFG.API_BASE || "http://localhost:3001").replace(/\/$/, "");
-    const mapboxToken =
-      (CFG.MAPBOX_TOKEN && CFG.MAPBOX_TOKEN.startsWith("pk.") ? CFG.MAPBOX_TOKEN : "") ||
-      (document.querySelector('meta[name="mapbox-token"]')?.content?.startsWith("pk.")
-        ? document.querySelector('meta[name="mapbox-token"]').content
-        : "");
-    const hasToken = Boolean(mapboxToken);
+    let mapboxToken = "";
 
-    if (!hasToken) {
-      document.getElementById("token-warn").style.display = "flex";
-    } else {
-      boot();
+    function pickMapboxToken() {
+      return (
+        (CFG.MAPBOX_TOKEN && CFG.MAPBOX_TOKEN.startsWith("pk.") ? CFG.MAPBOX_TOKEN : "") ||
+        (document.querySelector('meta[name="mapbox-token"]')?.content?.startsWith("pk.")
+          ? document.querySelector('meta[name="mapbox-token"]').content
+          : "")
+      );
     }
+
+    async function resolveMapboxToken() {
+      const fromConfig = pickMapboxToken();
+      if (fromConfig) return fromConfig;
+
+      const bases = [API];
+      if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+        bases.unshift("http://localhost:3001");
+      }
+
+      for (const base of [...new Set(bases.filter(Boolean))]) {
+        try {
+          const res = await fetch(`${base.replace(/\/$/, "")}/api/config`, { cache: "no-store" });
+          if (!res.ok) continue;
+          const data = await res.json();
+          if (data.mapboxToken?.startsWith("pk.")) return data.mapboxToken;
+        } catch {
+          /* backend apagado o CORS — probar siguiente base */
+        }
+      }
+      return "";
+    }
+
+    (async function initMap() {
+      mapboxToken = await resolveMapboxToken();
+      if (!mapboxToken) {
+        document.getElementById("token-warn").style.display = "flex";
+        return;
+      }
+      boot();
+    })();
 
     function setStatus(html) { document.getElementById("status").innerHTML = html; }
 
