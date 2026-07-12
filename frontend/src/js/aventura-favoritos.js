@@ -149,7 +149,7 @@ function renderAventuraFavoritos() {
     .map(
       (place) => `
         <article class="favoritos-card" data-id="${place.id}">
-          <div class="image-placeholder" aria-hidden="true"></div>
+          ${window.TwinmapCategoryImages?.thumbHtml(item.categoryLabel || item.category) || '<div class="image-placeholder" aria-hidden="true"></div>'}
           <div class="favoritos-card__meta">
             <span class="favoritos-card__category">${place.categoryLabel}</span>
             <h3>${place.name}</h3>

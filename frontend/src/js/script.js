@@ -31,6 +31,35 @@ const MODE_ENTRY = {
   [ADVENTURE_MODE]: "aventura-mapa",
 };
 
+const MAP_EMBED_SRC = "/index.html?embed=1&ui=frontend";
+
+function ensureMapIframeLoaded() {
+  const iframe = document.getElementById("twinmap-real-map");
+  if (!iframe) return null;
+
+  const wanted = iframe.dataset.src || MAP_EMBED_SRC;
+  const absolute = new URL(wanted, location.origin).href;
+  const current = iframe.getAttribute("src");
+
+  if (!current || !current.includes("embed=1")) {
+    iframe.src = absolute;
+  }
+
+  return iframe;
+}
+
+function pingEmbeddedMap() {
+  const iframe = document.getElementById("twinmap-real-map");
+  iframe?.contentWindow?.postMessage({ type: "twinmap-embed-init", ui: "frontend" }, "*");
+  iframe?.contentWindow?.postMessage({ type: "twinmap-profile-updated" }, "*");
+  iframe?.contentWindow?.postMessage({ type: "twinmap-resize" }, "*");
+  [150, 400, 900, 1500, 2500].forEach((ms) => {
+    window.setTimeout(() => {
+      iframe?.contentWindow?.postMessage({ type: "twinmap-resize" }, "*");
+    }, ms);
+  });
+}
+
 function getSavedMode() {
   return sessionStorage.getItem(MODE_STORAGE_KEY);
 }
@@ -59,12 +88,12 @@ function showView(viewName, options = {}) {
   const savedMode = getSavedMode();
 
   if (isRoutePanel && savedMode !== ROUTE_MODE) {
-    showView("landing");
+    showView("mode-select");
     return;
   }
 
   if (isAdventurePanel && savedMode !== ADVENTURE_MODE) {
-    showView("landing");
+    showView("mode-select");
     return;
   }
 
@@ -93,6 +122,12 @@ function showView(viewName, options = {}) {
 
   if (target === "aventura-logros") {
     window.TwinmapAventuraLogros?.refresh();
+  }
+
+  if (target === "mapa") {
+    window.TwinmapProfileSync?.syncFromFrontendQuiz?.();
+    ensureMapIframeLoaded();
+    pingEmbeddedMap();
   }
 
   if (target === "mapa-personalizado") {
@@ -148,8 +183,14 @@ viewButtons.forEach((button) => {
   button.addEventListener("click", (event) => {
     event.preventDefault();
 
-    if (button.dataset.view === "mode-select") {
-      returnToModeSelect();
+    if (button.dataset.view === "mode-select" || button.dataset.view === "landing") {
+      if (button.dataset.view === "landing") {
+        returnToModeSelect();
+        return;
+      }
+      setActiveMode(null);
+      document.body.classList.remove("is-onboarding");
+      showView("mode-select");
       return;
     }
 
@@ -177,5 +218,23 @@ document.querySelectorAll(".map-search").forEach((form) => {
   });
 });
 
-showView("landing");
+const quickView = new URLSearchParams(location.search).get("view");
+if (quickView) {
+  const quickMode = new URLSearchParams(location.search).get("mode") || ROUTE_MODE;
+  if (quickMode === ROUTE_MODE || quickMode === ADVENTURE_MODE) {
+    setActiveMode(quickMode);
+    showView(quickView);
+    if (quickView === "mapa") ensureMapIframeLoaded();
+  }
+} else {
+  showView("landing");
+}
+
+const mapIframe = document.getElementById("twinmap-real-map");
+if (mapIframe) {
+  mapIframe.addEventListener("load", () => {
+    pingEmbeddedMap();
+  });
+  window.addEventListener("resize", pingEmbeddedMap);
+}
 

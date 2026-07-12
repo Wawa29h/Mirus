@@ -683,9 +683,10 @@ function renderMapPins(places) {
     const pos = coordsToPercent(place.lat, place.lng);
     const pin = document.createElement("button");
     pin.type = "button";
-    pin.className = `map-pin aventura-map-pin aventura-map-pin--${place.type}`;
+    pin.className = `map-pin map-pin--icon aventura-map-pin aventura-map-pin--${place.type}`;
     pin.style.left = pos.left;
     pin.style.top = pos.top;
+    window.TwinmapCategoryImages?.applyPinIcon?.(pin, place.categoryLabel || place.category, place.type);
     pin.setAttribute("aria-label", `${index + 1}. ${place.name}`);
     pin.dataset.routeOrder = String(index + 1);
 
@@ -694,6 +695,10 @@ function renderMapPins(places) {
     });
 
     mapCanvasEl.appendChild(pin);
+  });
+
+  window.TwinmapCategoryImages?.prepareIconAssets?.().then(() => {
+    window.TwinmapCategoryImages?.refreshPinIcons?.(mapCanvasEl);
   });
 
   window.TwinmapPlacePopup?.bindPins(mapCanvasEl);

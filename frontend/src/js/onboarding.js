@@ -250,6 +250,9 @@ function showQuiz() {
 
 function finishOnboarding() {
   saveQuiz(activeMode, answers);
+  if (activeMode === "ruta") {
+    window.TwinmapProfileSync?.saveFromFrontendQuiz?.(answers);
+  }
   if (activeMode === "aventura") {
     localStorage.removeItem("twinmap-aventura-route");
   }

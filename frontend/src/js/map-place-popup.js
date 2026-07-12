@@ -11,10 +11,11 @@ const popupAddRouteBtn = document.getElementById("popup-add-route");
 const popupSaveFavoriteBtn = document.getElementById("popup-save-favorite");
 const popupCloseButtons = document.querySelectorAll("[data-close-popup]");
 const popupPlanningEl = document.querySelector(".place-popup__planning");
+const popupImage = document.getElementById("popup-image");
 
 let currentPlace = null;
 
-const FORECAST_LABELS = ["Hoy", "MaÃ±ana", "En dos dÃ­as"];
+const FORECAST_LABELS = ["Hoy", "Mañana", "En dos días"];
 
 const UBER = {
   scheme: "uber",
@@ -245,6 +246,10 @@ function openPlacePopup(pin) {
   popupTitle.textContent = currentPlace.name;
   popupLocation.textContent = currentPlace.location;
   popupDescription.textContent = currentPlace.description;
+  if (popupImage) {
+    popupImage.src = window.TwinmapCategoryImages?.urlForCategory(currentPlace.category) || "assets/parque.png";
+    popupImage.alt = currentPlace.category;
+  }
   renderForecast(currentPlace.forecast);
   popupWaze.href = currentPlace.wazeUrl;
   popupNews.href = currentPlace.newsUrl;

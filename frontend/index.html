@@ -11,10 +11,11 @@
     <link rel="stylesheet" href="src/css/aventura.css" />
     <link rel="stylesheet" href="src/css/mapa-personalizado.css" />
     <link rel="stylesheet" href="src/css/emergencia.css" />
+    <link rel="stylesheet" href="src/css/map-embed.css" />
   </head>
   <body>
     <header class="topbar">
-      <a class="brand" href="#inicio" data-view="mode-select" aria-label="Volver al inicio">
+      <a class="brand" href="#inicio" data-view="landing" aria-label="Volver al inicio">
         <span class="brand-logo">TM</span>
         <span>
           <strong>Twinmap</strong>
@@ -54,7 +55,87 @@
     </header>
 
     <main>
-      <section class="view mode-select-view is-visible" id="inicio" data-panel="mode-select">
+      <section class="view landing-view is-visible" id="inicio" data-panel="landing">
+        <figure class="landing-hero-image">
+          <img
+            src="assets/landing-illustration.png"
+            alt="Paisaje ilustrado con montañas, lago y vegetación de El Salvador"
+            width="1920"
+            height="720"
+            loading="eager"
+            decoding="async"
+          />
+        </figure>
+
+        <div class="landing-frame">
+          <div class="hero-copy">
+            <p class="eyebrow">Twin Map</p>
+            <h1>Explora lugares, rutas y experiencias cercanas</h1>
+            <p>
+              Gemelo digital turístico para descubrir El Salvador: mapa interactivo,
+              rutas inteligentes según tu perfil y recomendaciones personalizadas.
+            </p>
+            <div class="hero-actions">
+              <button class="primary-action" type="button" data-view="mode-select">Comenzar</button>
+              <button class="secondary-action" type="button" data-view="acerca">Acerca de</button>
+            </div>
+          </div>
+
+          <div class="landing-summary">
+            <article>
+              <strong>Mapa vivo</strong>
+              <span>Satélite, capas, tráfico y puntos de interés en tiempo real.</span>
+            </article>
+            <article>
+              <strong>Rutas a tu medida</strong>
+              <span>Cuestionario corto que adapta destinos y recorridos a tus gustos.</span>
+            </article>
+            <article>
+              <strong>Todo El Salvador</strong>
+              <span>Playas, volcanes, cascadas, cultura y gastronomía en un solo lugar.</span>
+            </article>
+          </div>
+        </div>
+
+        <section class="landing-details" aria-label="Información del proyecto">
+          <article class="value-card">
+            <p class="eyebrow">Propuesta de valor</p>
+            <h2>Un mapa turístico que recomienda experiencias cercanas según tus intereses.</h2>
+          </article>
+
+          <article>
+            <h2>Funcionalidades principales</h2>
+            <ul>
+              <li>Landing con ilustración del territorio salvadoreño.</li>
+              <li>Modo ruta y modo aventura con cuestionario inicial.</li>
+              <li>Mapa Mapbox con capas, clima y rutas inteligentes.</li>
+              <li>Bitácora, favoritos, emergencia y mapa personalizado por zonas.</li>
+            </ul>
+          </article>
+
+          <article>
+            <h2>Experiencias destacadas</h2>
+            <div class="landing-category-grid">
+              <figure><img src="assets/playa.png" alt="Playas" loading="lazy"><figcaption>Playas</figcaption></figure>
+              <figure><img src="assets/volcan.png" alt="Volcanes" loading="lazy"><figcaption>Volcanes</figcaption></figure>
+              <figure><img src="assets/cascada.png" alt="Cascadas" loading="lazy"><figcaption>Cascadas</figcaption></figure>
+              <figure><img src="assets/comida.png" alt="Gastronomía" loading="lazy"><figcaption>Gastronomía</figcaption></figure>
+              <figure><img src="assets/surf.png" alt="Surf" loading="lazy"><figcaption>Surf</figcaption></figure>
+              <figure><img src="assets/iglesia.png" alt="Cultura" loading="lazy"><figcaption>Cultura</figcaption></figure>
+            </div>
+          </article>
+
+          <article>
+            <h2>Estado de la solución</h2>
+            <p>
+              Interfaz funcional con mapa real, datos locales y flujo completo de navegación.
+              Algunos módulos siguen en modo simulado mientras se integran más fuentes.
+            </p>
+          </article>
+        </section>
+      </section>
+
+      <section class="view mode-select-view" data-panel="mode-select">
         <div class="mode-select">
           <p class="eyebrow">Bienvenido a Twinmap</p>
           <h1>Â¿CÃ³mo quieres explorar El Salvador?</h1>
@@ -183,173 +264,17 @@
         </aside>
       </section>
 
-      <section class="view map-view" data-panel="mapa" data-mode="ruta">
-        <div class="map-toolbar">
-          <div>
-            <p class="eyebrow">PlaneaciÃ³n Â· Explorar mapa</p>
-            <h1>Mapa interactivo</h1>
-          </div>
-          <form class="map-search" role="search" aria-label="Buscar lugares en el mapa">
-            <input
-              class="map-search__input"
-              type="search"
-              name="q"
-              placeholder="Buscar lugares..."
-              autocomplete="off"
-            />
-            <button class="map-search__submit" type="submit" aria-label="Buscar">
-              <svg class="map-search__icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
-                <path d="M20 20l-4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-              </svg>
-            </button>
-          </form>
-          <div class="map-actions">
-            <button class="outline-button" type="button">Filtros</button>
-            <button class="outline-button" type="button">Mi ubicaciÃ³n</button>
-          </div>
+      <section class="view map-view map-view--real" data-panel="mapa" data-mode="ruta">
+        <div class="map-embed-wrap" id="map-embed-wrap">
+          <iframe
+            id="twinmap-real-map"
+            title="Mapa TwinMap"
+            data-src="/index.html?embed=1&ui=frontend"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            allow="geolocation"
+          ></iframe>
         </div>
-
-        <div class="map-layout">
-          <aside class="map-filter-panel">
-            <h2>Capas</h2>
-            <button type="button">Hoteles</button>
-            <button type="button">Restaurantes</button>
-            <button type="button">Eventos tendencias</button>
-            <button type="button">Clima</button>
-            <button type="button">TrÃ¡fico</button>
-          </aside>
-
-          <section class="map-canvas" aria-label="Mockup de mapa">
-            <div class="map-road road-one"></div>
-            <div class="map-road road-two"></div>
-            <div class="map-road road-three"></div>
-            <div class="map-zone zone-one">Bosque</div>
-            <div class="map-zone zone-two">Mirador</div>
-            <div class="map-zone zone-three">Centro</div>
-            <button
-              type="button"
-              class="map-pin pin-one"
-              aria-label="Lago de Coatepeque"
-              data-place-name="Lago de Coatepeque"
-              data-place-category="Naturaleza"
-              data-place-location="Santa Ana, El Salvador"
-              data-place-description="CrÃ¡ter volcÃ¡nico con aguas turquesas ideal para kayak, miradores y gastronomÃ­a en la orilla."
-              data-place-lat="13.819"
-              data-place-lng="-89.559"
-              data-place-weather="24Â°C Â· Parcialmente nublado"
-              data-place-weather-hoy="24Â°C Â· Parcialmente nublado"
-              data-place-weather-manana="25Â°C Â· Soleado"
-              data-place-weather-pasadomanana="23Â°C Â· Lluvia ligera"
-              data-place-news="https://news.google.com/search?q=Lago+de+Coatepeque+El+Salvador"
-            ></button>
-            <button
-              type="button"
-              class="map-pin pin-two"
-              aria-label="El BoquerÃ³n"
-              data-place-name="El BoquerÃ³n"
-              data-place-category="VolcÃ¡n"
-              data-place-location="San Salvador, El Salvador"
-              data-place-description="VolcÃ¡n activo con senderos, miradores y clima fresco sobre la capital."
-              data-place-lat="13.734"
-              data-place-lng="-89.287"
-              data-place-weather="19Â°C Â· Brisa fresca"
-              data-place-weather-hoy="19Â°C Â· Brisa fresca"
-              data-place-weather-manana="18Â°C Â· Neblina matutina"
-              data-place-weather-pasadomanana="20Â°C Â· Despejado"
-              data-place-news="https://news.google.com/search?q=El+Boqueron+San+Salvador"
-            ></button>
-            <button
-              type="button"
-              class="map-pin pin-three"
-              aria-label="Playa El Tunco"
-              data-place-name="Playa El Tunco"
-              data-place-category="Playa"
-              data-place-location="La Libertad, El Salvador"
-              data-place-description="Destino de surf, atardeceres y ambiente relajado en la costa del PacÃ­fico."
-              data-place-lat="13.493"
-              data-place-lng="-89.385"
-              data-place-weather="29Â°C Â· Soleado"
-              data-place-weather-hoy="29Â°C Â· Soleado"
-              data-place-weather-manana="30Â°C Â· Calor intenso"
-              data-place-weather-pasadomanana="28Â°C Â· Bruma costera"
-              data-place-news="https://news.google.com/search?q=Playa+El+Tunco+La+Libertad"
-            ></button>
-          </section>
-
-          <aside class="map-detail-panel">
-            <h2>Lugar seleccionado</h2>
-            <div class="image-placeholder"></div>
-            <h3>Nombre lugar</h3>
-            <p>DescripciÃ³n breve, categorÃ­a, distancia y acciones del mapa.</p>
-            <button class="primary-action" type="button">Guardar</button>
-          </aside>
-        </div>
-
-        <section class="map-recommendations">
-          <div class="map-filter-strip">
-            <h2>Filtros</h2>
-            <div class="filter-chips">
-              <button type="button">Cerca de mÃ­</button>
-              <button type="button">Mejor valorados</button>
-              <button type="button">Abierto ahora</button>
-              <button type="button">Para visitar hoy</button>
-            </div>
-          </div>
-
-          <div class="section-heading">
-            <h2>Recomendaciones para ti</h2>
-            <button class="text-button" type="button">Ver todo</button>
-          </div>
-
-          <div class="recommendation-grid">
-            <article class="place-card">
-              <div class="image-placeholder"></div>
-              <span class="tag">Ruta</span>
-              <h3 class="place-name">
-                <span class="visually-hidden">Ruta de las Flores</span>
-                <span
-                  class="place-stamp"
-                  data-postmark="classic"
-                  data-title="Ruta de las Flores"
-                  data-location="Sonsonate"
-                ></span>
-              </h3>
-              <p>DescripciÃ³n breve del lugar recomendado en el mapa.</p>
-              <small>Lugar Â· Distancia de ti</small>
-            </article>
-            <article class="place-card">
-              <div class="image-placeholder"></div>
-              <span class="tag">Historia</span>
-              <h3 class="place-name">
-                <span class="visually-hidden">Joya de CerÃ©n</span>
-                <span
-                  class="place-stamp"
-                  data-postmark="portrait"
-                  data-title="Joya de CerÃ©n"
-                  data-location="La Libertad"
-                ></span>
-              </h3>
-              <p>DescripciÃ³n breve del lugar recomendado en el mapa.</p>
-              <small>Lugar Â· Distancia de ti</small>
-            </article>
-            <article class="place-card">
-              <div class="image-placeholder"></div>
-              <span class="tag">Pueblo</span>
-              <h3 class="place-name">
-                <span class="visually-hidden">Suchitoto</span>
-                <span
-                  class="place-stamp"
-                  data-postmark="classic"
-                  data-title="Suchitoto"
-                  data-location="CuscatlÃ¡n"
-                ></span>
-              </h3>
-              <p>DescripciÃ³n breve del lugar recomendado en el mapa.</p>
-              <small>Lugar Â· Distancia de ti</small>
-            </article>
-          </div>
-        </section>
       </section>
 
       <section class="view map-view map-view--personalized" data-panel="mapa-personalizado" data-mode="ruta">
@@ -417,7 +342,7 @@
               <p id="personalizado-ai-summary">Analizando tu quiz y bitÃ¡coraâ€¦</p>
             </div>
             <h2 class="map-panel-divider">Zona seleccionada</h2>
-            <div class="image-placeholder"></div>
+            <img id="personalizado-detail-image" class="place-thumb place-thumb--panel" src="assets/parque.png" alt="" loading="lazy" />
             <h3 id="personalizado-detail-title">Occidente</h3>
             <p id="personalizado-detail-text">Lugares sugeridos segÃºn tus gustos del cuestionario en esta zona.</p>
             <div id="personalizado-detail-list"></div>
@@ -727,7 +652,7 @@
         <button class="place-popup__close" type="button" data-close-popup aria-label="Cerrar">Ã—</button>
 
         <div class="place-popup__header">
-          <div class="image-placeholder" aria-hidden="true"></div>
+          <img id="popup-image" class="place-popup__photo" src="assets/parque.png" alt="" loading="lazy" />
           <div>
             <p class="eyebrow" id="popup-category">CategorÃ­a</p>
             <h2 id="popup-title">Nombre del lugar</h2>
@@ -782,6 +707,9 @@
       </div>
     </div>
 
+    <script src="/lib/category-images.js?v=7"></script>
+    <script src="/lib/profile-sync.js"></script>
+    <script src="/config.js" onerror="window.__TWINMAP_CONFIG_MISSING__=true"></script>
     <script src="src/js/config.js" defer onerror="this.remove()"></script>
     <script src="src/js/api.js"></script>
     <script src="src/js/ink-postmarks.js"></script>

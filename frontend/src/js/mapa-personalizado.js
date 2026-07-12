@@ -87,8 +87,8 @@ const mapCanvasEl = document.getElementById("personalizado-map-canvas");
 const routeLineEl = document.getElementById("personalizado-route-line");
 const detailTitleEl = document.getElementById("personalizado-detail-title");
 const detailTextEl = document.getElementById("personalizado-detail-text");
+const detailImageEl = document.getElementById("personalizado-detail-image");
 const detailListEl = document.getElementById("personalizado-detail-list");
-const aiSummaryEl = document.getElementById("personalizado-ai-summary");
 const perfectRouteEl = document.getElementById("personalizado-perfect-route");
 const dashboardAiEl = document.getElementById("dashboard-ai-text");
 const dashboardRecommendationsEl = document.getElementById("dashboard-recommendations");
@@ -454,9 +454,10 @@ function renderMapPins(places, context, perfectRoute = []) {
     const pos = coordsToPercent(place.lat, place.lng);
     const pin = document.createElement("button");
     pin.type = "button";
-    pin.className = `map-pin personalizado-map-pin personalizado-map-pin--${place.type}`;
+    pin.className = `map-pin map-pin--icon personalizado-map-pin personalizado-map-pin--${place.type}`;
     pin.style.left = pos.left;
     pin.style.top = pos.top;
+    window.TwinmapCategoryImages?.applyPinIcon?.(pin, place.categoryLabel || place.category, place.type);
     pin.setAttribute("aria-label", place.name);
     pin.dataset.placeId = place.id;
 
@@ -492,6 +493,10 @@ function renderMapPins(places, context, perfectRoute = []) {
     mapCanvasEl.appendChild(pin);
   });
 
+  window.TwinmapCategoryImages?.prepareIconAssets?.().then(() => {
+    window.TwinmapCategoryImages?.refreshPinIcons?.(mapCanvasEl);
+  });
+
   window.TwinmapPlacePopup?.bindPins(mapCanvasEl);
 }
 
@@ -515,6 +520,18 @@ function renderRouteLine(perfectRoute) {
   `;
 }
 
+function setDetailImage(category) {
+  if (!detailImageEl) return;
+  const apply = () => {
+    detailImageEl.src = window.TwinmapCategoryImages?.urlForCategory(category || activeCategory || activeZone) || "assets/parque.png";
+  };
+  if (window.TwinmapCategoryImages?.prepareIconAssets) {
+    window.TwinmapCategoryImages.prepareIconAssets().then(apply);
+  } else {
+    apply();
+  }
+}
+
 function renderDetailForPlace(place, context) {
   if (!detailTitleEl || !detailTextEl) return;
 
@@ -522,6 +539,7 @@ function renderDetailForPlace(place, context) {
   const favorite = context.favoriteIds.has(place.id);
 
   detailTitleEl.textContent = place.name;
+  setDetailImage(place.categoryLabel || place.category);
 
   let status = "";
   if (visited) status = "Ya conocido Â· ";
@@ -542,6 +560,7 @@ function renderDetailPanel(quiz, context, topPlaces) {
   } else {
     detailTitleEl.textContent = activeZone;
     detailTextEl.textContent = `Lugares sugeridos segÃºn tu quiz${activeCategory ? ` y la categorÃ­a ${activeCategory}` : ""} en esta zona.`;
+    setDetailImage(activeCategory || activeZone);
   }
 
   const zoneTop = topPlaces
@@ -583,7 +602,7 @@ function renderRecommendationCard(entry) {
 
   return `
     <article class="place-card personalizado-place-card" data-place-id="${place.id}">
-      <div class="image-placeholder"></div>
+      ${window.TwinmapCategoryImages?.thumbHtml(place.categoryLabel || place.category) || '<div class="image-placeholder"></div>'}
       <span class="tag">${place.zoneLabel}</span>
       ${visited ? '<span class="personalizado-badge personalizado-badge--visited">Ya conocido</span>' : ""}
       <h3 class="place-name">

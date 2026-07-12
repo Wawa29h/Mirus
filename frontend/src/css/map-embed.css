@@ -1,0 +1,46 @@
+/* Mapa real embebido: integrado con el shell claro del frontend */
+body.has-topbar main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: calc(100vh - 64px);
+  min-height: calc(100vh - 64px);
+  max-height: calc(100vh - 64px);
+  overflow: hidden;
+}
+
+body.has-topbar .map-view--real.is-visible {
+  display: flex !important;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden;
+}
+
+body.has-topbar .map-view--real .map-toolbar {
+  display: none !important;
+}
+
+body.has-topbar .map-embed-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: #eef1f4;
+  overflow: hidden;
+}
+
+body.has-topbar .map-embed-wrap iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  border: 0;
+  background: #eef1f4;
+}

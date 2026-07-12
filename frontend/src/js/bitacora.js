@@ -306,7 +306,7 @@ function renderPlaces() {
     .map(
       (place) => `
         <article class="bitacora-place-card">
-          <div class="image-placeholder" aria-hidden="true"></div>
+          ${window.TwinmapCategoryImages?.thumbHtml(place.categoryLabel || place.category) || '<div class="image-placeholder" aria-hidden="true"></div>'}
           <div class="bitacora-place-card__meta">
             <span class="bitacora-place-card__category">${place.categoryLabel}</span>
             <h3>${place.name}</h3>
