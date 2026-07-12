@@ -10,57 +10,79 @@
   <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.css" rel="stylesheet" />
   <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.min.js"></script>
   <script src="config.js"></script>
+  <meta name="mapbox-token" content="" id="mapbox-token-meta" />
 
   <style>
     :root {
       --bg: #0d1b2a;
-      --panel: rgba(13, 27, 42, 0.86);
+      --panel: rgba(13, 27, 42, 0.92);
       --panel-border: rgba(120, 200, 210, 0.22);
       --accent: #2ec4b6;
       --accent2: #ffbf69;
       --text: #e8f1f2;
       --muted: #9bb4bd;
+      --dock-w: 248px;
+      --ui-gap: 8px;
+      --ui-pad: 12px;
+      --ui-radius: 12px;
     }
     * { box-sizing: border-box; }
-    html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
     #map { position: absolute; inset: 0; }
 
-    /* ---- Buscador global (geocoder) ---- */
+    /* ---- Shell: mapa + overlays ---- */
+    .ui-shell {
+      position: absolute; inset: 0; z-index: 5; pointer-events: none;
+      display: grid;
+      grid-template-columns: var(--dock-w) minmax(0, 1fr) var(--dock-w);
+      grid-template-rows: auto 1fr auto;
+      gap: var(--ui-gap);
+      padding: var(--ui-pad);
+    }
+    .ui-shell > * { pointer-events: auto; min-width: 0; }
+
+    .ui-card {
+      background: var(--panel); color: var(--text);
+      border: 1px solid var(--panel-border); border-radius: var(--ui-radius);
+      padding: 12px 14px; backdrop-filter: blur(10px);
+      box-shadow: 0 6px 24px rgba(0,0,0,.35);
+    }
+
+    /* ---- Buscador: franja central superior ---- */
     #search {
-      position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
-      z-index: 6; width: min(420px, 60vw);
+      grid-column: 2; grid-row: 1; align-self: start; justify-self: center;
+      width: min(100%, 420px); z-index: 6;
     }
     #search .mapboxgl-ctrl-geocoder {
       width: 100%; max-width: none; min-width: 0;
       box-shadow: 0 8px 30px rgba(0,0,0,.35); border-radius: 12px; font-size: 14px;
     }
 
-    /* ---- Header ---- */
-    .brand {
-      position: absolute; top: 14px; left: 14px; z-index: 5;
-      background: var(--panel); color: var(--text);
-      border: 1px solid var(--panel-border); border-radius: 14px;
-      padding: 12px 16px; backdrop-filter: blur(10px);
-      box-shadow: 0 8px 30px rgba(0,0,0,.35);
+    /* ---- Columnas laterales ---- */
+    .ui-col-left, .ui-col-right {
+      grid-row: 1 / -1; display: flex; flex-direction: column; gap: var(--ui-gap);
+      min-height: 0; overflow-y: auto; overflow-x: hidden;
     }
+    .ui-col-left { grid-column: 1; }
+    .ui-col-right { grid-column: 3; }
+    .ui-col-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--ui-gap); }
+
+    /* ---- Header ---- */
+    .brand { flex-shrink: 0; }
     .brand h1 { margin: 0; font-size: 18px; letter-spacing: .3px; }
     .brand h1 span { color: var(--accent); }
     .brand p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
-    #island-btn {
-      margin-top: 10px; width: 100%; cursor: pointer;
+    #island-btn, #flat-btn {
+      margin-top: 8px; width: 100%; cursor: pointer;
       background: var(--accent); color: #062b28; border: none; border-radius: 9px;
       padding: 9px 12px; font-size: 13px; font-weight: 600; transition: background .15s, transform .1s;
     }
-    #island-btn:hover { transform: translateY(-1px); }
-    #island-btn.active { background: var(--accent2); color: #3a2600; }
+    #island-btn:hover, #flat-btn:hover { transform: translateY(-1px); }
+    #island-btn.active, #flat-btn.active { background: var(--accent2); color: #3a2600; }
 
     /* ---- Panel de capas ---- */
     .panel {
-      position: absolute; top: 14px; right: 14px; z-index: 5; width: 260px;
-      background: var(--panel); color: var(--text);
-      border: 1px solid var(--panel-border); border-radius: 14px;
-      padding: 14px; backdrop-filter: blur(10px);
-      box-shadow: 0 8px 30px rgba(0,0,0,.35);
+      flex: 1 1 auto; min-height: 0; overflow-y: auto;
     }
     .panel h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
     .layer { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-radius: 9px; cursor: pointer; transition: background .15s; }
@@ -77,6 +99,17 @@
     .status { margin-top: 12px; font-size: 11.5px; color: var(--muted); border-top: 1px solid var(--panel-border); padding-top: 10px; }
     .status b { color: var(--accent); }
 
+    /* ---- Signos vitales ---- */
+    .vitals { flex-shrink: 0; font-size: 12px; line-height: 1.4; }
+    .vitals h2 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+    .vitals .v-now { font-size: 22px; font-weight: 700; color: var(--accent); }
+    .vitals .v-row { display: flex; justify-content: space-between; gap: 8px; margin: 4px 0; color: var(--muted); }
+    .vitals .v-row b { color: var(--text); font-weight: 600; }
+    .vitals .v-days { display: flex; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--panel-border); }
+    .vitals .v-day { flex: 1; text-align: center; font-size: 10.5px; color: var(--muted); }
+    .vitals .v-day span { display: block; font-size: 13px; color: var(--text); font-weight: 600; }
+    .vitals .v-src { margin-top: 6px; font-size: 10px; color: var(--muted); }
+
     /* ---- Aviso de token faltante ---- */
     #token-warn {
       position: absolute; inset: 0; z-index: 20; display: none;
@@ -90,13 +123,23 @@
     .maplibre-marker { font-size: 22px; cursor: pointer; }
 
     /* ---- Panel de rutas ---- */
-    .route-panel {
-      position: absolute; bottom: 24px; left: 14px; z-index: 5; width: 270px;
-      background: var(--panel); color: var(--text);
-      border: 1px solid var(--panel-border); border-radius: 14px;
-      padding: 14px; backdrop-filter: blur(10px); box-shadow: 0 8px 30px rgba(0,0,0,.35);
+    .route-panel { flex-shrink: 0; overflow: visible; }
+    .location-bar {
+      display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;
+      padding: 8px 10px; border-radius: 9px; border: 1px solid var(--panel-border);
+      background: rgba(46, 196, 182, .08);
     }
-    .route-panel h2 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+    .location-bar button {
+      width: 100%; cursor: pointer; font-size: 13px; font-weight: 700; padding: 9px;
+      border-radius: 9px; border: none; background: var(--accent); color: #062b28;
+    }
+    .location-bar button:disabled { opacity: .65; cursor: wait; }
+    #sr-origin-label { font-size: 11px; color: var(--muted); line-height: 1.35; }
+    #sr-origin-label b { color: var(--accent); }
+    .route-panel h2.route-main-title { margin: 0 0 8px; font-size: 14px; color: var(--text); text-transform: none; letter-spacing: 0; }
+    .manual-route-details { margin-top: 12px; border-top: 1px solid var(--panel-border); padding-top: 8px; }
+    .manual-route-details summary { cursor: pointer; font-size: 11px; color: var(--muted); user-select: none; }
+    .manual-route-details[open] summary { margin-bottom: 8px; color: var(--text); }
     .route-panel .hint { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
     .route-row { display: flex; gap: 8px; margin-bottom: 8px; }
     .route-row button { flex: 1; cursor: pointer; font-size: 12.5px; padding: 8px; border-radius: 9px; border: 1px solid var(--panel-border); background: rgba(255,255,255,.05); color: var(--text); transition: all .15s; }
@@ -108,170 +151,321 @@
     #route-summary ol { margin: 6px 0 0; padding-left: 20px; }
     #route-summary li { margin: 2px 0; }
 
-    /* ---- Línea de tiempo de aves ---- */
+    .route-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+    .route-tabs button { flex: 1; cursor: pointer; font-size: 11.5px; padding: 7px; border-radius: 8px; border: 1px solid var(--panel-border); background: rgba(255,255,255,.05); color: var(--muted); }
+    .route-tabs button.active { background: var(--accent); color: #062b28; border-color: var(--accent); font-weight: 700; }
+    .sr-step-title { font-size: 12px; color: var(--accent); font-weight: 600; margin: 0 0 8px; }
+    .sr-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .sr-chips button { cursor: pointer; font-size: 11.5px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--panel-border); background: rgba(255,255,255,.05); color: var(--text); }
+    .sr-chips button.active { background: var(--accent2); color: #3a2600; border-color: var(--accent2); font-weight: 600; }
+    .dest-list { display: flex; flex-direction: column; gap: 6px; max-height: 140px; overflow-y: auto; margin-bottom: 8px; }
+    .dest-item { text-align: left; cursor: pointer; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--panel-border); background: rgba(255,255,255,.04); color: var(--text); }
+    .dest-item:hover { background: rgba(255,255,255,.08); }
+    .dest-item.selected { border-color: var(--accent); background: rgba(46,196,182,.12); }
+    .dest-item b { display: block; font-size: 12.5px; }
+    .dest-item small { color: var(--muted); font-size: 10.5px; line-height: 1.35; }
+    .dest-item .match { color: var(--accent2); font-size: 10px; }
+    .route-options { display: flex; flex-direction: column; gap: 6px; }
+    .route-opt { text-align: left; cursor: pointer; padding: 9px 10px; border-radius: 9px; border: 1px solid var(--panel-border); background: rgba(255,255,255,.04); color: var(--text); }
+    .route-opt:hover { background: rgba(255,255,255,.08); }
+    .route-opt.preview { box-shadow: inset 0 0 0 1px var(--accent); }
+    .route-opt.chosen { border-color: var(--accent); background: rgba(46,196,182,.15); }
+    .route-opt b { font-size: 12.5px; }
+    .route-opt small { display: block; color: var(--muted); font-size: 10.5px; margin-top: 3px; line-height: 1.35; }
+    .route-opt .rec { color: var(--accent2); font-size: 10px; font-weight: 700; }
+    .sr-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .sr-actions button { flex: 1; }
+    .sr-nav-links { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+    .sr-nav-links a {
+      display: block; text-align: center; font-size: 12px; font-weight: 600; padding: 8px;
+      border-radius: 9px; text-decoration: none; color: #062b28; background: var(--accent2);
+    }
+    .sr-nav-links a.secondary { background: rgba(255,255,255,.1); color: var(--text); border: 1px solid var(--panel-border); }
+
+    #quiz-overlay {
+      position: fixed; inset: 0; z-index: 30; display: none;
+      align-items: center; justify-content: center; background: rgba(6, 14, 24, .72); backdrop-filter: blur(4px);
+    }
+    #quiz-overlay.open { display: flex; }
+    .quiz-card { width: min(92vw, 420px); max-height: 85vh; overflow-y: auto; }
+    .quiz-card h2 { margin: 0 0 6px; font-size: 18px; color: var(--accent); }
+    .quiz-card p { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
+    .quiz-q { margin-bottom: 14px; }
+    .quiz-q label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+    .quiz-opts { display: flex; flex-direction: column; gap: 5px; }
+    .quiz-opts button { text-align: left; cursor: pointer; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--panel-border); background: rgba(255,255,255,.05); color: var(--text); font-size: 12px; }
+    .quiz-opts button.selected { border-color: var(--accent); background: rgba(46,196,182,.14); }
+    .profile-pill { display: inline-block; margin-top: 6px; font-size: 10px; color: var(--accent2); cursor: pointer; text-decoration: underline; }
+
+    /* ---- Timeline aves ---- */
     .timeline {
-      position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
-      z-index: 6; width: min(560px, 80vw); display: flex; align-items: center; gap: 12px;
-      background: var(--panel); color: var(--text);
-      border: 1px solid var(--panel-border); border-radius: 14px;
-      padding: 10px 16px; backdrop-filter: blur(10px); box-shadow: 0 8px 30px rgba(0,0,0,.35);
+      grid-column: 2; grid-row: 3; justify-self: center; align-self: end;
+      width: min(100%, 480px); z-index: 6;
+      display: flex; align-items: center; gap: 8px; padding: 8px 12px;
     }
     .timeline button { flex: none; cursor: pointer; width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--accent); color: #062b28; font-size: 14px; }
     .timeline input[type=range] { flex: 1; accent-color: var(--accent); cursor: pointer; }
     .timeline .tl-label { flex: none; font-size: 12px; color: var(--accent); font-weight: 600; min-width: 120px; text-align: right; }
     .timeline .tl-hint { flex: none; font-size: 10.5px; color: var(--muted); }
 
-    /* ---- Predicci?n migratoria: eBird + clima + OpenRouter ---- */
+    /* ---- Herramientas derecha (asistente + pronóstico) ---- */
+    .ui-tools { flex-shrink: 0; display: flex; flex-direction: column; gap: var(--ui-gap); max-height: 38vh; overflow-y: auto; }
     .forecast-card {
-      position: absolute; right: 24px; bottom: 24px; z-index: 6; width: min(340px, calc(100vw - 48px));
-      display: none; background: var(--panel); color: var(--text); border: 1px solid var(--panel-border);
-      border-radius: 14px; padding: 13px 15px; backdrop-filter: blur(10px); box-shadow: 0 8px 30px rgba(0,0,0,.35);
-      font-size: 12px; line-height: 1.42;
+      display: none; font-size: 12px; line-height: 1.4; max-height: 180px; overflow-y: auto;
     }
     .forecast-card h3 { margin: 0 0 5px; font-size: 13px; color: var(--accent); }
     .forecast-card p { margin: 5px 0; }
     .forecast-card .fc-meta { color: var(--muted); font-size: 10.5px; }
     .forecast-card button { margin-top: 8px; border: 0; border-radius: 8px; padding: 7px 9px; cursor: pointer; background: var(--accent); color: #062b28; font-weight: 700; }
 
-    .assistant-chat { position:absolute; right:24px; bottom:195px; z-index:6; width:min(340px,calc(100vw - 48px)); background:var(--panel); color:var(--text); border:1px solid var(--panel-border); border-radius:14px; padding:12px; box-shadow:0 8px 30px rgba(0,0,0,.35); }
+    .assistant-chat { max-height: 160px; overflow-y: auto; }
     .assistant-chat h3 { margin:0 0 5px; font-size:13px; color:var(--accent); }
     .assistant-chat p { margin:0 0 8px; color:var(--muted); font-size:11px; line-height:1.35; }
     .assistant-chat .chat-row { display:flex; gap:6px; }
     .assistant-chat input { min-width:0; flex:1; border:1px solid var(--panel-border); border-radius:8px; background:rgba(255,255,255,.07); color:var(--text); padding:8px; font-size:12px; }
     .assistant-chat button { border:0; border-radius:8px; background:var(--accent); color:#062b28; font-weight:700; cursor:pointer; padding:8px 10px; }
-    .assistant-chat .chat-answer { margin-top:8px; font-size:11.5px; line-height:1.4; color:var(--text); }
-    @media (max-width: 700px) { .assistant-chat { right:12px; bottom:150px; width:calc(100vw - 24px); } }
+    .assistant-chat .chat-answer { margin-top:8px; font-size:11.5px; line-height:1.4; color:var(--text); max-height: 72px; overflow-y: auto; }
+
+    .tool-toggle { width:100%; cursor:pointer; border:0; border-radius:8px; padding:7px 10px; font-size:11px; font-weight:600; background:rgba(255,255,255,.08); color:var(--muted); text-align:left; }
+    .tool-toggle:hover { color:var(--text); background:rgba(255,255,255,.12); }
+    .tool-body { display:none; }
+    .tool-body.is-open { display:block; }
+
+    .mapboxgl-ctrl-bottom-right { right: calc(var(--dock-w) + var(--ui-pad) + 4px) !important; bottom: var(--ui-pad) !important; }
+    .mapboxgl-ctrl-bottom-left { left: calc(var(--dock-w) + var(--ui-pad) + 4px) !important; bottom: var(--ui-pad) !important; }
+
+    @media (max-width: 900px) {
+      :root { --dock-w: 210px; }
+    }
+    @media (max-width: 680px) {
+      .ui-shell {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto 1fr auto auto;
+      }
+      #search { grid-column: 1 / -1; grid-row: 1; width: 100%; }
+      .ui-col-left { grid-column: 1; grid-row: 2 / 4; }
+      .ui-col-right { grid-column: 2; grid-row: 2 / 4; }
+      .timeline { grid-column: 1 / -1; grid-row: 5; width: 100%; }
+      .mapboxgl-ctrl-bottom-right, .mapboxgl-ctrl-bottom-left { bottom: 8px !important; }
+    }
 
   </style>
 </head>
 <body>
   <div id="map"></div>
 
-  <div id="search"></div>
+  <div class="ui-shell">
+    <div class="ui-col-left">
+      <div class="brand ui-card">
+        <h1>Twin<span>Map</span></h1>
+        <p>Gemelo digital turístico 🇸🇻</p>
+        <button id="island-btn" type="button">🏝️ Modo isla</button>
+        <button id="flat-btn" type="button">🗺️ Vista plana</button>
+      </div>
+      <div class="route-panel ui-card" id="route-panel" style="display:none">
+        <h2 class="route-main-title">🧭 Tu ruta personalizada</h2>
+        <div id="smart-route-panel">
+          <div class="location-bar">
+            <button type="button" id="sr-locate-btn">📍 Usar mi ubicación actual</button>
+            <div id="sr-origin-label">Origen: <b>pendiente</b> — pulsa el botón o permite GPS</div>
+          </div>
+          <div class="hint" id="smart-hint">Según tu perfil, te sugerimos destino y rutas Flash, Vibes y Zen.</div>
+          <div id="profile-summary"></div>
 
-  <div class="brand">
-    <h1>Twin<span>Map</span></h1>
-    <p>Digital Twin Turístico · Barra de Santiago 🇸🇻</p>
-    <button id="island-btn" type="button">🏝️ Modo isla</button>
-  </div>
+          <div id="sr-step-category">
+            <p class="sr-step-title">1 · ¿Qué tipo de lugar buscas?</p>
+            <div class="sr-chips" id="sr-categories">
+              <button type="button" data-cat="playa">🏖️ Playa</button>
+              <button type="button" data-cat="naturaleza">🌿 Naturaleza</button>
+              <button type="button" data-cat="comida">🍽️ Comida</button>
+              <button type="button" data-cat="cultura">🏛️ Cultura</button>
+              <button type="button" data-cat="aves">🐦 Aves</button>
+            </div>
+          </div>
 
-  <div class="panel" id="panel" style="display:none">
-    <h2>Capas del gemelo</h2>
+          <div id="sr-step-destination" style="display:none">
+            <p class="sr-step-title">2 · ¿Cuál destino? (ordenado por tu perfil)</p>
+            <div class="dest-list" id="dest-list"></div>
+            <div class="sr-actions">
+              <button type="button" id="sr-back-cat">← Tipo</button>
+              <button type="button" id="sr-calc-routes" class="primary" disabled>Ver rutas</button>
+            </div>
+          </div>
 
-    <label class="layer">
-      <input type="checkbox" id="lyr-3d" checked />
-      <span class="dot" style="background:#8ecae6"></span>
-      <span><span class="txt">Edificios 3D</span><br><span class="sub">Extrusión automática</span></span>
-    </label>
+          <div id="sr-step-routes" style="display:none">
+            <p class="sr-step-title">3 · Elige tu ruta en el mapa</p>
+            <div class="route-options" id="route-options"></div>
+            <div class="sr-actions">
+              <button type="button" id="sr-back-dest">← Destino</button>
+              <button type="button" id="sr-confirm-route" class="primary" disabled>🚗 Llévame</button>
+            </div>
+            <div id="sr-nav-links" class="sr-nav-links" style="display:none"></div>
+          </div>
+        </div>
 
-    <label class="layer">
-      <input type="checkbox" id="lyr-dept" checked />
-      <span class="dot" style="background:linear-gradient(90deg,#e07a5f,#457b9d,#81b29a)"></span>
-      <span><span class="txt">Departamentos</span><br><span class="sub">14 divisiones · al alejar</span></span>
-    </label>
-
-    <label class="layer">
-      <input type="checkbox" id="lyr-pois" checked />
-      <span class="dot" style="background:var(--accent2)"></span>
-      <span><span class="txt">Puntos de interés</span><br><span class="sub">OpenStreetMap · El Salvador</span></span>
-    </label>
-
-    <div class="legend" id="legend">
-      <span><i style="background:#ffbf69"></i>Comida</span>
-      <span><i style="background:#8ecae6"></i>Hospedaje</span>
-      <span><i style="background:#06d6a0"></i>Turismo</span>
-      <span><i style="background:#e07a5f"></i>Histórico</span>
-      <span><i style="background:#48cae4"></i>Playa</span>
-      <span><i style="background:#90be6d"></i>Parque</span>
+        <details class="manual-route-details" id="manual-route-details">
+          <summary>Ruta manual (avanzado)</summary>
+          <div id="manual-route-panel">
+            <div class="hint" id="route-hint">Fija tu punto de partida, luego agrega paradas en el mapa.</div>
+            <div class="route-row">
+              <button id="route-start-btn">📍 Estoy acá</button>
+              <button id="route-pick-btn" type="button">Elegir en mapa</button>
+              <select id="route-mode">
+                <option value="driving" selected>🚗 Auto</option>
+                <option value="walking">🚶 A pie</option>
+                <option value="cycling">🚴 Bici</option>
+              </select>
+            </div>
+            <div class="route-row"><button id="route-stop-btn">➕ Agregar parada</button></div>
+            <div class="route-row"><button id="route-clear-btn">🗑️ Limpiar</button></div>
+            <div id="route-summary"></div>
+          </div>
+        </details>
+      </div>
+      <div class="ui-col-scroll">
+        <div class="vitals ui-card" id="vitals-panel" style="display:none" aria-live="polite">
+          <h2>Clima local</h2>
+          <div id="vitals-body">Cargando clima…</div>
+        </div>
+      </div>
     </div>
 
-    <label class="layer">
-      <input type="checkbox" id="lyr-heat" />
-      <span class="dot" style="background:#ff6b6b"></span>
-      <span><span class="txt">Afluencia estimada</span><br><span class="sub" id="crowds-sub">SerpAPI · 14 departamentos</span></span>
-    </label>
+    <div id="search"></div>
 
-    <label class="layer">
-      <input type="checkbox" id="lyr-traffic" checked />
-      <span class="dot" style="background:linear-gradient(90deg,#2ec4b6,#ffbf69,#ff6b6b)"></span>
-      <span><span class="txt">Trafico y congestion</span><br><span class="sub" id="traffic-sub">Mapbox Traffic | segun cobertura</span></span>
-    </label>
+    <div class="ui-col-right">
+      <div class="panel ui-card" id="panel" style="display:none">
+        <h2>Capas del gemelo</h2>
 
-    <label class="layer">
-      <input type="checkbox" id="lyr-hotspots" />
-      <span class="dot" style="background:#06d6a0"></span>
-      <span><span class="txt">Biodiversidad</span><br><span class="sub">eBird · prob. de reavistamiento</span></span>
-    </label>
+        <label class="layer">
+          <input type="checkbox" id="lyr-3d" checked />
+          <span class="dot" style="background:#8ecae6"></span>
+          <span><span class="txt">Edificios 3D</span><br><span class="sub">Extrusión automática</span></span>
+        </label>
 
-    <label class="layer">
-      <input type="checkbox" id="lyr-nature" checked />
-      <span class="dot" style="background:#90be6d"></span>
-      <span><span class="txt">Naturaleza de El Salvador</span><br><span class="sub" id="nature-sub">Catalogo de referencia</span></span>
-    </label>
+        <label class="layer">
+          <input type="checkbox" id="lyr-dept" checked />
+          <span class="dot" style="background:linear-gradient(90deg,#e07a5f,#457b9d,#81b29a)"></span>
+          <span><span class="txt">Departamentos</span><br><span class="sub">14 divisiones · al alejar</span></span>
+        </label>
 
-    <label class="layer">
-      <input type="checkbox" id="lyr-mobility" />
-      <span class="dot" style="background:#f4a261"></span>
-      <span><span class="txt">Movilidad estimada</span><br><span class="sub">Patrones de referencia, no en vivo</span></span>
-    </label>
+        <label class="layer">
+          <input type="checkbox" id="lyr-pois" checked />
+          <span class="dot" style="background:var(--accent2)"></span>
+          <span><span class="txt">Puntos de interés</span><br><span class="sub">OpenStreetMap · El Salvador</span></span>
+        </label>
 
-    <label class="layer">
-      <input type="checkbox" id="lyr-events" />
-      <span class="dot" style="background:#c77dff"></span>
-      <span><span class="txt">Agenda cultural</span><br><span class="sub">Eventos recurrentes de referencia</span></span>
-    </label>
+        <label class="layer">
+          <input type="checkbox" id="lyr-parking" />
+          <span class="dot" style="background:#7bdff2"></span>
+          <span><span class="txt">Parqueos</span><br><span class="sub" id="parking-sub">OpenStreetMap</span></span>
+        </label>
 
-    <div class="status" id="status">Cargando mapa...</div>
+        <div class="legend" id="legend">
+          <span><i style="background:#ffbf69"></i>Comida</span>
+          <span><i style="background:#8ecae6"></i>Hospedaje</span>
+          <span><i style="background:#06d6a0"></i>Turismo</span>
+          <span><i style="background:#e07a5f"></i>Histórico</span>
+          <span><i style="background:#48cae4"></i>Playa</span>
+          <span><i style="background:#90be6d"></i>Parque</span>
+        </div>
+
+        <label class="layer">
+          <input type="checkbox" id="lyr-heat" />
+          <span class="dot" style="background:#ff6b6b"></span>
+          <span><span class="txt">Flujo y capacidad</span><br><span class="sub" id="crowds-sub">SerpAPI</span></span>
+        </label>
+
+        <label class="layer">
+          <input type="checkbox" id="lyr-traffic" checked />
+          <span class="dot" style="background:linear-gradient(90deg,#2ec4b6,#ffbf69,#ff6b6b)"></span>
+          <span><span class="txt">Tráfico</span><br><span class="sub" id="traffic-sub">Mapbox Traffic</span></span>
+        </label>
+
+        <label class="layer">
+          <input type="checkbox" id="lyr-hotspots" />
+          <span class="dot" style="background:#06d6a0"></span>
+          <span><span class="txt">Biodiversidad</span><br><span class="sub">eBird</span></span>
+        </label>
+
+        <label class="layer">
+          <input type="checkbox" id="lyr-nature" checked />
+          <span class="dot" style="background:#90be6d"></span>
+          <span><span class="txt">Naturaleza</span><br><span class="sub" id="nature-sub">Catálogo</span></span>
+        </label>
+
+        <label class="layer">
+          <input type="checkbox" id="lyr-mobility" />
+          <span class="dot" style="background:#f4a261"></span>
+          <span><span class="txt">Movilidad ref.</span><br><span class="sub">Patrones estimados</span></span>
+        </label>
+
+        <label class="layer">
+          <input type="checkbox" id="lyr-events" />
+          <span class="dot" style="background:#c77dff"></span>
+          <span><span class="txt">Agenda cultural</span><br><span class="sub">Eventos ref.</span></span>
+        </label>
+
+        <div class="status" id="status">Cargando mapa…</div>
+      </div>
+
+      <div class="ui-tools">
+        <div class="ui-card">
+          <button type="button" class="tool-toggle" data-target="assistant-body" aria-expanded="false">🧭 Ruta inteligente</button>
+          <div class="tool-body" id="assistant-body">
+            <section class="assistant-chat" aria-label="Asistente de rutas">
+              <p>Pide hotel, comida o ambos cerca de tu ubicación.</p>
+              <div class="chat-row"><input id="assistant-input" maxlength="500" placeholder="Ej. hotel y cena cerca" /><button id="assistant-send" type="button">Enviar</button></div>
+              <div class="chat-answer" id="assistant-answer">Lugares de OpenStreetMap; la IA los ordena.</div>
+            </section>
+          </div>
+        </div>
+        <div class="ui-card" id="forecast-wrap" style="display:none">
+          <button type="button" class="tool-toggle" data-target="forecast-body" aria-expanded="false">🐦 Pronóstico migratorio</button>
+          <div class="tool-body" id="forecast-body">
+            <div class="forecast-card" id="forecast-card" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline ui-card" id="bio-timeline" style="display:none">
+      <button id="bio-play" type="button">▶</button>
+      <input type="range" id="bio-time" min="0" max="1" value="1" disabled />
+      <span class="tl-label" id="bio-time-label">—</span>
+      <span class="tl-hint">eBird</span>
+    </div>
   </div>
 
-  <div class="route-panel" id="route-panel" style="display:none">
-    <h2>🧭 Arma tu ruta</h2>
-    <div class="hint" id="route-hint">Fija tu punto de partida, luego haz clic para agregar los lugares que quieres visitar.</div>
-    <div class="route-row">
-      <button id="route-start-btn">📍 Estoy acá</button>
-      <button id="route-pick-btn" type="button">Elegir en mapa</button>
-      <select id="route-mode">
-        <option value="driving" selected>🚗 Auto</option>
-        <option value="walking">🚶 A pie</option>
-        <option value="cycling">🚴 Bici</option>
-      </select>
+  <div id="quiz-overlay" role="dialog" aria-modal="true" aria-labelledby="quiz-title">
+    <div class="ui-card quiz-card">
+      <h2 id="quiz-title">Tu perfil turístico</h2>
+      <p>Respondemos 4 preguntas para recomendar destinos y rutas (Flash, Vibes, Zen).</p>
+      <div id="quiz-body"></div>
+      <div class="route-row" style="margin-top:12px">
+        <button type="button" id="quiz-skip">Saltar</button>
+        <button type="button" id="quiz-next" class="primary">Siguiente</button>
+      </div>
     </div>
-    <div class="route-row">
-      <button id="route-stop-btn">➕ Agregar parada</button>
-    </div>
-    <div class="route-row">
-      <button id="route-clear-btn">🗑️ Limpiar</button>
-    </div>
-    <div id="route-summary"></div>
   </div>
-
-  <div class="timeline" id="bio-timeline" style="display:none">
-    <button id="bio-play" type="button">▶</button>
-    <input type="range" id="bio-time" min="0" max="1" value="1" disabled />
-    <span class="tl-label" id="bio-time-label">—</span>
-    <span class="tl-hint">🐦 aves por fecha (eBird)</span>
-  </div>
-
-  <div class="forecast-card" id="forecast-card" aria-live="polite"></div>
-
-  <section class="assistant-chat" aria-label="Asistente de rutas">
-    <h3>Ruta inteligente</h3>
-    <p>Pide hotel, comida o ambos. Usa tu ubicacion o el centro actual del mapa.</p>
-    <div class="chat-row"><input id="assistant-input" maxlength="500" placeholder="Ej. hotel cerca de la playa y cena" /><button id="assistant-send" type="button">Enviar</button></div>
-    <div class="chat-answer" id="assistant-answer">Los lugares salen de OpenStreetMap; la IA solo los ordena.</div>
-  </section>
 
   <div id="token-warn">
     <div class="card">
-      <h2>Falta tu token de Mapbox</h2>
-      <p>Abre <code>config.js</code> y pega tu token público (empieza con <code>pk.</code>).</p>
-      <p>Créalo gratis en <a href="https://account.mapbox.com" target="_blank" rel="noopener">account.mapbox.com</a> → <em>Default public token</em>.</p>
+      <h2>Configura Mapbox para ver el mapa</h2>
+      <p>En local: copia <code>config.example.js</code> → <code>config.js</code> y pega tu token <code>pk.</code></p>
+      <p>En Netlify: variable de entorno <code>MAPBOX_TOKEN</code> (Site settings → Environment variables).</p>
+      <p>Token gratis en <a href="https://account.mapbox.com" target="_blank" rel="noopener">account.mapbox.com</a></p>
     </div>
   </div>
 
   <script>
     const CFG = window.TWINMAP_CONFIG || {};
-    const hasToken = CFG.MAPBOX_TOKEN && CFG.MAPBOX_TOKEN.startsWith("pk.");
+    const API = (CFG.API_BASE || "http://localhost:3001").replace(/\/$/, "");
+    const mapboxToken =
+      (CFG.MAPBOX_TOKEN && CFG.MAPBOX_TOKEN.startsWith("pk.") ? CFG.MAPBOX_TOKEN : "") ||
+      (document.querySelector('meta[name="mapbox-token"]')?.content?.startsWith("pk.")
+        ? document.querySelector('meta[name="mapbox-token"]').content
+        : "");
+    const hasToken = Boolean(mapboxToken);
 
     if (!hasToken) {
       document.getElementById("token-warn").style.display = "flex";
@@ -282,16 +476,20 @@
     function setStatus(html) { document.getElementById("status").innerHTML = html; }
 
     function boot() {
-      mapboxgl.accessToken = CFG.MAPBOX_TOKEN;
+      mapboxgl.accessToken = mapboxToken;
       document.getElementById("panel").style.display = "block";
+
+      // Modo plano: mapa vectorial de colores planos, SIN satélite, relieve ni 3D
+      const flatMode = new URLSearchParams(location.search).get("flat") === "1";
+      window._flatMode = flatMode;
 
       const map = new mapboxgl.Map({
         container: "map",
-        style: "mapbox://styles/mapbox/satellite-streets-v12",
+        style: flatMode ? "mapbox://styles/mapbox/streets-v12" : "mapbox://styles/mapbox/satellite-streets-v12",
         center: CFG.CENTER || [-90.05, 13.74],
         zoom: CFG.ZOOM || 13,
-        pitch: 60,
-        bearing: -20,
+        pitch: flatMode ? 0 : 60,
+        bearing: flatMode ? 0 : -20,
         antialias: true,
       });
 
@@ -311,33 +509,36 @@
       document.getElementById("search").appendChild(geocoder.onAdd(map));
       window._geocoder = geocoder; // para depurar en consola
 
-      map.on("style.load", () => {
-        // ---- Terreno 3D + cielo ----
-        map.addSource("dem", {
-          type: "raster-dem",
-          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-          tileSize: 512, maxzoom: 14,
-        });
-        map.setTerrain({ source: "dem", exaggeration: 1.4 });
+      map.on("style.load", async () => {
+        // En modo plano NO se agrega relieve, niebla ni edificios 3D (colores planos, sin elevación)
+        if (!flatMode) {
+          // ---- Terreno 3D + cielo ----
+          map.addSource("dem", {
+            type: "raster-dem",
+            url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+            tileSize: 512, maxzoom: 14,
+          });
+          map.setTerrain({ source: "dem", exaggeration: 1.4 });
 
-        // Cielo atmosférico
-        map.setFog({ "horizon-blend": 0.2, color: "#cfe8f0", "high-color": "#245", "space-color": "#0d1b2a" });
+          // Cielo atmosférico
+          map.setFog({ "horizon-blend": 0.2, color: "#cfe8f0", "high-color": "#245", "space-color": "#0d1b2a" });
 
-        // ---- Edificios 3D (fill-extrusion desde tiles vectoriales) ----
-        map.addLayer({
-          id: "3d-buildings",
-          source: "composite",
-          "source-layer": "building",
-          filter: ["==", "extrude", "true"],
-          type: "fill-extrusion",
-          minzoom: 14,
-          paint: {
-            "fill-extrusion-color": "#8ecae6",
-            "fill-extrusion-height": ["get", "height"],
-            "fill-extrusion-base": ["get", "min_height"],
-            "fill-extrusion-opacity": 0.85,
-          },
-        });
+          // ---- Edificios 3D (fill-extrusion desde tiles vectoriales) ----
+          map.addLayer({
+            id: "3d-buildings",
+            source: "composite",
+            "source-layer": "building",
+            filter: ["==", "extrude", "true"],
+            type: "fill-extrusion",
+            minzoom: 14,
+            paint: {
+              "fill-extrusion-color": "#8ecae6",
+              "fill-extrusion-height": ["get", "height"],
+              "fill-extrusion-base": ["get", "min_height"],
+              "fill-extrusion-opacity": 0.85,
+            },
+          });
+        }
 
         // Punto de referencia principal
         new mapboxgl.Marker({ color: "#2ec4b6" })
@@ -350,15 +551,20 @@
         addDepartments(map);
         addIslandMask(map);
         loadPOIs(map);
+        addParking(map);
         addCrowds(map);
-        addTraffic(map);
+        await addTraffic(map);
         addBiodiversity(map);
         addNatureCatalog(map);
         addReferenceLayers(map);
         addMigrationForecast(map);
+        addVitalsDashboard(map);
         wireToggles(map);
         wireRoute(map);
+        wireSmartRoute(map);
+        wireQuiz(map);
         wireAssistant(map);
+        wireToolToggles();
         setStatus("Mapa listo · <b>Barra de Santiago</b>");
       });
 
@@ -376,6 +582,7 @@
       historico: "#e07a5f", turismo: "#06d6a0", parque: "#90be6d", otro: "#adb5bd",
     };
     const POI_LAYERS = ["clusters", "cluster-count", "pois-layer"];
+    const PARKING_LAYERS = ["parking-clusters", "parking-cluster-count", "parking-points"];
 
     const DEPT_LAYERS = ["dept-fill", "dept-line", "dept-label"];
     const TRAFFIC_LAYERS = ["traffic-live"];
@@ -458,11 +665,37 @@
       });
     }
 
+
+    function placeDetailsHtml(p) {
+      const fields = [
+        p.opening_hours ? "Horario: " + p.opening_hours : "",
+        p.cuisine ? "Comida: " + p.cuisine.replaceAll(";", ", ") : "",
+        p.stars ? "Estrellas: " + p.stars : "",
+        p.rooms ? "Habitaciones: " + p.rooms : "",
+        p.internet_access ? "Internet: " + p.internet_access : "",
+        p.wheelchair ? "Accesibilidad: " + p.wheelchair : "",
+        p.outdoor_seating ? "Mesas exteriores: " + p.outdoor_seating : "",
+        p.takeaway ? "Para llevar: " + p.takeaway : "",
+        p.delivery ? "Delivery: " + p.delivery : ""
+      ].filter(Boolean);
+      const rows = fields.map((value) => "<br><small>" + escapeHtml(value) + "</small>").join("");
+      return rows + (p.availability ? "<br><small>Disponibilidad: " + escapeHtml(p.availability) + "</small>" : "");
+    }
+
     // ============ CAPA: POIs desde cache local (data/pois.geojson) con clustering ============
     async function loadPOIs(map) {
       try {
         const res = await fetch("data/pois.geojson");
         const geojson = await res.json();
+        try {
+          const detailsResponse = await fetch("data/place-details.geojson");
+          if (detailsResponse.ok) {
+            const details = await detailsResponse.json();
+            const keyOf = (feature) => (feature.properties.name || "").trim().toLowerCase() + "|" + feature.geometry.coordinates.map((n) => Number(n).toFixed(5)).join(",");
+            const index = new Map((details.features || []).map((feature) => [keyOf(feature), feature.properties]));
+            geojson.features.forEach((feature) => { const rich = index.get(keyOf(feature)); if (rich) Object.assign(feature.properties, rich); });
+          }
+        } catch (error) { console.warn("Place details cache error", error); }
         const total = geojson.features.length;
 
         map.addSource("pois", {
@@ -512,7 +745,7 @@
           const web = p.website ? `<br><a href="${p.website}" target="_blank">web</a>` : "";
           const tel = p.phone ? `<br>📞 ${p.phone}` : "";
           new mapboxgl.Popup().setLngLat(e.lngLat)
-            .setHTML(`<b>${p.name}</b><br><small>${p.cat} · ${p.kind}</small>${tel}${web}`).addTo(map);
+            .setHTML(`<b>${p.name}</b><br><small>${p.cat} · ${p.kind}</small>${tel}${web}${placeDetailsHtml(p)}`).addTo(map);
         });
         ["clusters", "pois-layer"].forEach((id) => {
           map.on("mouseenter", id, () => map.getCanvas().style.cursor = "pointer");
@@ -526,61 +759,184 @@
       }
     }
 
+
+    // ============ CAPA: Parqueos publicos de OpenStreetMap ============
+    async function addParking(map) {
+      const empty = { type: "FeatureCollection", features: [] };
+      map.addSource("parking", { type: "geojson", data: empty, cluster: true, clusterMaxZoom: 13, clusterRadius: 46 });
+      map.addLayer({ id: "parking-clusters", type: "circle", source: "parking", filter: ["has", "point_count"], layout: { visibility: "none" }, paint: { "circle-radius": ["step", ["get", "point_count"], 14, 20, 18, 80, 24], "circle-color": "#7bdff2", "circle-opacity": 0.88, "circle-stroke-width": 2, "circle-stroke-color": "#0d1b2a" } });
+      map.addLayer({ id: "parking-cluster-count", type: "symbol", source: "parking", filter: ["has", "point_count"], layout: { visibility: "none", "text-field": ["get", "point_count_abbreviated"], "text-size": 11 }, paint: { "text-color": "#0d1b2a" } });
+      map.addLayer({ id: "parking-points", type: "circle", source: "parking", filter: ["!", ["has", "point_count"]], layout: { visibility: "none" }, paint: { "circle-radius": 6, "circle-color": "#7bdff2", "circle-stroke-width": 1.5, "circle-stroke-color": "#0d1b2a" } });
+      map.on("click", "parking-clusters", (event) => { const feature = map.queryRenderedFeatures(event.point, { layers: ["parking-clusters"] })[0]; map.getSource("parking").getClusterExpansionZoom(feature.properties.cluster_id, (error, zoom) => { if (!error) map.easeTo({ center: feature.geometry.coordinates, zoom }); }); });
+      map.on("click", "parking-points", (event) => { const p=event.features[0].properties; const details=[p.type?"Tipo: "+p.type:"",p.capacity?"Capacidad: "+p.capacity:"",p.fee?"Cobro: "+p.fee:"",p.opening_hours?"Horario: "+p.opening_hours:"",p.covered?"Cubierto: "+p.covered:"",p.wheelchair?"Accesibilidad: "+p.wheelchair:""].filter(Boolean).map(escapeHtml).join("<br>"); new mapboxgl.Popup().setLngLat(event.lngLat).setHTML("<b>P " + escapeHtml(p.name) + "</b><br>" + details + "<br><small>OpenStreetMap. No muestra espacios libres en tiempo real.</small>").addTo(map); });
+      ["parking-clusters", "parking-points"].forEach((id) => { map.on("mouseenter", id, () => map.getCanvas().style.cursor = "pointer"); map.on("mouseleave", id, () => map.getCanvas().style.cursor = ""); });
+      try { const response=await fetch("data/parking.geojson"); if(!response.ok) throw new Error("No parking cache"); const data=await response.json(); map.getSource("parking").setData(data); const sub=document.getElementById("parking-sub"); if(sub) sub.textContent=(data.features?.length||0)+" parqueos ? no disponibilidad en vivo"; } catch(error) { console.warn("Parking cache error",error); }
+    }
+
     // ============ CAPA: Afluencia desde SerpAPI (Google Popular Times) ============
+    // Semáforo de CAPACIDAD DE CARGA (#2): óptimo <50 · moderado 50-75 · saturado >=75
+    const CAP_COLOR = ["step", ["coalesce", ["get", "busyness"], 0], "#2ec4b6", 50, "#ffbf69", 75, "#ff6b6b"];
+    function capStatus(b) {
+      if (b >= 75) return { emoji: "🔴", txt: "Saturado", rec: "Sobre su capacidad óptima. Visita más temprano o elige otra zona." };
+      if (b >= 50) return { emoji: "🟠", txt: "Moderado", rec: "Acercándose al límite. Aún se disfruta, pero llenándose." };
+      return { emoji: "🟢", txt: "Óptimo", rec: "Por debajo de su capacidad. Buen momento para visitar." };
+    }
+
     async function addCrowds(map) {
       const empty = { type: "FeatureCollection", features: [] };
       map.addSource("crowds", { type: "geojson", data: empty });
+
+      // Halo pulsante SOLO en lugares saturados (llama la atención sobre la sobrecarga)
+      map.addLayer({
+        id: "crowds-pulse", type: "circle", source: "crowds",
+        layout: { visibility: "none" }, filter: [">=", ["coalesce", ["get", "busyness"], 0], 75],
+        paint: { "circle-radius": 18, "circle-color": "#ff6b6b", "circle-opacity": 0.35, "circle-stroke-width": 0 },
+      });
       map.addLayer({
         id: "crowds-heat", type: "heatmap", source: "crowds", layout: { visibility: "none" },
         paint: { "heatmap-weight": ["coalesce", ["get", "busyness"], 0], "heatmap-intensity": 1.2, "heatmap-radius": 45, "heatmap-opacity": 0.8, "heatmap-color": ["interpolate", ["linear"], ["heatmap-density"], 0, "rgba(0,0,0,0)", 0.35, "#2ec4b6", 0.65, "#ffbf69", 1, "#ff6b6b"] },
       });
       map.addLayer({
         id: "crowds-points", type: "circle", source: "crowds", layout: { visibility: "none" }, filter: [">=", ["get", "busyness"], 0],
-        paint: { "circle-radius": ["interpolate", ["linear"], ["get", "busyness"], 0, 8, 50, 15, 100, 23], "circle-color": ["interpolate", ["linear"], ["get", "busyness"], 0, "#2ec4b6", 45, "#ffbf69", 75, "#ff6b6b"], "circle-opacity": 0.88, "circle-stroke-width": 2, "circle-stroke-color": "#0d1b2a" },
+        paint: {
+          "circle-radius": ["interpolate", ["linear"], ["coalesce", ["get", "busyness"], 0], 0, 9, 100, 22],
+          "circle-color": CAP_COLOR,
+          "circle-opacity": 0.92, "circle-stroke-width": 2, "circle-stroke-color": "#0d1b2a",
+        },
       });
       map.on("click", "crowds-points", (event) => {
         const p = event.features[0].properties;
-        new mapboxgl.Popup().setLngLat(event.lngLat).setHTML(`<b>${p.name}</b><br>Intensidad estimada: <b>${Math.round(p.busyness)}%</b><br><small>${p.info || ""}</small>`).addTo(map);
+        const b = Math.round(p.busyness);
+        const s = capStatus(b);
+        const pico = p.peak_hour ? `<br>⏰ Hora pico: <b>${p.peak_hour}</b>` : "";
+        new mapboxgl.Popup().setLngLat(event.lngLat).setHTML(
+          `<b>${p.name}</b><br>Ocupación: <b>${b}%</b> ${s.emoji} <b>${s.txt}</b>${p.is_live ? " · en vivo" : ""}${pico}<br><small>${s.rec}</small>`
+        ).addTo(map);
       });
       map.on("mouseenter", "crowds-points", () => map.getCanvas().style.cursor = "pointer");
       map.on("mouseleave", "crowds-points", () => map.getCanvas().style.cursor = "");
       try {
-        const response = await fetch("http://localhost:3001/api/crowds");
+        const response = await fetch(API + "/api/crowds");
         const payload = await response.json();
         if (!response.ok || !payload.success) throw new Error(payload.error || "No se pudo consultar SerpAPI.");
-        const crowds = payload.data || empty;
-        map.getSource("crowds").setData(crowds);
-        const valid = crowds.features.filter((feature) => Number.isFinite(feature.properties?.busyness)).length;
-        const sub = document.getElementById("crowds-sub");
-        if (sub) sub.textContent = valid ? `SerpAPI · ${valid} lugares con intensidad` : "SerpAPI · sin intensidad para esta zona";
-        if (valid) setStatus(`Afluencia lista · <b>${valid}</b> lugares medidos por SerpAPI`);
+        applyCrowdsData(map, payload.data || empty, payload.source || "api");
       } catch (error) {
+        try {
+          const cache = await fetch("data/crowds.geojson");
+          if (cache.ok) {
+            applyCrowdsData(map, await cache.json(), "cache");
+            const sub = document.getElementById("crowds-sub");
+            if (sub) sub.textContent = "Cache local · backend apagado";
+            return;
+          }
+        } catch { /* sigue al warn */ }
         const sub = document.getElementById("crowds-sub");
-        if (sub) sub.textContent = "SerpAPI no disponible · usa el caché";
+        if (sub) sub.textContent = "SerpAPI no disponible · arranca el backend";
         console.warn("Crowds API error", error);
       }
     }
-    // ============ CAPA: Trafico en tiempo real (Mapbox Traffic) ============
-    function addTraffic(map) {
+
+    function applyCrowdsData(map, crowds, source) {
+      const empty = { type: "FeatureCollection", features: [] };
+      map.getSource("crowds").setData(crowds);
+      const conDato = (crowds.features || []).filter((f) => Number.isFinite(f.properties?.busyness));
+      const saturados = conDato.filter((f) => f.properties.busyness >= 75).length;
+      const sub = document.getElementById("crowds-sub");
+      if (sub) sub.textContent = conDato.length ? `${conDato.length} lugares · ${saturados} saturados` : "SerpAPI · sin dato para esta zona";
+      if (conDato.length) setStatus(`Flujo y capacidad · <b>${conDato.length}</b> lugares · <b>${saturados}</b> saturados (${source})`);
+      startCrowdPulse(map);
+    }
+
+    // Animación del halo pulsante (solo repinta cuando la capa está visible)
+    let crowdPulseRAF = null;
+    function startCrowdPulse(map) {
+      if (crowdPulseRAF) return;
+      const step = (t) => {
+        if (map.getLayer("crowds-pulse") && map.getLayoutProperty("crowds-points", "visibility") === "visible") {
+          const phase = (Math.sin(t / 500) + 1) / 2; // 0..1
+          map.setPaintProperty("crowds-pulse", "circle-radius", 16 + phase * 18);
+          map.setPaintProperty("crowds-pulse", "circle-opacity", 0.45 - phase * 0.35);
+        }
+        crowdPulseRAF = requestAnimationFrame(step);
+      };
+      crowdPulseRAF = requestAnimationFrame(step);
+    }
+    // ============ CAPA: Tráfico (Mapbox + TomTom vía backend) ============
+    async function addTraffic(map) {
       const sub = document.getElementById("traffic-sub");
+      let tomtomReady = false;
+
+      const updateTrafficHint = () => {
+        if (!sub) return;
+        const z = map.getZoom();
+        if (z < 9) {
+          sub.textContent = tomtomReady ? "TomTom · acerca zoom 10+" : "Acerca a ciudad · zoom 11+";
+          return;
+        }
+        const mapboxN = map.getLayer("traffic-live")
+          ? map.queryRenderedFeatures({ layers: ["traffic-live"] }).length
+          : 0;
+        if (tomtomReady) {
+          sub.textContent = mapboxN > 0
+            ? `TomTom + Mapbox · ${mapboxN} tramos`
+            : "TomTom activo · overlay en mapa";
+          return;
+        }
+        sub.textContent = mapboxN > 0 ? `${mapboxN} tramos Mapbox` : "Sin tráfico Mapbox en esta zona";
+      };
+
       try {
         map.addSource("traffic", { type: "vector", url: "mapbox://mapbox.mapbox-traffic-v1" });
         map.addLayer({
           id: "traffic-live", type: "line", source: "traffic", "source-layer": "traffic",
-          minzoom: 7, layout: { visibility: "visible", "line-cap": "round", "line-join": "round" },
+          minzoom: 6,
+          layout: { visibility: "visible", "line-cap": "round", "line-join": "round" },
           paint: {
-            "line-color": ["match", ["get", "congestion"], "low", "#2ec4b6", "moderate", "#ffbf69", "heavy", "#ff8c42", "severe", "#ff4d4d", "#8a9aa5"],
-            "line-width": ["interpolate", ["linear"], ["zoom"], 7, 2, 12, 5],
-            "line-opacity": 0.88
-          }
+            "line-color": ["match", ["get", "congestion"], "low", "#2ec4b6", "moderate", "#ffbf69", "heavy", "#ff8c42", "severe", "#ff4d4d", "#c8d6df"],
+            "line-width": ["interpolate", ["linear"], ["zoom"], 8, 2.5, 11, 5, 14, 9, 16, 14],
+            "line-opacity": 0.95,
+          },
         });
         map.on("error", (event) => {
-          if (event?.sourceId === "traffic" && sub) sub.textContent = "Trafico no disponible para esta cobertura";
+          if (event?.sourceId === "traffic" && sub && !tomtomReady) {
+            sub.textContent = "Tráfico no disponible (token/cobertura)";
+          }
         });
       } catch (error) {
-        if (sub) sub.textContent = "Trafico no disponible";
-        console.warn("Traffic layer error", error);
+        console.warn("Mapbox traffic layer error", error);
       }
+
+      try {
+        const statusRes = await fetch(`${API}/api/traffic/status`);
+        if (statusRes.ok) {
+          const status = await statusRes.json();
+          if (status.providers?.tomtom) {
+            map.addSource("traffic-tomtom", {
+              type: "raster",
+              tiles: [`${API}/api/traffic/tiles/{z}/{x}/{y}.png`],
+              tileSize: 256,
+              minzoom: 0,
+              maxzoom: 22,
+            });
+            map.addLayer({
+              id: "traffic-tomtom",
+              type: "raster",
+              source: "traffic-tomtom",
+              minzoom: 6,
+              paint: { "raster-opacity": 0.72, "raster-fade-duration": 0 },
+            });
+            TRAFFIC_LAYERS.push("traffic-tomtom");
+            tomtomReady = true;
+            if (sub) sub.textContent = "TomTom conectado";
+          }
+        }
+      } catch (error) {
+        console.warn("TomTom traffic unavailable", error);
+      }
+
+      map.on("zoomend", updateTrafficHint);
+      map.on("moveend", updateTrafficHint);
+      map.once("idle", updateTrafficHint);
     }
 
 
@@ -669,7 +1025,7 @@
       map.on("mouseleave", "fauna-layer", () => map.getCanvas().style.cursor = "");
       let birds = null;
       try {
-        const response = await fetch("http://localhost:3001/api/birds");
+        const response = await fetch(API + "/api/birds");
         const payload = await response.json();
         if (!response.ok || !payload.success) throw new Error(payload.error || "No se pudo consultar eBird.");
         birds = payload.data;
@@ -701,7 +1057,7 @@
     }
     async function addMigrationForecast(map) {
       let forecast = null;
-      for (const url of ["http://localhost:3001/api/birds/forecast", "data/forecast.json"]) {
+      for (const url of [API + "/api/birds/forecast", "data/forecast.json"]) {
         try {
           const response = await fetch(url);
           if (!response.ok) continue;
@@ -756,7 +1112,7 @@
           const button = event.currentTarget;
           button.disabled = true; button.textContent = "Actualizando IA...";
           try {
-            const response = await fetch("http://localhost:3001/api/birds/forecast?refresh=1");
+            const response = await fetch(API + "/api/birds/forecast?refresh=1");
             const payload = await response.json();
             if (!response.ok || !payload.success) throw new Error(payload.error || "No se pudo actualizar");
             window.location.reload();
@@ -767,6 +1123,7 @@
         };
       };
       card.style.display = "block";
+      document.getElementById("forecast-wrap").style.display = "block";
       renderDay(0);
     }
 
@@ -958,6 +1315,486 @@
       routeHint("Fija tu punto de partida, luego agrega las paradas.");
     }
 
+    // ============ Quiz de perfil + rutas inteligentes personalizadas ============
+    const PROFILE_KEY = "twinmapProfile";
+    const QUIZ_QUESTIONS = [
+      {
+        key: "pace", label: "¿Qué ritmo prefieres?",
+        options: [
+          { value: "flash", text: "⚡ Rápido — maximizar tiempo" },
+          { value: "balance", text: "⚖️ Equilibrado" },
+          { value: "zen", text: "🌿 Tranquilo — sin prisa" },
+        ],
+      },
+      {
+        key: "interest", label: "¿Qué te interesa más?",
+        options: [
+          { value: "playa", text: "🏖️ Playa y costa" },
+          { value: "naturaleza", text: "🌿 Naturaleza y humedales" },
+          { value: "gastronomia", text: "🍽️ Gastronomía" },
+          { value: "aves", text: "🐦 Aves y biodiversidad" },
+          { value: "cultura", text: "🏛️ Cultura e historia" },
+        ],
+      },
+      {
+        key: "crowds", label: "¿Cómo te llevas con las multitudes?",
+        options: [
+          { value: "avoid", text: "Evitarlas" },
+          { value: "ok", text: "Me da igual" },
+          { value: "like", text: "Me gusta el ambiente" },
+        ],
+      },
+      {
+        key: "transport", label: "¿Cómo te mueves?",
+        options: [
+          { value: "driving", text: "🚗 Auto" },
+          { value: "walking", text: "🚶 A pie" },
+          { value: "cycling", text: "🚴 Bici" },
+        ],
+      },
+    ];
+
+    const smartState = { category: null, destination: null, origin: null, routes: [], previewId: null, chosenId: null, destMarker: null, originMarker: null };
+    let quizStep = 0;
+    let quizDraft = {};
+
+    function loadProfile() {
+      try {
+        const raw = localStorage.getItem(PROFILE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch { return null; }
+    }
+
+    function saveProfile(profile) {
+      localStorage.setItem(PROFILE_KEY, JSON.stringify({ ...profile, completedAt: new Date().toISOString() }));
+    }
+
+    function defaultProfile() {
+      return { pace: "balance", interest: "playa", crowds: "ok", transport: "driving" };
+    }
+
+    function getProfile() {
+      return loadProfile() || defaultProfile();
+    }
+
+    function profileLabel(profile) {
+      const map = { flash: "rápido", balance: "equilibrado", zen: "tranquilo", playa: "playa", naturaleza: "naturaleza", gastronomia: "gastronomía", aves: "aves", cultura: "cultura", avoid: "evita multitudes", ok: "multitudes OK", like: "le gusta ambiente", driving: "auto", walking: "a pie", cycling: "bici" };
+      return `Perfil: ${map[profile.pace] || profile.pace} · ${map[profile.interest] || profile.interest} · ${map[profile.transport] || profile.transport}`;
+    }
+
+    function renderProfileSummary() {
+      const el = document.getElementById("profile-summary");
+      const profile = getProfile();
+      if (!loadProfile()) {
+        el.innerHTML = '<span class="profile-pill" id="open-quiz">Hacer quiz de perfil</span>';
+        document.getElementById("open-quiz")?.addEventListener("click", () => openQuiz());
+        return;
+      }
+      el.innerHTML = `<small>${profileLabel(profile)}</small><br><span class="profile-pill" id="open-quiz">Editar perfil</span>`;
+      document.getElementById("open-quiz")?.addEventListener("click", () => openQuiz(true));
+    }
+
+    function renderQuizStep() {
+      const q = QUIZ_QUESTIONS[quizStep];
+      const body = document.getElementById("quiz-body");
+      body.innerHTML = `<div class="quiz-q"><label>${q.label}</label><div class="quiz-opts" id="quiz-opts"></div></div>`;
+      const opts = document.getElementById("quiz-opts");
+      q.options.forEach((opt) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = opt.text;
+        if (quizDraft[q.key] === opt.value) btn.classList.add("selected");
+        btn.onclick = () => {
+          quizDraft[q.key] = opt.value;
+          opts.querySelectorAll("button").forEach((b) => b.classList.remove("selected"));
+          btn.classList.add("selected");
+        };
+        opts.appendChild(btn);
+      });
+      document.getElementById("quiz-next").textContent = quizStep === QUIZ_QUESTIONS.length - 1 ? "Guardar perfil" : "Siguiente";
+    }
+
+    function openQuiz(reset = false) {
+      quizStep = 0;
+      quizDraft = reset ? { ...getProfile() } : {};
+      renderQuizStep();
+      document.getElementById("quiz-overlay").classList.add("open");
+    }
+
+    function closeQuiz() {
+      document.getElementById("quiz-overlay").classList.remove("open");
+      renderProfileSummary();
+      preselectCategoryFromProfile();
+      startSmartRouteFlow(window._twinmap);
+    }
+
+    async function startSmartRouteFlow(map) {
+      if (!map || !smartState.category) return;
+      document.getElementById("route-panel")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      document.getElementById("smart-hint").textContent = "Cargando destinos según tu perfil...";
+      try {
+        await loadDestinationsForCategory(map, smartState.category);
+        document.getElementById("smart-hint").textContent = "Elige el destino exacto. Luego pulsa «Ver rutas».";
+      } catch (error) {
+        showSmartStep(1);
+        document.getElementById("smart-hint").textContent = error.message;
+      }
+    }
+
+    function wireQuiz(map) {
+      if (!loadProfile()) setTimeout(() => openQuiz(), 800);
+      renderProfileSummary();
+
+      document.getElementById("quiz-skip").onclick = () => {
+        if (!loadProfile()) saveProfile(defaultProfile());
+        closeQuiz();
+      };
+      document.getElementById("quiz-next").onclick = () => {
+        const q = QUIZ_QUESTIONS[quizStep];
+        if (!quizDraft[q.key]) quizDraft[q.key] = q.options[0].value;
+        if (quizStep < QUIZ_QUESTIONS.length - 1) {
+          quizStep += 1;
+          renderQuizStep();
+          return;
+        }
+        saveProfile(quizDraft);
+        closeQuiz();
+        setStatus("Perfil guardado · <b>elige tu destino</b>");
+      };
+    }
+
+    async function updateSmartOrigin(map, loc, label) {
+      smartState.origin = { lat: loc.lat, lng: loc.lng, source: loc.source || "mapa", label: label || "Tu ubicación" };
+      const el = document.getElementById("sr-origin-label");
+      if (el) {
+        const src = smartState.origin.source === "gps" ? "GPS" : "mapa";
+        el.innerHTML = `Origen: <b>${escapeHtml(smartState.origin.label)}</b> (${src})`;
+      }
+      if (smartState.originMarker) smartState.originMarker.remove();
+      smartState.originMarker = new mapboxgl.Marker({ color: "#2ec4b6" })
+        .setLngLat([smartState.origin.lng, smartState.origin.lat])
+        .setPopup(new mapboxgl.Popup().setHTML(`<b>Partida</b><br>${escapeHtml(smartState.origin.label)}`))
+        .addTo(map);
+    }
+
+    async function refreshSmartOrigin(map, prompt = false) {
+      const btn = document.getElementById("sr-locate-btn");
+      if (btn) { btn.disabled = true; btn.textContent = "📍 Buscando ubicación..."; }
+      try {
+        const loc = await getDeviceLocation(map);
+        let label = loc.source === "gps" ? "Tu ubicación" : "Centro del mapa";
+        if (loc.source === "gps") {
+          const place = await placeNameFromCoords(loc.lng, loc.lat);
+          if (place) label = place;
+        }
+        await updateSmartOrigin(map, loc, label);
+        if (prompt) document.getElementById("smart-hint").textContent = "Ubicación lista. Elige destino y pulsa «Ver rutas».";
+        return smartState.origin;
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "📍 Usar mi ubicación actual"; }
+      }
+    }
+
+    async function getSmartOrigin(map) {
+      if (smartState.origin) return smartState.origin;
+      return refreshSmartOrigin(map);
+    }
+
+    function showSmartStep(step) {
+      document.getElementById("sr-step-category").style.display = step === 1 ? "block" : "none";
+      document.getElementById("sr-step-destination").style.display = step === 2 ? "block" : "none";
+      document.getElementById("sr-step-routes").style.display = step === 3 ? "block" : "none";
+    }
+
+    function preselectCategoryFromProfile() {
+      const profile = getProfile();
+      const interestToCat = { playa: "playa", naturaleza: "naturaleza", gastronomia: "comida", aves: "aves", cultura: "cultura" };
+      const cat = interestToCat[profile.interest] || "playa";
+      document.querySelectorAll("#sr-categories button").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.cat === cat);
+      });
+      smartState.category = cat;
+    }
+
+    function clearSmartRouteLayers(map) {
+      if (smartState.destMarker) { smartState.destMarker.remove(); smartState.destMarker = null; }
+      ["smart-route-line"].forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
+      if (map.getSource("smart-route")) map.removeSource("smart-route");
+    }
+
+    function drawSmartRouteLine(map, geometry, color) {
+      const data = { type: "Feature", geometry };
+      if (map.getSource("smart-route")) {
+        map.getSource("smart-route").setData(data);
+        map.setPaintProperty("smart-route-line", "line-color", color);
+        return;
+      }
+      map.addSource("smart-route", { type: "geojson", data });
+      map.addLayer({
+        id: "smart-route-line", type: "line", source: "smart-route",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": color, "line-width": 6, "line-opacity": 0.92 },
+      });
+    }
+
+    async function loadDestinationsForCategory(map, category) {
+      const location = await getSmartOrigin(map);
+      const profile = getProfile();
+      document.getElementById("dest-list").innerHTML = '<small style="color:var(--muted)">Buscando destinos...</small>';
+      showSmartStep(2);
+      const url = `${API}/api/routes/destinations?category=${encodeURIComponent(category)}&lat=${location.lat}&lng=${location.lng}&profile=${encodeURIComponent(JSON.stringify(profile))}`;
+      const res = await fetch(url);
+      const payload = await res.json();
+      if (!res.ok || !payload.success) throw new Error(payload.error || "No se cargaron destinos.");
+      const list = document.getElementById("dest-list");
+      list.innerHTML = "";
+      smartState.destination = null;
+      document.getElementById("sr-calc-routes").disabled = true;
+
+      payload.data.destinations.forEach((dest, index) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "dest-item" + (index === 0 ? " selected" : "");
+        btn.innerHTML = `<b>${escapeHtml(dest.name)}</b><small>${escapeHtml(dest.kind)} · ${dest.distanceKm} km</small><span class="match">${dest.matchScore}% · ${escapeHtml(dest.matchReason)}</span>`;
+        btn.onclick = () => {
+          list.querySelectorAll(".dest-item").forEach((el) => el.classList.remove("selected"));
+          btn.classList.add("selected");
+          smartState.destination = dest;
+          document.getElementById("sr-calc-routes").disabled = false;
+          if (smartState.destMarker) smartState.destMarker.remove();
+          smartState.destMarker = new mapboxgl.Marker({ color: "#ffbf69" })
+            .setLngLat([dest.lng, dest.lat])
+            .setPopup(new mapboxgl.Popup().setHTML(`<b>${escapeHtml(dest.name)}</b><br><small>Destino elegido</small>`))
+            .addTo(map);
+          map.flyTo({ center: [dest.lng, dest.lat], zoom: Math.max(map.getZoom(), 10), speed: 1.2 });
+        };
+        list.appendChild(btn);
+        if (index === 0) {
+          smartState.destination = dest;
+          document.getElementById("sr-calc-routes").disabled = false;
+          smartState.destMarker = new mapboxgl.Marker({ color: "#ffbf69" })
+            .setLngLat([dest.lng, dest.lat])
+            .addTo(map);
+        }
+      });
+
+      if (!payload.data.destinations.length) {
+        list.innerHTML = '<small style="color:var(--muted)">No hay destinos en esta categoría cerca. Prueba otra.</small>';
+      }
+    }
+
+    function boundsFromLine(geometry) {
+      const coords = geometry?.type === "LineString" ? geometry.coordinates : [];
+      if (!coords.length) return null;
+      let minLng = Infinity; let minLat = Infinity; let maxLng = -Infinity; let maxLat = -Infinity;
+      coords.forEach(([lng, lat]) => {
+        minLng = Math.min(minLng, lng); maxLng = Math.max(maxLng, lng);
+        minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
+      });
+      return [[minLng, minLat], [maxLng, maxLat]];
+    }
+
+    function travelModeForRoute(route) {
+      if (route.mode === "walking") return "walking";
+      if (route.mode === "cycling") return "bicycling";
+      return "driving";
+    }
+
+    function buildNavLinks(origin, destination, route) {
+      const o = `${origin.lat},${origin.lng}`;
+      const d = `${destination.lat},${destination.lng}`;
+      const mode = travelModeForRoute(route);
+      const google = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(o)}&destination=${encodeURIComponent(d)}&travelmode=${mode}`;
+      const waze = `https://waze.com/ul?ll=${destination.lat}%2C${destination.lng}&navigate=yes`;
+      return { google, waze };
+    }
+
+    function startNavigation(map) {
+      if (!smartState.destination) {
+        document.getElementById("smart-hint").textContent = "Primero elige un destino de la lista.";
+        return;
+      }
+      const route = smartState.routes.find((r) => r.id === smartState.previewId);
+      if (!route || !route.geometry) {
+        document.getElementById("smart-hint").textContent = "Elige una ruta (Flash, Vibes o Zen) y luego pulsa Llévame.";
+        return;
+      }
+      smartState.chosenId = route.id;
+
+      try {
+        drawSmartRouteLine(map, route.geometry, route.color);
+        const bounds = boundsFromLine(route.geometry);
+        if (bounds) map.fitBounds(bounds, { padding: { top: 100, bottom: 120, left: 280, right: 280 }, duration: 1400, maxZoom: 13 });
+      } catch (err) {
+        console.warn("No se pudo dibujar la ruta", err);
+      }
+
+      const origin = smartState.origin || { lat: map.getCenter().lat, lng: map.getCenter().lng };
+      const dest = smartState.destination;
+      const links = buildNavLinks(origin, dest, route);
+      const km = route.distance ? (route.distance / 1000).toFixed(1) : "?";
+      const min = route.duration ? Math.round(route.duration / 60) : "?";
+
+      document.querySelectorAll(".route-opt").forEach((el) => el.classList.remove("chosen"));
+      document.querySelector(`[data-route-id="${route.id}"]`)?.classList.add("chosen", "preview");
+
+      const nav = document.getElementById("sr-nav-links");
+      nav.style.display = "flex";
+      nav.innerHTML =
+        `<a href="${links.google}" target="_blank" rel="noopener noreferrer">Abrir en Google Maps (${km} km · ~${min} min)</a>` +
+        `<a class="secondary" href="${links.waze}" target="_blank" rel="noopener noreferrer">Abrir en Waze hacia ${escapeHtml(dest.name)}</a>`;
+
+      document.getElementById("smart-hint").innerHTML =
+        `<b>¡Listo!</b> Abriendo navegación hacia <b>${escapeHtml(dest.name)}</b>…`;
+      setStatus(`Navegando · <b>${escapeHtml(route.name)}</b> → ${escapeHtml(dest.name)}`);
+
+      const opened = window.open(links.google, "_blank", "noopener,noreferrer");
+      if (!opened) {
+        document.getElementById("smart-hint").innerHTML +=
+          `<br><small>Si no se abrió solo, pulsa el enlace amarillo de Google Maps abajo.</small>`;
+      }
+    }
+
+    async function fetchClientMapboxRoute(mode, coordList) {
+      const path = coordList.map(([lng, lat]) => `${lng},${lat}`).join(";");
+      const url = `https://api.mapbox.com/directions/v5/mapbox/${mode}/${path}?geometries=geojson&overview=full&access_token=${mapboxgl.accessToken}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.code !== "Ok" || !data.routes?.[0]) throw new Error(data.message || data.code || "Sin ruta Mapbox");
+      return data.routes[0];
+    }
+
+    async function buildClientSmartRoutes(origin, destination, profile) {
+      const o = [origin.lng, origin.lat];
+      const d = [destination.lng, destination.lat];
+      const mid = [(o[0] + d[0]) / 2, (o[1] + d[1]) / 2];
+      const zenMode = profile.transport === "cycling" ? "cycling" : profile.pace === "zen" ? "walking" : "driving";
+      const specs = [
+        { id: "flash", name: "Ruta Flash", emoji: "⚡", color: "#ff6b6b", mode: "driving", coords: [o, d], tagline: "La más rápida" },
+        { id: "vibes", name: "Ruta Vibes", emoji: "🌅", color: "#ffbf69", mode: "driving", coords: [o, mid, d], tagline: "Panorámica" },
+        { id: "zen", name: "Ruta Zen", emoji: "🌿", color: "#2ec4b6", mode: zenMode, coords: [o, d], tagline: "Tranquila" },
+      ];
+      const routes = [];
+      for (const spec of specs) {
+        try {
+          const r = await fetchClientMapboxRoute(spec.mode, spec.coords);
+          routes.push({
+            id: spec.id, name: spec.name, emoji: spec.emoji, color: spec.color, mode: spec.mode,
+            tagline: spec.tagline, distance: r.distance, duration: r.duration, geometry: r.geometry,
+            score: spec.id === "flash" ? 90 : spec.id === "vibes" ? 85 : 80,
+            summary: `${(r.distance / 1000).toFixed(1)} km · ~${Math.round(r.duration / 60)} min hacia ${destination.name}`,
+          });
+        } catch (err) { console.warn("Ruta cliente " + spec.id, err); }
+      }
+      if (!routes.length) throw new Error("No se pudo calcular ninguna ruta. Revisa tu conexión.");
+      return routes;
+    }
+
+    function renderSmartRouteOptions(map, routes, recommendedId) {
+      smartState.routes = routes;
+      const box = document.getElementById("route-options");
+      box.innerHTML = "";
+      routes.forEach((route) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "route-opt";
+        btn.dataset.routeId = route.id;
+        const km = (route.distance / 1000).toFixed(1);
+        const min = Math.round(route.duration / 60);
+        btn.innerHTML = `<b>${route.emoji} ${escapeHtml(route.name)}</b> <small>${km} km · ~${min} min · ${escapeHtml(route.tagline)}</small><small>${escapeHtml(route.summary)}</small>${route.id === recommendedId ? '<span class="rec">Recomendada para tu perfil</span>' : ""}`;
+        btn.onclick = () => {
+          box.querySelectorAll(".route-opt").forEach((el) => el.classList.remove("preview", "chosen"));
+          btn.classList.add("preview");
+          smartState.previewId = route.id;
+          drawSmartRouteLine(map, route.geometry, route.color);
+          document.getElementById("sr-confirm-route").disabled = false;
+          document.getElementById("smart-hint").textContent = "Previsualizando " + route.name + ". Pulsa «Llévame» para iniciar.";
+        };
+        box.appendChild(btn);
+      });
+      const best = routes.find((r) => r.id === recommendedId) || routes[0];
+      if (best) box.querySelector(`[data-route-id="${best.id}"]`)?.click();
+    }
+
+    async function calculateSmartRoutes(map) {
+      if (!smartState.destination) return;
+      clearRoute(map);
+      clearSmartRouteLayers(map);
+      const origin = await getSmartOrigin(map);
+      const profile = getProfile();
+      document.getElementById("route-options").innerHTML = '<small style="color:var(--muted)">Calculando Flash, Vibes y Zen...</small>';
+      showSmartStep(3);
+      smartState.previewId = null;
+      smartState.chosenId = null;
+      document.getElementById("sr-confirm-route").disabled = true;
+      document.getElementById("sr-nav-links").style.display = "none";
+      document.getElementById("sr-nav-links").innerHTML = "";
+
+      let routes = [];
+      let recommendedId = "flash";
+      let sourceNote = "";
+
+      try {
+        const res = await fetch(`${API}/api/routes/smart`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ origin: { lat: origin.lat, lng: origin.lng }, destination: smartState.destination, profile }),
+        });
+        const payload = await res.json();
+        if (res.ok && payload.success && payload.data?.routes?.length) {
+          routes = payload.data.routes;
+          recommendedId = payload.data.recommendedId || routes[0].id;
+          sourceNote = " (servidor TwinMap)";
+        } else {
+          throw new Error(payload.error || "Backend sin rutas");
+        }
+      } catch (backendErr) {
+        console.warn("Fallback Mapbox en navegador:", backendErr.message);
+        routes = await buildClientSmartRoutes(origin, smartState.destination, profile);
+        const pacePick = profile.pace === "zen" ? "zen" : profile.pace === "flash" ? "flash" : "vibes";
+        recommendedId = routes.find((r) => r.id === pacePick)?.id || routes[0].id;
+        sourceNote = " (mapa directo)";
+      }
+
+      document.getElementById("smart-hint").textContent = "Elige ruta y pulsa Llévame · se abre Google Maps" + sourceNote;
+      renderSmartRouteOptions(map, routes, recommendedId);
+    }
+
+    function wireSmartRoute(map) {
+      window._twinmap = map;
+      preselectCategoryFromProfile();
+
+      document.getElementById("sr-locate-btn").onclick = () => refreshSmartOrigin(map, true);
+      refreshSmartOrigin(map);
+
+      document.querySelectorAll("#sr-categories button").forEach((btn) => {
+        btn.onclick = async () => {
+          document.querySelectorAll("#sr-categories button").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          smartState.category = btn.dataset.cat;
+          document.getElementById("smart-hint").textContent = "Cargando opciones de " + btn.textContent.trim() + "...";
+          try {
+            await loadDestinationsForCategory(map, smartState.category);
+            document.getElementById("smart-hint").textContent = "Elige el destino exacto. El % refleja tu perfil del quiz.";
+          } catch (error) {
+            document.getElementById("smart-hint").textContent = error.message;
+          }
+        };
+      });
+
+      document.getElementById("sr-back-cat").onclick = () => showSmartStep(1);
+      document.getElementById("sr-back-dest").onclick = () => showSmartStep(2);
+      document.getElementById("sr-calc-routes").onclick = async () => {
+        try { await calculateSmartRoutes(map); }
+        catch (error) { document.getElementById("smart-hint").textContent = error.message; }
+      };
+      document.getElementById("sr-confirm-route").onclick = () => startNavigation(map);
+
+      if (loadProfile()) {
+        setTimeout(() => startSmartRouteFlow(map), 900);
+      }
+    }
+
     function wireRoute(map) {
       document.getElementById("route-panel").style.display = "block";
       document.getElementById("route-start-btn").onclick = () => useMyLocation(map);
@@ -969,14 +1806,37 @@
     }
 
     // ============ MINI CHAT: hoteles y restaurantes cercanos ============
-    async function chatLocation(map) {
-      const center = map.getCenter();
-      if (!navigator.geolocation) return { lat: center.lat, lng: center.lng, source: "mapa" };
+    // ============ Ubicación: GPS → centro del mapa → config ============
+    function getDeviceLocation(map) {
+      const fromCenter = () => {
+        const c = map?.getCenter?.();
+        return {
+          lat: c?.lat ?? CFG.CENTER?.[1] ?? 13.74,
+          lng: c?.lng ?? CFG.CENTER?.[0] ?? -90.05,
+          source: "mapa",
+        };
+      };
+      if (!navigator.geolocation) return Promise.resolve(fromCenter());
       return new Promise((resolve) => navigator.geolocation.getCurrentPosition(
-        (position) => resolve({ lat: position.coords.latitude, lng: position.coords.longitude, source: "ubicacion" }),
-        () => resolve({ lat: center.lat, lng: center.lng, source: "mapa" }),
-        { enableHighAccuracy: true, timeout: 7000, maximumAge: 60000 }
+        (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, source: "gps" }),
+        () => resolve(fromCenter()),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 }
       ));
+    }
+
+    async function placeNameFromCoords(lng, lat) {
+      try {
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?language=es&types=place,locality,neighborhood,region&limit=1&access_token=${mapboxgl.accessToken}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const f = data.features?.[0];
+        if (!f) return null;
+        return f.text || f.place_name?.split(",")[0] || null;
+      } catch { return null; }
+    }
+
+    async function chatLocation(map) {
+      return getDeviceLocation(map);
     }
     function wireAssistant(map) {
       const input = document.getElementById("assistant-input");
@@ -989,7 +1849,7 @@
         answer.textContent = "Buscando lugares reales cercanos y ordenando la ruta...";
         try {
           const location = await chatLocation(map);
-          const response = await fetch("http://localhost:3001/api/assistant/route", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, location }) });
+          const response = await fetch(API + "/api/assistant/route", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, location }) });
           const payload = await response.json();
           if (!response.ok || !payload.success) throw new Error(payload.error || "No se pudo crear la ruta.");
           const stops = payload.data.stops || [];
@@ -1009,13 +1869,120 @@
       input.onkeydown = (event) => { if (event.key === "Enter") send(); };
     }
 
+    function wireToolToggles() {
+      document.querySelectorAll(".tool-toggle").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const body = document.getElementById(btn.dataset.target);
+          if (!body) return;
+          const open = body.classList.toggle("is-open");
+          btn.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+      });
+    }
+
+    function weatherLabel(code) {
+      const c = Number(code);
+      if (c === 0) return "Despejado";
+      if (c <= 3) return "Parcialmente nublado";
+      if (c <= 48) return "Niebla";
+      if (c <= 67) return "Lluvia";
+      if (c <= 77) return "Nieve/granizo";
+      if (c <= 82) return "Chubascos";
+      if (c <= 99) return "Tormenta";
+      return "Variable";
+    }
+
+    async function addVitalsDashboard(map) {
+      const panel = document.getElementById("vitals-panel");
+      const body = document.getElementById("vitals-body");
+      panel.style.display = "block";
+      body.textContent = "Buscando tu ubicación…";
+
+      const loc = await getDeviceLocation(map);
+      const geoName = await placeNameFromCoords(loc.lng, loc.lat);
+      const usingGps = loc.source === "gps";
+
+      let placeLabel;
+      let locHint;
+      if (usingGps) {
+        placeLabel = geoName || "Tu ubicación";
+        locHint = "GPS";
+      } else {
+        placeLabel = geoName ? `${geoName} (mapa)` : "Centro del mapa";
+        locHint = "sin GPS · no es tu ubicación real";
+      }
+
+      let weather = null;
+      let source = "Open-Meteo";
+
+      try {
+        const url = new URL("https://api.open-meteo.com/v1/forecast");
+        url.search = new URLSearchParams({
+          latitude: String(loc.lat), longitude: String(loc.lng), timezone: "auto",
+          current: "temperature_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m",
+          daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+          forecast_days: "4",
+        }).toString();
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Open-Meteo HTTP " + res.status);
+        const data = await res.json();
+        weather = { current: data.current, daily: data.daily };
+      } catch (error) {
+        console.warn("Vitals error", error);
+        body.innerHTML =
+          `<p style="margin:0;color:var(--muted)">No se pudo cargar el clima.</p>` +
+          `<button type="button" id="vitals-refresh" style="margin-top:8px;border:0;border-radius:8px;padding:7px 10px;background:var(--accent);color:#062b28;font-weight:600;cursor:pointer">Reintentar</button>`;
+        document.getElementById("vitals-refresh").onclick = () => addVitalsDashboard(map);
+        return;
+      }
+
+      const cur = weather.current || {};
+      const daily = weather.daily || {};
+      const days = (daily.time || []).slice(0, 3).map((date, i) => ({
+        date,
+        max: daily.temperature_2m_max?.[i],
+        min: daily.temperature_2m_min?.[i],
+        rain: daily.precipitation_probability_max?.[i],
+        code: daily.weather_code?.[i],
+      }));
+      const dayHtml = days.map((d) => {
+        const label = new Date(d.date + "T12:00:00").toLocaleDateString("es", { weekday: "short" });
+        return `<div class="v-day"><span>${Math.round(d.max)}°</span>${label}<br>${d.rain ?? 0}% lluvia</div>`;
+      }).join("");
+
+      const gpsBanner = usingGps ? "" :
+        `<p style="margin:0 0 8px;font-size:10.5px;color:var(--accent2)">⚠️ Permite ubicación en el navegador (candado en la barra de dirección) para ver el clima donde estás.</p>`;
+
+      body.innerHTML =
+        gpsBanner +
+        `<div class="v-now">${Math.round(cur.temperature_2m ?? days[0]?.max ?? 0)}°C</div>` +
+        `<div class="v-row"><span>${weatherLabel(cur.weather_code ?? days[0]?.code)}</span><b>${escapeHtml(placeLabel)}</b></div>` +
+        `<div class="v-row"><span>Sensación</span><b>${Math.round(cur.apparent_temperature ?? cur.temperature_2m ?? 0)}°C</b></div>` +
+        `<div class="v-row"><span>Viento</span><b>${Math.round(cur.wind_speed_10m ?? 0)} km/h</b></div>` +
+        `<div class="v-row"><span>Lluvia ahora</span><b>${cur.precipitation ?? 0} mm</b></div>` +
+        `<div class="v-days">${dayHtml}</div>` +
+        `<div class="v-src">${source} · ${locHint} · <button type="button" id="vitals-refresh" style="border:0;background:none;color:var(--accent);cursor:pointer;font-size:10px;padding:0">↻ actualizar</button></div>`;
+
+      document.getElementById("vitals-refresh").onclick = () => addVitalsDashboard(map);
+    }
+
+    // ============ Estilo plano (colores planos, sin relieve) / satélite 3D ============
+    // Alterna recargando con ?flat=1 para re-armar limpio todas las capas.
+    function toggleFlat() {
+      const params = new URLSearchParams(location.search);
+      if (params.get("flat") === "1") params.delete("flat");
+      else params.set("flat", "1");
+      location.search = params.toString();
+    }
+
     // ============ Toggles del panel ============
     function wireToggles(map) {
       const setVis = (id, on) => { if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none"); };
       document.getElementById("lyr-3d").onchange = (e) => toggle3D(map, e.target.checked);
       document.getElementById("lyr-dept").onchange = (e) => DEPT_LAYERS.forEach((id) => setVis(id, e.target.checked));
       document.getElementById("lyr-pois").onchange = (e) => POI_LAYERS.forEach((id) => setVis(id, e.target.checked));
-      document.getElementById("lyr-heat").onchange = (e) => ["crowds-heat", "crowds-points"].forEach((id) => setVis(id, e.target.checked));
+      document.getElementById("lyr-parking").onchange = (e) => PARKING_LAYERS.forEach((id) => setVis(id, e.target.checked));
+      document.getElementById("lyr-heat").onchange = (e) => ["crowds-heat", "crowds-points", "crowds-pulse"].forEach((id) => setVis(id, e.target.checked));
       document.getElementById("lyr-traffic").onchange = (e) => TRAFFIC_LAYERS.forEach((id) => setVis(id, e.target.checked));
       document.getElementById("lyr-nature").onchange = (e) => NATURE_LAYERS.forEach((id) => setVis(id, e.target.checked));
       document.getElementById("lyr-mobility").onchange = (e) => MOBILITY_LAYERS.forEach((id) => setVis(id, e.target.checked));
@@ -1026,6 +1993,10 @@
         if (!e.target.checked && bioPlayTimer) toggleBioPlay(map); // pausar al apagar
       };
       document.getElementById("island-btn").onclick = () => toggleIsland(map);
+      const flatBtn = document.getElementById("flat-btn");
+      flatBtn.textContent = window._flatMode ? "🛰️ Satélite 3D" : "🗺️ Colores planos";
+      flatBtn.classList.toggle("active", window._flatMode);
+      flatBtn.onclick = () => toggleFlat();
 
       // Slider de línea de tiempo de aves
       document.getElementById("bio-time").oninput = (e) => applyBioTime(map, Number(e.target.value));

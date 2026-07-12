@@ -38,7 +38,7 @@ const fetchMapboxFallback = async ({ origin, destination, departureTime }) => {
       geometries: "geojson",
       overview: "full",
       steps: true,
-      depart_at: departureTime,
+      depart_at: departureTime?.replace(/\.\d{3}Z$/, "Z"),
     },
   });
 
