@@ -1295,7 +1295,7 @@
 
   <script>
     const CFG = window.TWINMAP_CONFIG || {};
-    const API = (CFG.API_BASE || "http://localhost:3001").replace(/\/$/, "");
+    const API = (CFG.API_BASE || (location.hostname === "localhost" || location.hostname === "127.0.0.1" ? "http://localhost:3001" : location.origin)).replace(/\/$/, "");
     let mapboxToken = "";
 
     function pickMapboxToken() {
